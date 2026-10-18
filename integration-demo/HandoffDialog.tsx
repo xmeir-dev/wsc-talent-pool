@@ -10,6 +10,8 @@ interface Props {
   comeet: ComeetService;
   onClose: () => void;
   onOpenComeet: (uid: string) => void;
+  /** Comeet's status webhook: HubSpot re-reads the person's Comeet status. */
+  onHandedOff: () => void;
 }
 
 type State =
@@ -21,7 +23,7 @@ type State =
   | { step: 'unavailable'; message: string };
 
 /** Review, then confirm. Nothing is sent until Confirm, and a failed call never reads as success. */
-export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet }: Props) {
+export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, onHandedOff }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<State>({ step: 'checking' });
   const [attempt, setAttempt] = useState(0);
@@ -68,7 +70,10 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet }:
     const r = await comeet.handoff(payload);
     sending.current = false;
     if (r.kind === 'unavailable') setState({ step: 'unavailable', message: r.message });
-    else setState({ step: r.kind, candidate: r.candidate });
+    else {
+      setState({ step: r.kind, candidate: r.candidate });
+      onHandedOff();
+    }
   };
 
   const close = onClose;

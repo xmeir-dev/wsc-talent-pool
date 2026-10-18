@@ -1,6 +1,8 @@
 import { ArrowDown01Icon, MoreHorizontalIcon } from '@hugeicons/core-free-icons';
 import { matchLabel, OUTCOME_LABEL, referenceLine } from '../view/format';
 import type { AssessmentStore, StoredAssessment } from './assessments';
+import type { ComeetCandidate } from './comeet';
+import { comeetStatusText } from './comeetStatus';
 import { Icon } from './Icon';
 
 interface Props {
@@ -8,7 +10,10 @@ interface Props {
   entry: StoredAssessment;
   jobId: string;
   onJobChange: (jobId: string) => void;
+  /** This person's record in the selected role's Comeet position, kept in sync by Comeet's webhook. */
+  comeetRecord: ComeetCandidate | null;
   onHandoff: () => void;
+  onOpenComeet: (uid: string) => void;
 }
 
 const TAG: Record<string, string> = {
@@ -31,7 +36,7 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
  * patterns. Every value comes from the assessment for the selected role; the selector reads another
  * stored assessment rather than recomputing or overwriting this one.
  */
-export function TalentMatchCard({ store, entry, jobId, onJobChange, onHandoff }: Props) {
+export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord, onHandoff, onOpenComeet }: Props) {
   const { a } = entry;
   const p = a.candidate.profile;
   const matched = a.skills.filter((s) => s.match !== 'none');
@@ -60,9 +65,20 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, onHandoff }:
             ))}
           </select>
         </label>
-        <button type="button" className="hs-btn hs-btn-primary" onClick={onHandoff}>
-          Add to Comeet
-        </button>
+        {comeetRecord ? (
+          <div className="tm-incomeet">
+            <span data-testid="tm-comeet">
+              In Comeet: {comeetStatusText(comeetRecord)} · Owner: {comeetRecord.owner}
+            </span>
+            <button type="button" className="hs-btn hs-btn-outline" onClick={() => onOpenComeet(comeetRecord.uid)}>
+              Open in Comeet
+            </button>
+          </div>
+        ) : (
+          <button type="button" className="hs-btn hs-btn-primary" onClick={onHandoff}>
+            Add to Comeet
+          </button>
+        )}
       </div>
 
       <div className="tm-stats">

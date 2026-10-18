@@ -1,4 +1,5 @@
 import {
+  Cancel01Icon,
   ChartLineData01Icon,
   ContactIcon,
   CustomerService01Icon,
@@ -10,28 +11,133 @@ import {
   Settings01Icon,
   ShoppingBag01Icon,
 } from '@hugeicons/core-free-icons';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 
+export interface Notice {
+  id: string;
+  title: string;
+  body: string;
+  /** One line per role; each opens that role's saved shortlist view. */
+  lines: { jobId: string; text: string }[];
+}
+
+interface Props {
+  notices: Notice[];
+  unread: number;
+  onReadAll: () => void;
+  onOpenView: (jobId: string) => void;
+  children: React.ReactNode;
+}
+
 /**
- * HubSpot's frame: dark top bar with global search and a left icon rail. Decorative only;
- * nothing in it is wired, so it is hidden from assistive technology.
+ * HubSpot's frame: dark top bar with global search and a left icon rail. Only the notification
+ * bell works; it is how the overnight run and later updates reach the recruiter.
  */
-export function HubSpotShell({ children }: { children: React.ReactNode }) {
+export function HubSpotShell({ notices, unread, onReadAll, onOpenView, children }: Props) {
+  // Opens when something new is waiting: the demo starts the morning after, with the overnight run's notice.
+  const [open, setOpen] = useState(unread > 0);
+  const latest = notices[0]?.id;
+  useEffect(() => {
+    if (unread > 0) setOpen(true);
+    // Only a newly arrived notice reopens the panel.
+  }, [latest]);
+
+  useEffect(() => {
+    if (open && unread > 0) onReadAll();
+  }, [open, unread, onReadAll]);
+
+  const panel = useRef<HTMLElement>(null);
+  const bell = useRef<HTMLButtonElement>(null);
+
+  // Closes on Escape or a click anywhere outside the panel, as HubSpot's popovers do.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!panel.current?.contains(t) && !bell.current?.contains(t)) setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+    };
+  }, [open]);
+
   return (
     <div className="host hs">
-      <header className="hs-top" aria-hidden="true">
-        <span className="hs-brand">HubSpot</span>
-        <span className="hs-search">
+      <header className="hs-top">
+        <span className="hs-brand" aria-hidden="true">
+          HubSpot
+        </span>
+        <span className="hs-search" aria-hidden="true">
           <Icon icon={Search01Icon} size={16} />
           Search HubSpot
         </span>
         <span className="hs-top-icons">
-          <Icon icon={HelpCircleIcon} />
-          <Icon icon={Settings01Icon} />
-          <Icon icon={Notification03Icon} />
-          <span className="hs-me">WS</span>
+          <span aria-hidden="true">
+            <Icon icon={HelpCircleIcon} />
+          </span>
+          <span aria-hidden="true">
+            <Icon icon={Settings01Icon} />
+          </span>
+          <button
+            ref={bell}
+            type="button"
+            className="hs-bell"
+            aria-label={unread > 0 ? `Notifications, ${unread} new` : 'Notifications'}
+            aria-expanded={open}
+            onClick={() => setOpen((o) => !o)}
+          >
+            <Icon icon={Notification03Icon} />
+            {unread > 0 && <span className="hs-bell-count">{unread}</span>}
+          </button>
+          <span className="hs-me" aria-hidden="true">
+            WS
+          </span>
         </span>
       </header>
+
+      {open && (
+        <section ref={panel} className="hs-notices" role="dialog" aria-label="Notifications">
+          <div className="hs-notices-head">
+            <h2>Notifications</h2>
+            <button type="button" className="handoff-x" aria-label="Close notifications" onClick={() => setOpen(false)}>
+              <Icon icon={Cancel01Icon} size={16} />
+            </button>
+          </div>
+          <ul>
+            {notices.map((n) => (
+              <li key={n.id} className="hs-notice">
+                <p className="hs-notice-app">WSC Talent Pool</p>
+                <p className="hs-notice-title">{n.title}</p>
+                <p className="muted">{n.body}</p>
+                <ul className="hs-notice-lines">
+                  {n.lines.map((l) => (
+                    <li key={l.jobId}>
+                      <button
+                        type="button"
+                        className="hs-link"
+                        onClick={() => {
+                          onOpenView(l.jobId);
+                          setOpen(false);
+                        }}
+                      >
+                        {l.text}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <div className="hs-frame">
         <nav className="hs-rail" aria-hidden="true">
           <span>

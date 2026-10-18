@@ -12,23 +12,28 @@ import {
   UserGroupIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
+import { useState } from 'react';
 import type { ComeetCandidate, ComeetService } from './comeet';
 import { ComeetProfile, STEPS } from './ComeetProfile';
 import { Icon } from './Icon';
 import { initials } from './initials';
+import { NewPositionDialog } from './NewPositionDialog';
+import type { NewRole } from './sources';
 
 interface Props {
   comeet: ComeetService;
   positionUid: string;
   openUid: string | null;
   onNavigate: (to: { positionUid: string; openUid: string | null }) => void;
+  onOpenRole: (role: NewRole) => void;
 }
 
 /**
  * Comeet's hiring workspace: icon rail, Hiring sidebar with positions, and the position page.
  * Opening a candidate narrows the list into a side column beside the profile, as Comeet does.
  */
-export function ComeetApp({ comeet, positionUid, openUid, onNavigate }: Props) {
+export function ComeetApp({ comeet, positionUid, openUid, onNavigate, onOpenRole }: Props) {
+  const [creating, setCreating] = useState(false);
   const position = comeet.positions().find((p) => p.uid === positionUid)!;
   const candidates = comeet.list(positionUid);
   const open = openUid ? comeet.get(openUid) : undefined;
@@ -76,7 +81,9 @@ export function ComeetApp({ comeet, positionUid, openUid, onNavigate }: Props) {
         </ul>
         <div className="cm-side-head">
           <span>Positions</span>
-          <Icon icon={Add01Icon} size={18} />
+          <button type="button" className="cm-add" aria-label="New position" onClick={() => setCreating(true)}>
+            <Icon icon={Add01Icon} size={18} />
+          </button>
         </div>
         <ul className="cm-positions">
           {comeet.positions().map((p) => (
@@ -137,6 +144,7 @@ export function ComeetApp({ comeet, positionUid, openUid, onNavigate }: Props) {
           <CandidateBoard candidates={candidates} onOpen={(uid) => onNavigate({ positionUid, openUid: uid })} />
         )}
       </div>
+      {creating && <NewPositionDialog onClose={() => setCreating(false)} onCreate={onOpenRole} />}
     </div>
   );
 }

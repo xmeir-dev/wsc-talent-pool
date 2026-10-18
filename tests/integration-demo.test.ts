@@ -1,8 +1,13 @@
 /** The integration demo's data layer: assessments keyed by person and role, and the simulated Comeet handoff. */
 import { describe, expect, it } from 'vitest';
 import { buildAssessmentStore } from '../integration-demo/assessments';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { loadSources } from '../cli/load-sources';
 import { buildHandoff, createSimulatedComeet, type ComeetService } from '../integration-demo/comeet';
-import { assessJob, byName, realDataset } from './helpers';
+import { addRole, applyImport, previewImport, roleProblems } from '../integration-demo/sources';
+import { buildDataset } from '../pipeline';
+import { assessJob, byName, DATA_DIR, realDataset, ROOT } from './helpers';
 
 const store = buildAssessmentStore(realDataset());
 
@@ -69,5 +74,56 @@ describe('simulated Comeet handoff', () => {
     up = true;
     expect(await comeet.find(payload.email, payload.positionUid)).toEqual({ kind: 'found', candidate: null });
     expect((await comeet.handoff(payload)).kind).toBe('created');
+  });
+});
+
+describe('spreadsheet import and new roles', () => {
+  const sources = loadSources(DATA_DIR);
+  const sample = readFileSync(join(ROOT, 'integration-demo', 'public', 'sample-conference-import.csv'), 'utf8');
+
+  it('previews the sample: four new contacts, one repeat attendee merged', () => {
+    const p = previewImport(sample, sources);
+    expect(p.ok && { created: p.created, merged: p.merged, conferences: p.conferences }).toEqual({
+      created: 4,
+      merged: 1,
+      conferences: ['Sports Video AI Meetup'],
+    });
+  });
+
+  it('applies through the same pipeline: new people are scored and the repeat gets a second event', () => {
+    const p = previewImport(sample, sources);
+    if (!p.ok) throw new Error(p.problems.join('; '));
+    const dataset = buildDataset(applyImport(p.rows, sources));
+    expect(dataset.candidates).toHaveLength(79);
+    const result = assessJob(dataset, 'JOB001');
+    expect(byName(result, 'Noa Barak').shortlistRank).toBe(1);
+    expect(byName(result, 'James Thornton').candidate.attendances).toHaveLength(2);
+    expect(byName(result, 'Yossi Levin').recommendation).toBe('needs_review');
+  });
+
+  it('rejects a file with missing columns and changes nothing', () => {
+    const p = previewImport('name,phone\nA,1\n', sources);
+    expect(p.ok).toBe(false);
+    if (!p.ok) expect(p.problems).toContain('Missing column "full_name".');
+  });
+
+  it('adds a role with the next job ID and scores the pool for it', () => {
+    const role = {
+      title: 'Computer Vision Engineer',
+      department: 'AI/ML',
+      seniority: 'Mid',
+      keyDomains: 'Computer Vision',
+      requiredSkills: 'Python, Computer Vision',
+      niceToHave: '',
+    };
+    const { sources: next, jobId } = addRole(role, sources);
+    expect(jobId).toBe('JOB005');
+    const result = assessJob(buildDataset(next), jobId);
+    expect(result.job.requiredSkills).toEqual(['Python', 'Computer Vision']);
+    expect(result.counts.shortlist).toBeGreaterThan(0);
+    expect(roleProblems({ ...role, title: ' ', requiredSkills: '' })).toEqual([
+      'Add a position title.',
+      'Add at least one required skill.',
+    ]);
   });
 });

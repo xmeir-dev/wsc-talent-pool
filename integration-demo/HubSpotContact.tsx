@@ -16,7 +16,7 @@ import { RELEVANCE_LABEL } from '../view/format';
 import type { AssessmentStore } from './assessments';
 import type { ComeetService } from './comeet';
 import { HandoffDialog } from './HandoffDialog';
-import { HubSpotShell } from './HubSpotShell';
+import { comeetStatusText } from './comeetStatus';
 import { Icon } from './Icon';
 import { initials } from './initials';
 import { TalentMatchCard } from './TalentMatchCard';
@@ -29,6 +29,7 @@ interface Props {
   onJobChange: (jobId: string) => void;
   onBack: () => void;
   onOpenComeet: (uid: string) => void;
+  onHandedOff: () => void;
 }
 
 const ACTIONS = [
@@ -45,7 +46,7 @@ const ACTIONS = [
  * The Talent match app card sits at the top of the Overview tab (an app-card location HubSpot
  * supports), so the assessment gets the full middle column.
  */
-export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange, onBack, onOpenComeet }: Props) {
+export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange, onBack, onOpenComeet, onHandedOff }: Props) {
   const [handoffOpen, setHandoffOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => heading.current?.focus(), []);
@@ -56,10 +57,12 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
   const c = a.candidate;
   const p = c.profile;
   const firstEvent = a.events[0]?.attendance;
+  const position = comeet.positionFor(jobId);
+  const status = position ? comeetStatusText(comeet.statusFor(c.email, position.uid)) : '--';
   const company = p?.currentCompany || c.attendances.at(-1)?.listedCompany || '';
 
   return (
-    <HubSpotShell>
+    <>
       <div className="hs-record">
         <aside className="hs-left" aria-label="Contact properties">
           <section className="hs-card hs-idcard">
@@ -110,6 +113,8 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
               <dd>Lead</dd>
               <dt>Lead source</dt>
               <dd>{firstEvent ? `Conference: ${firstEvent.conferenceName}` : '--'}</dd>
+              <dt>Comeet status ({entry.result.job.title})</dt>
+              <dd data-testid="hs-comeet-status">{status}</dd>
               <dt>Last contacted</dt>
               <dd>--</dd>
             </dl>
@@ -154,7 +159,9 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
             entry={entry}
             jobId={jobId}
             onJobChange={onJobChange}
+            comeetRecord={position ? comeet.statusFor(c.email, position.uid) : null}
             onHandoff={() => setHandoffOpen(true)}
+            onOpenComeet={onOpenComeet}
           />
 
           <section className="hs-card" aria-labelledby="hs-recent">
@@ -226,8 +233,9 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
           comeet={comeet}
           onClose={() => setHandoffOpen(false)}
           onOpenComeet={onOpenComeet}
+          onHandedOff={onHandedOff}
         />
       )}
-    </HubSpotShell>
+    </>
   );
 }

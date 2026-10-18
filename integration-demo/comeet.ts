@@ -70,6 +70,10 @@ export type LookupResult = { kind: 'found'; candidate: ComeetCandidate | null } 
 
 export interface ComeetService {
   positions: () => ComeetPosition[];
+  /** A new position opened in Comeet; in production its webhook starts an assessment for the role. */
+  addPosition: (jobId: string, name: string) => ComeetPosition;
+  /** What HubSpot shows as "Comeet status": the person's record in that position, if any. */
+  statusFor: (email: string, positionUid: string) => ComeetCandidate | null;
   positionFor: (jobId: string) => ComeetPosition | undefined;
   find: (email: string, positionUid: string) => Promise<LookupResult>;
   /** Idempotent: handing off the same person to the same position again returns the existing record. */
@@ -124,14 +128,21 @@ export interface SimulationOptions {
 
 export function createSimulatedComeet({ isAvailable, delayMs = 400 }: SimulationOptions): ComeetService {
   const records = new Map(seedCandidates().map((c) => [c.uid, c]));
+  const positions = [...POSITIONS];
   let nextUid = 2001;
   const wait = () => new Promise((resolve) => setTimeout(resolve, delayMs));
   const match = (email: string, positionUid: string) =>
     [...records.values()].find((c) => c.positionUid === positionUid && c.email.toLowerCase() === email.toLowerCase()) ?? null;
 
   return {
-    positions: () => POSITIONS,
-    positionFor: (jobId) => POSITIONS.find((p) => p.jobId === jobId),
+    positions: () => positions,
+    addPosition: (jobId, name) => {
+      const position = { uid: `POS-${jobId}`, jobId, name };
+      positions.push(position);
+      return position;
+    },
+    statusFor: (email, positionUid) => match(email, positionUid),
+    positionFor: (jobId) => positions.find((p) => p.jobId === jobId),
     get: (uid) => records.get(uid),
     list: (positionUid) => [...records.values()].filter((c) => c.positionUid === positionUid),
     async find(email, positionUid) {
