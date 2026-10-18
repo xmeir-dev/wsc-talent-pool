@@ -1,18 +1,18 @@
 # Schema and flow
 
-**Output:** a ranked candidate list for one selected role, explaining fit, gaps, and potential employee references. This is a draft specification; the pipeline and live import have not been verified.
+**Output:** a ranked candidate list for one selected role, explaining fit, gaps, and potential employee references. The pipeline in `pipeline/` implements this contract; a live HubSpot import has not been tested. Scoring rules: [How candidates are ranked](scoring.md).
 
 ## Flow
 
 | Step | Input → action → output |
 |---|---|
-| 1. Select role | `job_id` + `job_openings.csv` → load the role's requirements. |
-| 2. Combine evidence | Attendees + LinkedIn profiles, matched by profile URL; connections + employees, matched by employee ID → candidate records with source evidence. |
-| 3. Assess conference relevance | Skills, work history, and `conference_domain` → relevance and explanation for each event. This organizes the pool; it does not exclude someone from job matching. |
-| 4. Assess job fit | Candidate evidence + role requirements → recommendation, reasons, gaps, and next check, using the [selection rules](assumptions.md). |
-| 5. Rank and export | Recommendations → `output/candidates_<job_id>.csv`. Include JOB001 in the submission. Identical inputs and rules produce identical ordering. |
+| 1. Select role | `job_id` + `job_openings.csv` → load the role's requirements. An unknown `job_id` stops with the list of valid IDs. |
+| 2. Combine evidence | Check each file has its required columns. Attendees + LinkedIn profiles, matched by normalized profile URL; connections + employees, matched by employee ID; candidate and employee work histories compared for shared employers → candidate records with source evidence. |
+| 3. Assess conference relevance | Skills, industry, and `conference_domain` → relevance and explanation for each event. This organizes the pool; it does not exclude someone from job matching. |
+| 4. Assess job fit | Candidate evidence + role requirements → points, recommendation, reasons, gaps, and next check, using the [scoring rules](scoring.md). |
+| 5. Rank and export | Recommendations → `output/candidates_<job_id>.csv`. All four jobs are included. Identical inputs and rules produce identical files. |
 
-Keep one person with all their attendance records. Never merge by name alone. Ambiguous identities stay separate with unique local keys and visible warnings; missing profiles remain eligible for review.
+Keep one person with all their attendance records: rows sharing a LinkedIn URL are one person; without a usable URL, rows sharing an email are. Never merge by name alone. Ambiguous identities stay separate with unique local keys (`C-<first HubSpot ID>`) and visible warnings; missing profiles remain eligible for review.
 
 ## Output fields
 
@@ -20,15 +20,16 @@ Keep one person with all their attendance records. Never merge by name alone. Am
 
 | Group | Columns | Purpose |
 |---|---|---|
-| Recommendation | `recommendation`, `shortlist_rank`, `fit_evidence`, `skill_gaps`, `seniority_evidence`, `industry_bonus_evidence` | Why this person fits, what is unconfirmed, and their position. Reasons cite source fields; inferences are labelled. |
+| Recommendation | `recommendation`, `shortlist_rank`, `tie_note`, `outcome_reason`, `fit_evidence`, `skill_gaps`, `seniority_evidence`, `industry_bonus_evidence` | Why this person fits, what is unconfirmed, and their position. Reasons cite the profile skill used; partial and inferred matches are labelled. |
+| Points | `points_total`, `required_points`, `required_points_max`, `nice_to_have_points`, `industry_bonus_points` | The arithmetic behind the ranking, so anyone can recheck it. |
 | Person | `candidate_key`, `source_contact_ids`, `full_name`, `email`, `linkedin_url`, `current_company`, `current_title`, `years_experience` | Identify the person. Experience is total experience, not necessarily time in the specialty. |
-| Role and history | `job_id`, `job_title`, `event_assessments`, `assessment_version` | Identify the role and rule version. Keep event names, dates, domains, relevance, notes/source references together. |
-| References | `employee_connections`, `connection_count`, `connection_status` | Resolved employee IDs/names and the source of each connection. Distinguish `listed`, `none_listed`, `unknown`, and `partially_resolved`. |
+| Role and history | `job_id`, `job_title`, `event_assessments`, `assessment_version` | Identify the role and rule version. Each event keeps its date, name, domain, relevance with reason, HubSpot ID, source and notes. |
+| References | `employee_connections`, `connection_count`, `connection_status`, `possible_references` | Listed connections: resolved employee names, IDs and titles. Possible references: employees who shared an employer in overlapping years. Kept apart; neither is scored. |
 | Review | `profile_status`, `data_quality_flags`, `review_next_step`, `comeet_status`, `job_interest` | Explain missing/conflicting data and what to check. Comeet status and job interest are `unknown` in this exercise. |
 
-Export UTF-8 CSV with headers. Years, counts, and ranks are numbers; other fields are text. Related list entries stay together in readable cells. Keys, role, version, statuses, and explanations are required. Unavailable source values are blank and flagged; conflicting values remain unresolved. Rank starts at 1 and is blank outside the shortlist. Use `none identified` for no skill gaps and `none` for no quality flags.
+Export UTF-8 CSV with headers. Years, counts, points, and ranks are numbers; other fields are text. List entries share a cell, separated by `; ` (events by ` | `). Keys, role, version, statuses, and explanations are always filled. Unavailable source values are blank and flagged; conflicting values (e.g. two emails for one person) are left blank and both are listed in the flags. Rank starts at 1, tied people share a rank, and rank is blank outside the shortlist. Use `none identified` for no skill gaps, `none` for no quality flags, `none listed` for no connections, and `none found` for no possible references. Points are blank when there is no usable profile.
 
-`recommendation` is `shortlist` or `needs_review`. Retaining clear mismatches as `not_recommended_for_role` is **proposed, not yet agreed**. `profile_status` is `matched`, `missing_url`, `unmatched`, `invalid_url`, or `conflict`. Count only resolved employee IDs: an empty source list gives 0 and `none_listed`; unresolved IDs give `partially_resolved`, even if none resolve. An unavailable profile gives a blank count and `unknown`. An industry bonus is assessed only where that role's policy defines one.
+`recommendation` is `shortlist`, `needs_review`, or `not_recommended_for_role` (no evidence of the role's core discipline; still in the pool for other roles). Rows are ordered shortlist first, then needs review, then not recommended; within each, by points. `profile_status` is `matched`, `missing_url`, `unmatched`, `invalid_url`, or `conflict`. Count only resolved employee IDs: an empty source list gives 0 and `none_listed`; unresolved IDs give `partially_resolved`, even if none resolve. An unavailable profile gives a blank count and `unknown`. An industry bonus is assessed only where that role's policy defines one (JOB001).
 
 ## HubSpot preparation
 
@@ -36,4 +37,4 @@ Map `email` to Email and other columns to configured `talent_<column>` contact p
 
 Contact properties hold one selected-job snapshot: another job can overwrite it. Preserve per-job results. Blank CSV cells do not clear old values, including a former shortlist rank, so production updates need an explicit clearing policy. [HubSpot file requirements](https://knowledge.hubspot.com/import-and-export/set-up-your-import-file).
 
-Planned checks: missing/conflicting profiles, repeat attendees, unresolved connections, visible skill gaps, and connections unable to outrank clearly stronger qualifications. Scoring choices still to settle are listed in [assumptions](assumptions.md).
+Automated tests (`npm test`) cover missing/conflicting profiles, repeat attendees, duplicates, unresolved connections, visible skill gaps, and connections unable to outrank clearly stronger qualifications, using synthetic fixtures in `tests/fixtures/`.
