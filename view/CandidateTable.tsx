@@ -153,7 +153,7 @@ export function AttendeeTable({ attendees, onOpen, emptyState }: Shared & { atte
     { id: 'about', header: <Head icon={File02Icon} label="About candidate" />, width: '24%', accessor: ({ candidate }) => about(candidate) },
     {
       id: 'relevant',
-      header: <Head icon={Target02Icon} label="Relevant for" />,
+      header: <Head icon={Target02Icon} label="Relevant job" />,
       width: 176,
       accessor: ({ relevantFor }) => <RelevantFor list={relevantFor} />,
     },
