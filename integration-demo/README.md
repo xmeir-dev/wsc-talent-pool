@@ -2,7 +2,7 @@
 
 A clickable concept of the production recruiter experience: review the talent pool inside HubSpot, then hand a person into Comeet for a role. Plan: [docs/native-integration-demo-plan.md](../docs/native-integration-demo-plan.md).
 
-**Everything here is simulated.** Synthetic data, no HubSpot or Comeet account, no network calls. The screens only approximate each product's layout. Every recommendation, rank, gap and reference comes from the same `pipeline/` the CLI and recruiter view use.
+**Everything here is simulated.** Synthetic data, no HubSpot or Comeet account, no network calls. Each screen is drawn in that product's layout, approximated from public screenshots; no logos or product assets are used. The **HubSpot | Comeet** switch in the yellow strip works like two browser tabs. Every recommendation, rank, gap and reference comes from the same `pipeline/` the CLI and recruiter view use.
 
 ```bash
 npm run demo:integrations   # http://localhost:5173
@@ -17,8 +17,10 @@ npx playwright test --project integration-demo
    ![Contact card](../docs/screenshots/integration-2-hubspot-contact-card.png)
 3. **Handoff.** **Add to Comeet** previews exactly what will be sent: position, name, email, status Sourced, and the custom fields. Nothing is sent until **Confirm**, and no email goes out.
    ![Handoff review](../docs/screenshots/integration-3-handoff-review.png)
-4. **Comeet candidate.** **Open in Comeet** opens the Senior ML Engineer position: its candidates on the left (grouped by step), the profile on the right. The Details tab holds the custom fields (role fit, evidence, gaps, possible references, assessment version); the Workflow card shows status Sourced (not Applied), an unassigned owner and the next step.
+4. **Comeet candidate.** **Open in Comeet** switches to Comeet on the Senior ML Engineer position, with the candidate list narrowed beside the profile. The profile shows matched skills as tags, status Sourced (not Applied), the custom fields on the Details tab (role fit, evidence, gaps, possible references, assessment version), the Workflow card with an unassigned owner and next step, and the handoff note in Activity.
    ![Comeet record](../docs/screenshots/integration-4-comeet-candidate.png)
+5. **Comeet position.** Close the profile to see the position's candidates grouped by step: the new Sourced candidate and Lucas Evans in Phone screen.
+   ![Comeet position](../docs/screenshots/integration-5-comeet-position.png)
 
 Also try:
 
@@ -35,4 +37,4 @@ Also try:
 | Talent match card | React component | HubSpot UI extension (app card) reading the assessment store |
 | Role switching | Reads per-person, per-role, per-version assessments held in memory (`assessments.ts`) | Same keys, in the assessment store |
 | Comeet lookup and create | In-memory service (`comeet.ts`), fictional positions and one active candidate (`fixtures.ts`) | Comeet Recruiting API (Enterprise; access through Comeet support) |
-| Comeet record | Approximate layout with configured custom fields | Comeet's own candidate page |
+| Comeet position and profile | Approximate layout with configured custom fields and tags | Comeet's own pages |

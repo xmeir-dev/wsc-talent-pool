@@ -45,7 +45,7 @@ test('keyboard journey: shortlist → contact card → handoff → Comeet record
   await expect(dialog).toContainText('Added to Senior ML Engineer as Sourced.');
 
   await dialog.getByRole('button', { name: 'Open in Comeet' }).press('Enter');
-  await expect(page.getByRole('heading', { level: 1, name: 'Priya Anand' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Priya Anand' })).toBeFocused();
   await expect(page.getByTestId('cm-status')).toHaveText('Sourced');
   await expect(page.getByRole('region', { name: 'Custom fields' })).toContainText('Shortlist · #1');
   await expect(page.getByRole('region', { name: 'Custom fields' })).toContainText('rules-v2');
@@ -77,25 +77,36 @@ test('repeating a handoff links to the same record instead of creating another',
   await card.getByRole('button', { name: 'Add to Comeet' }).click();
   await handoff(page).getByRole('button', { name: 'Confirm' }).click();
   await handoff(page).getByRole('button', { name: 'Open in Comeet' }).click();
-  const firstId = await page.locator('.cm-person .muted').textContent();
+  const firstId = await page.locator('[data-uid]').getAttribute('data-uid');
 
-  await page.getByRole('button', { name: '← Back to HubSpot' }).click();
+  await page.getByRole('button', { name: 'HubSpot', exact: true }).click();
   await card.getByRole('button', { name: 'Add to Comeet' }).click();
   await expect(handoff(page)).toContainText('Already in Comeet for Senior ML Engineer');
   await expect(handoff(page).getByRole('button', { name: 'Confirm' })).toHaveCount(0);
   await handoff(page).getByRole('button', { name: 'Open in Comeet' }).click();
-  await expect(page.locator('.cm-person .muted')).toHaveText(firstId!);
+  await expect(page.locator('[data-uid]')).toHaveAttribute('data-uid', firstId!);
+  await expect(page.getByRole('complementary', { name: 'Candidates' }).getByRole('button', { name: /Chiara Russo/ })).toHaveCount(
+    1,
+  );
   expect(errors).toEqual([]);
 });
 
-test('a person already in a Comeet process shows the owner and next step', async ({ page }) => {
+test('Comeet opens on its own; a person already in a process shows the owner and next step', async ({ page }) => {
   const errors = watchErrors(page);
-  await openContact(page, 'Lucas Evans');
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Comeet', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Senior ML Engineer' })).toBeVisible();
+  await page.getByRole('button', { name: /Lucas Evans/ }).click();
+  await expect(page.getByTestId('cm-status')).toHaveText('In progress · Phone screen');
+  await page.getByRole('button', { name: 'Close profile' }).click();
+  await page.getByRole('button', { name: 'HubSpot', exact: true }).click();
+
+  await shortlist(page).getByRole('button', { name: 'Lucas Evans' }).click();
   await page.getByRole('button', { name: 'Add to Comeet' }).click();
   await expect(handoff(page)).toContainText('Owner: Dana (fictional recruiter)');
   await expect(handoff(page)).toContainText('Check with Dana before contacting Lucas.');
   await handoff(page).getByRole('button', { name: 'Open in Comeet' }).click();
-  await expect(page.getByTestId('cm-status')).toHaveText('Active · Phone screen');
+  await expect(page.getByTestId('cm-status')).toHaveText('In progress · Phone screen');
   expect(errors).toEqual([]);
 });
 

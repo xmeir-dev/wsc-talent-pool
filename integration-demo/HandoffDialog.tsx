@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StoredAssessment } from './assessments';
+import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { buildHandoff, type ComeetCandidate, type ComeetService } from './comeet';
+import { Icon } from './Icon';
 
 interface Props {
   entry: StoredAssessment;
@@ -76,7 +78,12 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet }:
   return (
     <div className="handoff-backdrop">
       <div ref={dialog} className="handoff" role="dialog" aria-modal="true" aria-labelledby="handoff-title" tabIndex={-1}>
-        <h2 id="handoff-title">Add {name} to Comeet</h2>
+        <div className="handoff-head">
+          <h2 id="handoff-title">Add {name} to Comeet</h2>
+          <button type="button" className="handoff-x" aria-label="Dismiss" onClick={close}>
+            <Icon icon={Cancel01Icon} size={18} />
+          </button>
+        </div>
 
         {!payload ? (
           <p role="alert">No Comeet position is mapped to {result.job.title}.</p>
@@ -91,6 +98,8 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet }:
               </dd>
               <dt>Email</dt>
               <dd>{payload.email || <span className="unknown">Not set</span>}</dd>
+              <dt>Tags</dt>
+              <dd>{payload.tags.join(', ') || <span className="unknown">None</span>}</dd>
               <dt>Status</dt>
               <dd>{payload.status}</dd>
               <dt>Role fit</dt>
@@ -122,23 +131,23 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet }:
         )}
 
         <div className="handoff-actions">
-          <button type="button" className="hs-btn-secondary" onClick={close}>
+          <button type="button" className="hs-btn hs-btn-outline" onClick={close}>
             {state.step === 'created' || state.step === 'existing' ? 'Close' : 'Cancel'}
           </button>
           {(state.step === 'review' || state.step === 'sending') && (
-            <button type="button" className="hs-btn-primary" onClick={confirm} disabled={state.step === 'sending'}>
+            <button type="button" className="hs-btn hs-btn-primary" onClick={confirm} disabled={state.step === 'sending'}>
               Confirm
             </button>
           )}
           {state.step === 'unavailable' && (
-            <button type="button" className="hs-btn-primary" onClick={() => setAttempt((n) => n + 1)}>
+            <button type="button" className="hs-btn hs-btn-primary" onClick={() => setAttempt((n) => n + 1)}>
               Try again
             </button>
           )}
           {(state.step === 'created' || state.step === 'existing') && (
             <button
               type="button"
-              className="hs-btn-primary"
+              className="hs-btn hs-btn-primary"
               onClick={() => {
                 const uid = state.candidate.uid;
                 close();

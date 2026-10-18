@@ -1,5 +1,7 @@
+import { ArrowDown01Icon, MoreHorizontalIcon } from '@hugeicons/core-free-icons';
 import { matchLabel, OUTCOME_LABEL, referenceLine } from '../view/format';
 import type { AssessmentStore, StoredAssessment } from './assessments';
+import { Icon } from './Icon';
 
 interface Props {
   store: AssessmentStore;
@@ -8,6 +10,12 @@ interface Props {
   onJobChange: (jobId: string) => void;
   onHandoff: () => void;
 }
+
+const TAG: Record<string, string> = {
+  shortlist: 'hs-tag-success',
+  needs_review: 'hs-tag-warning',
+  not_recommended_for_role: 'hs-tag-default',
+};
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -19,23 +27,29 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
 }
 
 /**
- * The proposed HubSpot app card. Every value comes from the assessment for the selected role;
- * the selector reads another stored assessment rather than recomputing or overwriting this one.
+ * The proposed HubSpot app card, drawn with HubSpot's card, statistic, tag and description-list
+ * patterns. Every value comes from the assessment for the selected role; the selector reads another
+ * stored assessment rather than recomputing or overwriting this one.
  */
 export function TalentMatchCard({ store, entry, jobId, onJobChange, onHandoff }: Props) {
   const { a } = entry;
   const p = a.candidate.profile;
   const matched = a.skills.filter((s) => s.match !== 'none');
   const conn = a.connections;
-  const outcome =
-    a.shortlistRank !== null ? `${OUTCOME_LABEL[a.recommendation]} · #${a.shortlistRank}` : OUTCOME_LABEL[a.recommendation];
+  const outcome = OUTCOME_LABEL[a.recommendation];
 
   return (
     <section className="hs-card tm" aria-labelledby="tm-title">
-      <div className="tm-head">
-        <h2 id="tm-title" className="hs-card-title">
-          Talent match
+      <div className="hs-card-head">
+        <h2 id="tm-title">
+          <Icon icon={ArrowDown01Icon} size={16} /> Talent match
         </h2>
+        <span className="tm-app" aria-hidden="true">
+          WSC Talent Pool app <Icon icon={MoreHorizontalIcon} size={16} />
+        </span>
+      </div>
+
+      <div className="tm-toolbar">
         <label className="tm-role">
           <span>Role</span>
           <select value={jobId} onChange={(e) => onJobChange(e.target.value)}>
@@ -46,25 +60,41 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, onHandoff }:
             ))}
           </select>
         </label>
-      </div>
-
-      <div className={`tm-verdict verdict-${a.recommendation}`}>
-        <div>
-          <p className="tm-outcome" data-testid="tm-outcome">
-            {outcome}
-          </p>
-          <ul className="tm-reasons">
-            {a.outcomeReasons.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-          <p className="tm-next">
-            <span className="label">Next step:</span> {a.reviewNextStep}
-          </p>
-        </div>
-        <button type="button" className="hs-btn-primary" onClick={onHandoff}>
+        <button type="button" className="hs-btn hs-btn-primary" onClick={onHandoff}>
           Add to Comeet
         </button>
+      </div>
+
+      <div className="tm-stats">
+        <div className="tm-stat">
+          <span className="tm-stat-label">Recommendation</span>
+          <span className={`hs-tag ${TAG[a.recommendation]}`} data-testid="tm-outcome">
+            {a.shortlistRank !== null ? `${outcome} · #${a.shortlistRank}` : outcome}
+          </span>
+        </div>
+        <div className="tm-stat">
+          <span className="tm-stat-label">Required-skill points</span>
+          <span className="tm-stat-value">{p ? `${a.points.required} / ${a.points.requiredMax}` : '--'}</span>
+        </div>
+        <div className="tm-stat">
+          <span className="tm-stat-label">Experience</span>
+          <span className="tm-stat-value">{a.seniority.totalYears === null ? '--' : `${a.seniority.totalYears} yrs`}</span>
+        </div>
+        <div className="tm-stat">
+          <span className="tm-stat-label">WSC connections</span>
+          <span className="tm-stat-value">{conn.status === 'unknown' ? '--' : conn.resolved.length}</span>
+        </div>
+      </div>
+
+      <div className="tm-why">
+        <ul>
+          {a.outcomeReasons.map((r) => (
+            <li key={r}>{r}</li>
+          ))}
+        </ul>
+        <p>
+          <span className="label">Next step:</span> {a.reviewNextStep}
+        </p>
       </div>
 
       <div className="tm-grid">
@@ -74,14 +104,14 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, onHandoff }:
           ) : matched.length === 0 ? (
             <p>None of the role's skills appear on the profile.</p>
           ) : (
-            <ul className="tm-list">
+            <dl className="tm-list">
               {matched.map((s) => (
-                <li key={s.skill}>
-                  <span>{s.skill}</span>
-                  <span className={s.match === 'named' ? 'muted' : 'warn'}>{matchLabel(s.skill, s.match, s.evidence)}</span>
-                </li>
+                <div key={s.skill}>
+                  <dt>{s.skill}</dt>
+                  <dd className={s.match === 'named' ? 'muted' : 'warn'}>{matchLabel(s.skill, s.match, s.evidence)}</dd>
+                </div>
               ))}
-            </ul>
+            </dl>
           )}
         </Block>
 
@@ -91,32 +121,16 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, onHandoff }:
           ) : a.skillGaps.length === 0 ? (
             <p>Nothing outstanding.</p>
           ) : (
-            <ul className="tm-list">
+            <ul className="tm-plain">
               {a.skillGaps.map((g) => (
-                <li key={g}>
-                  <span className="warn">{g}</span>
+                <li key={g} className="warn">
+                  {g}
                 </li>
               ))}
             </ul>
           )}
-        </Block>
-
-        <Block title="Seniority">
-          {!p ? (
-            <p className="unknown">Unknown: no profile.</p>
-          ) : (
-            <>
-              <p>
-                {a.seniority.totalYears === null ? (
-                  <span className="unknown">Years not stated</span>
-                ) : (
-                  `${a.seniority.totalYears} years total`
-                )}
-              </p>
-              {a.seniority.earlyCareerRoles.length > 0 && <p className="warn">Includes intern or junior roles</p>}
-              {a.seniority.seniorTitleFlag && <p className="warn">{a.seniority.seniorTitleFlag}</p>}
-            </>
-          )}
+          {p && a.seniority.earlyCareerRoles.length > 0 && <p className="warn">Experience includes intern or junior roles</p>}
+          {p && a.seniority.seniorTitleFlag && <p className="warn">{a.seniority.seniorTitleFlag}</p>}
         </Block>
 
         <Block title="WSC connections">
@@ -125,14 +139,14 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, onHandoff }:
           ) : conn.resolved.length === 0 ? (
             <p>None listed.</p>
           ) : (
-            <ul className="tm-list">
+            <dl className="tm-list">
               {conn.resolved.map((e) => (
-                <li key={e.employeeId}>
-                  <span>{e.fullName}</span>
-                  <span className="muted">{e.title}</span>
-                </li>
+                <div key={e.employeeId}>
+                  <dt>{e.fullName}</dt>
+                  <dd className="muted">{e.title}</dd>
+                </div>
               ))}
-            </ul>
+            </dl>
           )}
         </Block>
 
@@ -142,14 +156,14 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, onHandoff }:
           ) : a.possibleReferences.length === 0 ? (
             <p>None found.</p>
           ) : (
-            <ul className="tm-list">
+            <dl className="tm-list">
               {a.possibleReferences.map((r) => (
-                <li key={`${r.employeeId}-${r.company}-${r.overlapStart}`}>
-                  <span>{r.employeeName}</span>
-                  <span className="muted">{referenceLine(r)}</span>
-                </li>
+                <div key={`${r.employeeId}-${r.company}-${r.overlapStart}`}>
+                  <dt>{r.employeeName}</dt>
+                  <dd className="muted">{referenceLine(r)}</dd>
+                </div>
               ))}
-            </ul>
+            </dl>
           )}
           <p className="muted tm-hint">Overlapping work history. Leads, not endorsements.</p>
         </Block>

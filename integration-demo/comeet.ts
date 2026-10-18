@@ -31,7 +31,11 @@ export interface ComeetCandidate {
   lastName: string;
   email: string;
   linkedinUrl: string;
-  status: 'Sourced' | 'Active';
+  location: string;
+  /** Matched required skills, shown as candidate tags. */
+  tags: string[];
+  addedOn: string;
+  status: 'Sourced' | 'In progress';
   stage: string;
   owner: string;
   nextStep: string;
@@ -49,6 +53,8 @@ export interface HandoffPayload {
   lastName: string;
   email: string;
   linkedinUrl: string;
+  location: string;
+  tags: string[];
   status: 'Sourced';
   source: string;
   customFields: TalentFields;
@@ -63,6 +69,7 @@ export type HandoffResult =
 export type LookupResult = { kind: 'found'; candidate: ComeetCandidate | null } | { kind: 'unavailable'; message: string };
 
 export interface ComeetService {
+  positions: () => ComeetPosition[];
   positionFor: (jobId: string) => ComeetPosition | undefined;
   find: (email: string, positionUid: string) => Promise<LookupResult>;
   /** Idempotent: handing off the same person to the same position again returns the existing record. */
@@ -85,6 +92,8 @@ export function buildHandoff(a: CandidateAssessment, job: Job, version: string, 
     ...splitNames(c.fullName),
     email: c.email,
     linkedinUrl: c.linkedinUrl,
+    location: c.profile?.location ?? '',
+    tags: a.skills.filter((s) => s.kind === 'required' && s.match !== 'none').map((s) => s.skill),
     status: 'Sourced',
     source: 'Conference talent pool (HubSpot)',
     customFields: {
@@ -121,6 +130,7 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400 }: Simulation
     [...records.values()].find((c) => c.positionUid === positionUid && c.email.toLowerCase() === email.toLowerCase()) ?? null;
 
   return {
+    positions: () => POSITIONS,
     positionFor: (jobId) => POSITIONS.find((p) => p.jobId === jobId),
     get: (uid) => records.get(uid),
     list: (positionUid) => [...records.values()].filter((c) => c.positionUid === positionUid),
@@ -142,6 +152,9 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400 }: Simulation
         lastName: p.lastName,
         email: p.email,
         linkedinUrl: p.linkedinUrl,
+        location: p.location,
+        tags: p.tags,
+        addedOn: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         status: p.status,
         stage: 'Sourced',
         owner: 'Unassigned',

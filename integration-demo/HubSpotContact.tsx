@@ -1,9 +1,23 @@
+import {
+  ArrowDown01Icon,
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Calendar03Icon,
+  Call02Icon,
+  Copy01Icon,
+  Mail01Icon,
+  MoreHorizontalIcon,
+  Note01Icon,
+  Settings01Icon,
+  Task01Icon,
+} from '@hugeicons/core-free-icons';
 import { useEffect, useRef, useState } from 'react';
 import { RELEVANCE_LABEL } from '../view/format';
 import type { AssessmentStore } from './assessments';
 import type { ComeetService } from './comeet';
 import { HandoffDialog } from './HandoffDialog';
-import { HubSpotNav } from './HubSpotNav';
+import { HubSpotShell } from './HubSpotShell';
+import { Icon } from './Icon';
 import { initials } from './initials';
 import { TalentMatchCard } from './TalentMatchCard';
 
@@ -17,9 +31,19 @@ interface Props {
   onOpenComeet: (uid: string) => void;
 }
 
+const ACTIONS = [
+  { label: 'Note', icon: Note01Icon },
+  { label: 'Email', icon: Mail01Icon },
+  { label: 'Call', icon: Call02Icon },
+  { label: 'Task', icon: Task01Icon },
+  { label: 'Meeting', icon: Calendar03Icon },
+  { label: 'More', icon: MoreHorizontalIcon },
+];
+
 /**
- * HubSpot's three-column contact record. The Talent match app card sits in the middle column's
- * Overview tab (a supported app-card location), so the assessment gets the full width.
+ * HubSpot's contact record: left sidebar, middle column tabs, right sidebar associations.
+ * The Talent match app card sits at the top of the Overview tab (an app-card location HubSpot
+ * supports), so the assessment gets the full middle column.
  */
 export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange, onBack, onOpenComeet }: Props) {
   const [handoffOpen, setHandoffOpen] = useState(false);
@@ -31,45 +55,97 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
   const { a } = entry;
   const c = a.candidate;
   const p = c.profile;
+  const firstEvent = a.events[0]?.attendance;
+  const company = p?.currentCompany || c.attendances.at(-1)?.listedCompany || '';
 
   return (
-    <div className="host hs">
-      <HubSpotNav />
+    <HubSpotShell>
       <div className="hs-record">
         <aside className="hs-left" aria-label="Contact properties">
-          <button type="button" className="hs-back" onClick={onBack}>
-            ← Contacts
-          </button>
-          <div className="hs-identity">
-            <span className="hs-avatar" aria-hidden="true">
-              {initials(c.fullName)}
-            </span>
-            <h1 ref={heading} tabIndex={-1} className="hs-name">
-              {c.fullName}
-            </h1>
-            <p className="hs-subtitle">{[p?.currentTitle, p?.currentCompany].filter(Boolean).join(' at ')}</p>
-            <p className="hs-email">{c.email}</p>
-          </div>
-          <h2 className="hs-about">About this contact</h2>
-          <dl className="hs-props">
-            <dt>Email</dt>
-            <dd>{c.email || <span className="unknown">Not set</span>}</dd>
-            <dt>LinkedIn</dt>
-            <dd className="hs-break">{c.linkedinUrl || <span className="unknown">Not set</span>}</dd>
-            <dt>Location</dt>
-            <dd>{p?.location || <span className="unknown">Not set</span>}</dd>
-            <dt>Lead source</dt>
-            <dd>{a.events.map((e) => e.attendance.conferenceName).join(', ')}</dd>
-          </dl>
+          <section className="hs-card hs-idcard">
+            <div className="hs-idcard-top">
+              <button type="button" className="hs-crumb" onClick={onBack}>
+                <Icon icon={ArrowLeft01Icon} size={16} /> Contacts
+              </button>
+              <span className="hs-actions-menu" aria-hidden="true">
+                Actions <Icon icon={ArrowDown01Icon} size={14} />
+              </span>
+            </div>
+            <div className="hs-identity">
+              <span className="hs-avatar" aria-hidden="true">
+                {initials(c.fullName)}
+              </span>
+              <div className="hs-identity-text">
+                <h1 ref={heading} tabIndex={-1} className="hs-name">
+                  {c.fullName}
+                </h1>
+                <p>{[p?.currentTitle, company].filter(Boolean).join(' at ')}</p>
+                <p className="hs-email">
+                  <span className="hs-underline">{c.email}</span> <Icon icon={Copy01Icon} size={14} />
+                </p>
+              </div>
+            </div>
+            <div className="hs-quick" aria-hidden="true">
+              {ACTIONS.map((x) => (
+                <span key={x.label} className="hs-quick-item">
+                  <span className="hs-quick-btn">
+                    <Icon icon={x.icon} size={18} />
+                  </span>
+                  {x.label}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <section className="hs-card" aria-labelledby="hs-key">
+            <div className="hs-card-head">
+              <h2 id="hs-key">
+                <Icon icon={ArrowDown01Icon} size={16} /> Key information
+              </h2>
+            </div>
+            <dl className="hs-props">
+              <dt>Contact owner</dt>
+              <dd>Unassigned</dd>
+              <dt>Lifecycle stage</dt>
+              <dd>Lead</dd>
+              <dt>Lead source</dt>
+              <dd>{firstEvent ? `Conference: ${firstEvent.conferenceName}` : '--'}</dd>
+              <dt>Last contacted</dt>
+              <dd>--</dd>
+            </dl>
+          </section>
+
+          <section className="hs-card" aria-labelledby="hs-about">
+            <div className="hs-card-head">
+              <h2 id="hs-about">
+                <Icon icon={ArrowDown01Icon} size={16} /> About this contact
+              </h2>
+            </div>
+            <dl className="hs-props">
+              <dt>Email</dt>
+              <dd>{c.email || '--'}</dd>
+              <dt>LinkedIn</dt>
+              <dd className="hs-break">{c.linkedinUrl || '--'}</dd>
+              <dt>City</dt>
+              <dd>{p?.location || '--'}</dd>
+              <dt>Record ID</dt>
+              <dd>{c.sourceContactIds.join(', ')}</dd>
+            </dl>
+          </section>
         </aside>
 
         <main className="hs-middle">
-          <div className="hs-tabs" role="tablist" aria-label="Record tabs">
-            <span className="hs-tab is-active" role="tab" aria-selected="true">
-              Overview
-            </span>
-            <span className="hs-tab" aria-disabled="true">
-              Activities
+          <div className="hs-tabs">
+            <div className="hs-tabbar" role="tablist" aria-label="Record tabs">
+              <span className="hs-tab is-active" role="tab" aria-selected="true">
+                Overview
+              </span>
+              <span className="hs-tab" aria-disabled="true">
+                Activities
+              </span>
+            </div>
+            <span className="hs-customize" aria-hidden="true">
+              <Icon icon={Settings01Icon} size={16} /> Customize
             </span>
           </div>
 
@@ -81,17 +157,19 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
             onHandoff={() => setHandoffOpen(true)}
           />
 
-          <section className="hs-card" aria-labelledby="hs-events">
-            <h2 id="hs-events" className="hs-card-title">
-              Conference activity
-            </h2>
-            <ul className="hs-timeline">
+          <section className="hs-card" aria-labelledby="hs-recent">
+            <div className="hs-card-head">
+              <h2 id="hs-recent">Recent activities</h2>
+            </div>
+            <ul className="hs-activities">
               {a.events.map((e) => (
                 <li key={e.attendance.hubspotId}>
-                  <p>
-                    <strong>{e.attendance.conferenceName}</strong>
-                    <span className="muted"> · {e.attendance.conferenceDate}</span>
-                  </p>
+                  <div className="hs-activity-head">
+                    <span>
+                      <Icon icon={ArrowRight01Icon} size={14} /> <strong>Event attendance</strong> · {e.attendance.conferenceName}
+                    </span>
+                    <span className="muted">{e.attendance.conferenceDate}</span>
+                  </div>
                   <p className="muted">
                     Listed as {e.attendance.listedTitle || 'no title'}, {e.attendance.listedCompany || 'no company'} ·{' '}
                     {RELEVANCE_LABEL[e.relevance]} to this role
@@ -104,12 +182,39 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
         </main>
 
         <aside className="hs-right" aria-label="Associations">
-          <section className="hs-assoc">
-            <h2>Companies (1)</h2>
-            <p className="hs-assoc-name">{p?.currentCompany || c.attendances.at(-1)?.listedCompany}</p>
+          <section className="hs-card">
+            <div className="hs-card-head">
+              <h2>
+                <Icon icon={ArrowDown01Icon} size={16} /> Companies (1)
+              </h2>
+              <span className="hs-add" aria-hidden="true">
+                + Add
+              </span>
+            </div>
+            <div className="hs-assoc">
+              <span className="hs-primary-tag">Primary</span>
+              <p className="hs-underline hs-assoc-name">{company}</p>
+            </div>
           </section>
-          <section className="hs-assoc">
-            <h2>Deals (0)</h2>
+          <section className="hs-card">
+            <div className="hs-card-head">
+              <h2>
+                <Icon icon={ArrowRight01Icon} size={16} /> Deals (0)
+              </h2>
+              <span className="hs-add" aria-hidden="true">
+                + Add
+              </span>
+            </div>
+          </section>
+          <section className="hs-card">
+            <div className="hs-card-head">
+              <h2>
+                <Icon icon={ArrowRight01Icon} size={16} /> Tickets (0)
+              </h2>
+              <span className="hs-add" aria-hidden="true">
+                + Add
+              </span>
+            </div>
           </section>
         </aside>
       </div>
@@ -123,6 +228,6 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
           onOpenComeet={onOpenComeet}
         />
       )}
-    </div>
+    </HubSpotShell>
   );
 }
