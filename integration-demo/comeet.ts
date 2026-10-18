@@ -68,6 +68,8 @@ export interface ComeetService {
   /** Idempotent: handing off the same person to the same position again returns the existing record. */
   handoff: (payload: HandoffPayload) => Promise<HandoffResult>;
   get: (uid: string) => ComeetCandidate | undefined;
+  /** Everyone in one position, oldest first. */
+  list: (positionUid: string) => ComeetCandidate[];
 }
 
 const UNAVAILABLE = 'Comeet did not respond. Nothing was created.';
@@ -121,6 +123,7 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400 }: Simulation
   return {
     positionFor: (jobId) => POSITIONS.find((p) => p.jobId === jobId),
     get: (uid) => records.get(uid),
+    list: (positionUid) => [...records.values()].filter((c) => c.positionUid === positionUid),
     async find(email, positionUid) {
       await wait();
       if (!isAvailable()) return { kind: 'unavailable', message: UNAVAILABLE };

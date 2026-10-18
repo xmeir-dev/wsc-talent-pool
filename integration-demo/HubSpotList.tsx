@@ -1,6 +1,7 @@
 import type { JobAssessment } from '../pipeline';
 import { fitReason, OUTCOME_LABEL, referenceSummary } from '../view/format';
 import { HubSpotNav } from './HubSpotNav';
+import { initials } from './initials';
 
 interface Props {
   result: JobAssessment;
@@ -42,7 +43,10 @@ export function HubSpotList({ result, onOpen }: Props) {
                 return (
                   <tr key={c.candidateKey} onClick={() => onOpen(c.candidateKey)}>
                     <td className="hs-rank">{a.shortlistRank}</td>
-                    <td>
+                    <td className="hs-name-cell">
+                      <span className="hs-avatar hs-avatar-sm" aria-hidden="true">
+                        {initials(c.fullName)}
+                      </span>
                       <button
                         type="button"
                         className="hs-link"

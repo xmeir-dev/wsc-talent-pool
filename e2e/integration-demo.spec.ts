@@ -1,11 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
-/** Fails the test on any console error or uncaught page error. */
+/** Fails the test on any console error or uncaught page error (web-font fetches excepted when offline). */
 function watchErrors(page: Page): string[] {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => {
-    if (m.type() === 'error') errors.push(m.text());
+    if (m.type() === 'error' && !/fonts\.(googleapis|gstatic)\.com/.test(m.location().url + m.text())) errors.push(m.text());
   });
   return errors;
 }
@@ -77,14 +77,14 @@ test('repeating a handoff links to the same record instead of creating another',
   await card.getByRole('button', { name: 'Add to Comeet' }).click();
   await handoff(page).getByRole('button', { name: 'Confirm' }).click();
   await handoff(page).getByRole('button', { name: 'Open in Comeet' }).click();
-  const firstId = await page.locator('.cm-head .muted').textContent();
+  const firstId = await page.locator('.cm-person .muted').textContent();
 
   await page.getByRole('button', { name: '← Back to HubSpot' }).click();
   await card.getByRole('button', { name: 'Add to Comeet' }).click();
   await expect(handoff(page)).toContainText('Already in Comeet for Senior ML Engineer');
   await expect(handoff(page).getByRole('button', { name: 'Confirm' })).toHaveCount(0);
   await handoff(page).getByRole('button', { name: 'Open in Comeet' }).click();
-  await expect(page.locator('.cm-head .muted')).toHaveText(firstId!);
+  await expect(page.locator('.cm-person .muted')).toHaveText(firstId!);
   expect(errors).toEqual([]);
 });
 

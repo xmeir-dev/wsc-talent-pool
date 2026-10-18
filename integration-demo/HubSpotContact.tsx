@@ -4,6 +4,7 @@ import type { AssessmentStore } from './assessments';
 import type { ComeetService } from './comeet';
 import { HandoffDialog } from './HandoffDialog';
 import { HubSpotNav } from './HubSpotNav';
+import { initials } from './initials';
 import { TalentMatchCard } from './TalentMatchCard';
 
 interface Props {
@@ -16,6 +17,10 @@ interface Props {
   onOpenComeet: (uid: string) => void;
 }
 
+/**
+ * HubSpot's three-column contact record. The Talent match app card sits in the middle column's
+ * Overview tab (a supported app-card location), so the assessment gets the full width.
+ */
 export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange, onBack, onOpenComeet }: Props) {
   const [handoffOpen, setHandoffOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -35,10 +40,17 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
           <button type="button" className="hs-back" onClick={onBack}>
             ← Contacts
           </button>
-          <h1 ref={heading} tabIndex={-1} className="hs-name">
-            {c.fullName}
-          </h1>
-          <p className="muted">{[p?.currentTitle, p?.currentCompany].filter(Boolean).join(' at ')}</p>
+          <div className="hs-identity">
+            <span className="hs-avatar" aria-hidden="true">
+              {initials(c.fullName)}
+            </span>
+            <h1 ref={heading} tabIndex={-1} className="hs-name">
+              {c.fullName}
+            </h1>
+            <p className="hs-subtitle">{[p?.currentTitle, p?.currentCompany].filter(Boolean).join(' at ')}</p>
+            <p className="hs-email">{c.email}</p>
+          </div>
+          <h2 className="hs-about">About this contact</h2>
           <dl className="hs-props">
             <dt>Email</dt>
             <dd>{c.email || <span className="unknown">Not set</span>}</dd>
@@ -46,31 +58,21 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
             <dd className="hs-break">{c.linkedinUrl || <span className="unknown">Not set</span>}</dd>
             <dt>Location</dt>
             <dd>{p?.location || <span className="unknown">Not set</span>}</dd>
-            <dt>Contact IDs</dt>
-            <dd>{c.sourceContactIds.join(', ')}</dd>
+            <dt>Lead source</dt>
+            <dd>{a.events.map((e) => e.attendance.conferenceName).join(', ')}</dd>
           </dl>
         </aside>
 
         <main className="hs-middle">
-          <h2 className="hs-section-title">Conference activity</h2>
-          <ul className="hs-timeline">
-            {a.events.map((e) => (
-              <li key={e.attendance.hubspotId}>
-                <p>
-                  <strong>{e.attendance.conferenceName}</strong>
-                  <span className="muted"> · {e.attendance.conferenceDate}</span>
-                </p>
-                <p className="muted">
-                  Listed as {e.attendance.listedTitle || 'no title'}, {e.attendance.listedCompany || 'no company'} ·{' '}
-                  {RELEVANCE_LABEL[e.relevance]} to this role
-                </p>
-                {e.attendance.notes && <p>"{e.attendance.notes}"</p>}
-              </li>
-            ))}
-          </ul>
-        </main>
+          <div className="hs-tabs" role="tablist" aria-label="Record tabs">
+            <span className="hs-tab is-active" role="tab" aria-selected="true">
+              Overview
+            </span>
+            <span className="hs-tab" aria-disabled="true">
+              Activities
+            </span>
+          </div>
 
-        <aside className="hs-right" aria-label="App cards">
           <TalentMatchCard
             store={store}
             entry={entry}
@@ -78,6 +80,37 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
             onJobChange={onJobChange}
             onHandoff={() => setHandoffOpen(true)}
           />
+
+          <section className="hs-card" aria-labelledby="hs-events">
+            <h2 id="hs-events" className="hs-card-title">
+              Conference activity
+            </h2>
+            <ul className="hs-timeline">
+              {a.events.map((e) => (
+                <li key={e.attendance.hubspotId}>
+                  <p>
+                    <strong>{e.attendance.conferenceName}</strong>
+                    <span className="muted"> · {e.attendance.conferenceDate}</span>
+                  </p>
+                  <p className="muted">
+                    Listed as {e.attendance.listedTitle || 'no title'}, {e.attendance.listedCompany || 'no company'} ·{' '}
+                    {RELEVANCE_LABEL[e.relevance]} to this role
+                  </p>
+                  {e.attendance.notes && <p>"{e.attendance.notes}"</p>}
+                </li>
+              ))}
+            </ul>
+          </section>
+        </main>
+
+        <aside className="hs-right" aria-label="Associations">
+          <section className="hs-assoc">
+            <h2>Companies (1)</h2>
+            <p className="hs-assoc-name">{p?.currentCompany || c.attendances.at(-1)?.listedCompany}</p>
+          </section>
+          <section className="hs-assoc">
+            <h2>Deals (0)</h2>
+          </section>
         </aside>
       </div>
 

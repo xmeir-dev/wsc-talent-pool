@@ -13,11 +13,11 @@ npx playwright test --project integration-demo
 
 1. **HubSpot shortlist.** The saved view "Senior ML Engineer — shortlist" lists the 7 JOB001 shortlisted contacts with rank, recommendation, main fit reason and WSC connections. Open **Priya Anand**.
    ![Shortlist](../docs/screenshots/integration-1-hubspot-shortlist.png)
-2. **Contact record.** The **Talent match** app card shows the selected role's recommendation, matched evidence, what is not confirmed, seniority, WSC connections and possible references (leads, not endorsements). Switch **Role** to see her other assessments: JOB002 reads "Not recommended for this role", and JOB001 is unchanged when you switch back.
+2. **Contact record.** The **Talent match** app card sits full-width in the middle column's Overview tab and shows the selected role's recommendation, matched evidence, what is not confirmed, seniority, WSC connections and possible references (leads, not endorsements). Switch **Role** to see her other assessments: JOB002 reads "Not recommended for this role", and JOB001 is unchanged when you switch back.
    ![Contact card](../docs/screenshots/integration-2-hubspot-contact-card.png)
 3. **Handoff.** **Add to Comeet** previews exactly what will be sent: position, name, email, status Sourced, and the custom fields. Nothing is sent until **Confirm**, and no email goes out.
    ![Handoff review](../docs/screenshots/integration-3-handoff-review.png)
-4. **Comeet candidate.** **Open in Comeet** shows the candidate record: status Sourced (not Applied), unassigned owner, the custom fields with the assessment version, and a note.
+4. **Comeet candidate.** **Open in Comeet** opens the Senior ML Engineer position: its candidates on the left (grouped by step), the profile on the right. The Details tab holds the custom fields (role fit, evidence, gaps, possible references, assessment version); the Workflow card shows status Sourced (not Applied), an unassigned owner and the next step.
    ![Comeet record](../docs/screenshots/integration-4-comeet-candidate.png)
 
 Also try:

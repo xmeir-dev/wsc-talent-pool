@@ -76,7 +76,12 @@ export function App({ sources = bundledSources, delayMs }: Props) {
         />
       )}
       {screen.name === 'comeet' && (
-        <ComeetRecord candidate={comeet.get(screen.uid)} onBack={() => setScreen({ name: 'contact', ...screen.from })} />
+        <ComeetRecord
+          comeet={comeet}
+          uid={screen.uid}
+          onSelect={(uid) => setScreen({ ...screen, uid })}
+          onBack={() => setScreen({ name: 'contact', ...screen.from })}
+        />
       )}
     </div>
   );
