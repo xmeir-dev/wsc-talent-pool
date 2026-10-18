@@ -28,6 +28,19 @@ export const OUTCOME_LABEL: Record<Recommendation, string> = {
   not_recommended_for_role: 'Not recommended for this role',
 };
 
+/** Shorter outcome wording for the table's status pill; the detail keeps OUTCOME_LABEL. */
+export const TABLE_OUTCOME_LABEL: Record<Recommendation, string> = {
+  shortlist: 'Shortlist',
+  needs_review: 'Needs review',
+  not_recommended_for_role: 'Not recommended',
+};
+
+export const OUTCOME_TONE: Record<Recommendation, 'good' | 'warn' | 'neutral'> = {
+  shortlist: 'good',
+  needs_review: 'warn',
+  not_recommended_for_role: 'neutral',
+};
+
 export const RELEVANCE_LABEL: Record<ConferenceRelevance, string> = {
   relevant: 'Relevant',
   adjacent: 'Adjacent',

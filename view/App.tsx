@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { Button, Callout, Drawer, EmptyState, SegmentedControl, Select, TopBar } from '@meir-labs/ui-kit';
 import {
   assessJob,
   buildDataset,
@@ -8,7 +9,7 @@ import {
   type SourceTexts,
 } from '../pipeline';
 import { CandidateDetail } from './CandidateDetail';
-import { CandidateTable } from './CandidateTable';
+import { CandidateTable, type Item } from './CandidateTable';
 import { bundledSources } from './data';
 import { downloadCsv } from './download';
 import { emptyShortlistCopy, VIEWS, type View } from './format';
@@ -28,14 +29,15 @@ export function App({ sources = bundledSources }: { sources?: SourceTexts }) {
   const loaded = useMemo(() => load(sources), [sources]);
   if (!loaded.ok) {
     return (
-      <main className="error" role="alert">
-        <h1>The source data could not be read</h1>
-        <ul>
-          {loaded.problems.map((p) => (
-            <li key={p}>{p}</li>
-          ))}
-        </ul>
-        <p>Fix the files in data/ and reload.</p>
+      <main className="content">
+        <Callout tone="danger" title="The source data could not be read">
+          <ul>
+            {loaded.problems.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+          <p>Fix the files in data/ and reload.</p>
+        </Callout>
       </main>
     );
   }
@@ -46,28 +48,16 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   const [jobId, setJobId] = useState(dataset.jobs[0]?.jobId ?? '');
   const [view, setView] = useState<View>('shortlist');
   const [openKey, setOpenKey] = useState<string | null>(null);
-  const rowButtons = useRef(new Map<string, HTMLButtonElement>());
 
   const result = useMemo(() => assessJob(dataset, jobId), [dataset, jobId]);
   const rows = useMemo(() => toOutputRows(result), [result]);
-  const indexed = useMemo(() => result.candidates.map((a, i) => ({ a, row: rows[i]! })), [result, rows]);
+  const indexed = useMemo<Item[]>(() => result.candidates.map((a, i) => ({ a, row: rows[i]! })), [result, rows]);
   const visible = view === 'all' ? indexed : indexed.filter(({ a }) => a.recommendation === view);
   const open = openKey ? indexed.find(({ a }) => a.candidate.candidateKey === openKey) : undefined;
 
-  const close = () => {
-    const key = openKey;
-    setOpenKey(null);
-    if (key) requestAnimationFrame(() => rowButtons.current.get(key)?.focus());
-  };
-
-  useEffect(() => {
-    if (!openKey) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  });
+  // The drawer dissolves after close; keep showing the last person while it does.
+  const shown = useRef<Item | undefined>(undefined);
+  if (open) shown.current = open;
 
   const counts: Record<View, number> = {
     shortlist: result.counts.shortlist,
@@ -76,75 +66,68 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   };
 
   return (
-    <div className="app">
-      <header className="toolbar">
-        <label className="role">
-          <span className="sr-only">Role</span>
-          <select
+    <>
+      <TopBar
+        className="toolbar"
+        left={
+          <Select
             value={jobId}
-            onChange={(e) => {
-              setJobId(e.target.value);
+            onValueChange={(v) => {
+              setJobId(v);
               setOpenKey(null);
             }}
           >
-            {dataset.jobs.map((j) => (
-              <option key={j.jobId} value={j.jobId}>
-                {j.jobId} · {j.title}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="button" className="btn-primary" onClick={() => downloadCsv(result)}>
-          Export all for role
-        </button>
-      </header>
+            <Select.Trigger aria-label="Role" />
+            <Select.Content>
+              {dataset.jobs.map((j) => (
+                <Select.Item key={j.jobId} value={j.jobId}>
+                  {`${j.jobId} · ${j.title}`}
+                </Select.Item>
+              ))}
+            </Select.Content>
+          </Select>
+        }
+        right={<Button onClick={() => downloadCsv(result)}>Export all for role</Button>}
+      />
 
       <main className="content">
-        <h1 className="sr-only">Candidates for {result.job.title}</h1>
-        <div className="views" role="group" aria-label="View">
-          {VIEWS.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              className="view"
-              aria-pressed={view === v.id}
-              onClick={() => setView(v.id)}
-            >
-              {v.label}
-              <span className="view-count">{counts[v.id]}</span>
-            </button>
-          ))}
-        </div>
+        <h1 className="ml-visually-hidden">Candidates for {result.job.title}</h1>
+        <SegmentedControl
+          className="views"
+          aria-label="View"
+          value={view}
+          onChange={(v) => setView(v as View)}
+          options={VIEWS.map((v) => ({ value: v.id, label: v.label, count: counts[v.id] }))}
+        />
 
         {visible.length === 0 ? (
           view === 'shortlist' && result.counts.needs_review > 0 ? (
-            <div className="empty">
-              <p className="empty-title">{emptyShortlistCopy(result).title}</p>
-              <p>{emptyShortlistCopy(result).body}</p>
-              <button type="button" className="btn-secondary" onClick={() => setView('needs_review')}>
-                Open Needs review
-              </button>
-            </div>
+            <EmptyState
+              variant="no-results"
+              title={emptyShortlistCopy(result).title}
+              description={emptyShortlistCopy(result).body}
+              action={
+                <Button variant="secondary" onClick={() => setView('needs_review')}>
+                  Open Needs review
+                </Button>
+              }
+            />
           ) : (
-            <div className="empty">
-              <p className="empty-title">No candidates in this view.</p>
-            </div>
+            <EmptyState variant="no-results" title="No candidates in this view." />
           )
         ) : (
-          <CandidateTable
-            items={visible}
-            showOutcome={view === 'all'}
-            openKey={openKey}
-            onOpen={setOpenKey}
-            registerRow={(key, el) => {
-              if (el) rowButtons.current.set(key, el);
-              else rowButtons.current.delete(key);
-            }}
-          />
+          <CandidateTable items={visible} showOutcome={view === 'all'} onOpen={setOpenKey} />
         )}
       </main>
 
-      {open && <CandidateDetail key={open.a.candidate.candidateKey} a={open.a} row={open.row} onClose={close} />}
-    </div>
+      <Drawer
+        open={open !== undefined}
+        onClose={() => setOpenKey(null)}
+        size="lg"
+        title={shown.current?.a.candidate.fullName}
+      >
+        {shown.current && <CandidateDetail a={shown.current.a} row={shown.current.row} />}
+      </Drawer>
+    </>
   );
 }
