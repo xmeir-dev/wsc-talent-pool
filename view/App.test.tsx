@@ -120,7 +120,7 @@ describe('recruiter view: list', () => {
     expect(document.activeElement).toBe(trigger('Job'));
   });
 
-  it('one job shows its shortlist then needs review in rank order, with outcome pills and ties', async () => {
+  it('one job keeps the same columns, in the job rank order: shortlist, then needs review', async () => {
     const user = userEvent.setup();
     render(<App />);
     await pick(user, 'Job', /^Senior ML Engineer 12$/);
@@ -128,12 +128,11 @@ describe('recruiter view: list', () => {
     expect(heading()).toBe('12 of 75 attendees');
     expect(rows()).toHaveLength(12);
     expect(rows()[0]!.textContent).toContain('Priya Anand');
-    expect(within(rows()[0]!).getByText('10')).toBeTruthy(); // Score column
-    expect(rows().slice(0, 7).every((r) => r.textContent?.includes('Shortlist'))).toBe(true);
-    expect(rows().slice(7).every((r) => r.textContent?.includes('Needs review'))).toBe(true);
-    const ties = screen.getAllByText('tied');
-    expect(ties[0]!.getAttribute('title')).toMatch(/tied with/);
-    expect(screen.queryByText('Not recommended')).toBeNull();
+    expect(screen.queryByRole('columnheader', { name: /Score/ })).toBeNull();
+    expect(screen.getByRole('columnheader', { name: /Relevant job/ })).toBeTruthy();
+    const ml = (r: HTMLElement) => [...r.querySelectorAll('.jobs .ml-status-pill')].find((p) => p.textContent?.startsWith('Senior ML Engineer'))!;
+    expect(rows().slice(0, 7).every((r) => ml(r).textContent?.includes('Shortlist'))).toBe(true);
+    expect(rows().slice(7).every((r) => ml(r).textContent?.includes('Needs review'))).toBe(true);
 
     // Swap to another single job.
     await pick(user, 'Job', /^Senior ML Engineer/, /^Senior Product Manager/);

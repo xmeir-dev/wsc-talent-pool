@@ -5,7 +5,7 @@ import { Button, Callout, EmptyState, Select, TopBar, type SortState } from '@me
 import { buildDataset, DataValidationError, type Dataset, type SourceTexts } from '../pipeline';
 import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
 import { CandidateDetail } from './CandidateDetail';
-import { AttendeeTable, CandidateTable } from './CandidateTable';
+import { AttendeeTable } from './CandidateTable';
 import { bundledSources } from './data';
 import { downloadFile, exportCsv } from './download';
 import { FilterMenu, type FilterOption } from './FilterMenu';
@@ -57,14 +57,15 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   const [openKey, setOpenKeyState] = useState<string | null>(keyFromHash);
   const [profileJob, setProfileJob] = useState<string | null>(null);
 
-  // Exactly one job: that job's ranked view. None or several: the attendee list.
+  // One table, same columns, whatever the filter. Exactly one job: that job's ranked order until a header is clicked.
   const job = jobIds.length === 1 ? jobIds[0]! : null;
-  const attendees = useMemo(
-    () => sortAttendees(filterAttendees(pool, conferences, jobIds, countries), sort, pool.jobs),
-    [pool, conferences, jobIds, countries, sort],
-  );
-  const items = useMemo(() => (job ? jobItems(pool, job, conferences, countries) : []), [pool, job, conferences, countries]);
-  const shown = job ? items.length : attendees.length;
+  const attendees = useMemo(() => {
+    const list = filterAttendees(pool, conferences, jobIds, countries);
+    if (sort || !job) return sortAttendees(list, sort, pool.jobs);
+    const order = new Map(jobItems(pool, job, []).map(({ a }, i) => [a.candidate.candidateKey, i]));
+    return [...list].sort((x, y) => order.get(x.candidate.candidateKey)! - order.get(y.candidate.candidateKey)!);
+  }, [pool, conferences, jobIds, countries, sort, job]);
+  const shown = attendees.length;
   const { conferenceOptions, jobOptions, countryOptions } = useMemo(() => {
     const counts = filterCounts(pool);
     const conferenceOptions: FilterOption[] = pool.conferences.map((c) => {
@@ -207,11 +208,7 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   return (
     <main className="content">
       {filters}
-      {job ? (
-        <CandidateTable items={items} onOpen={openProfile} emptyState={empty} />
-      ) : (
-        <AttendeeTable attendees={attendees} onOpen={openProfile} emptyState={empty} sort={sort} onSort={setSort} />
-      )}
+      <AttendeeTable attendees={attendees} onOpen={openProfile} emptyState={empty} sort={sort} onSort={setSort} />
     </main>
   );
 }

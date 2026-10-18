@@ -1,22 +1,19 @@
 import { isValidElement, type ReactElement, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import {
-  AlertCircleIcon,
   Calendar03Icon,
-  CheckmarkCircle02Icon,
   File02Icon,
-  StarIcon,
   Target02Icon,
   UserIcon,
 } from '@hugeicons/core-free-icons';
 import { Avatar, DataTable, Hint, StatusPill, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
-import type { Attendee, Item } from './attendees';
+import type { Attendee } from './attendees';
 import { AVATAR, initials } from './avatars';
 import { CountryFlag } from './Location';
 import { Overview } from './Overview';
 import { WscMark } from './WscMark';
-import { currentRole, fitReason, mainGap, OUTCOME_TONE, shortDate, TABLE_OUTCOME_LABEL } from './format';
+import { shortDate, TABLE_OUTCOME_LABEL } from './format';
 
 interface Shared {
   onOpen: (key: string) => void;
@@ -78,66 +75,6 @@ const connections = (a: CandidateAssessment) => {
     </span>
   );
 };
-
-function RankCell({ a }: { a: CandidateAssessment }) {
-  return (
-    <span className="rank-cell">
-      {a.shortlistRank !== null && <span className="rank">{a.shortlistRank}</span>}
-      <StatusPill tone={OUTCOME_TONE[a.recommendation]}>{TABLE_OUTCOME_LABEL[a.recommendation]}</StatusPill>
-      {a.tieNote && (
-        <span className="tie" title={a.tieNote}>
-          tied
-        </span>
-      )}
-    </span>
-  );
-}
-
-/** One job's shortlist and needs review, in pipeline rank order. */
-export function CandidateTable({ items, onOpen, emptyState }: Shared & { items: Item[] }) {
-  const columns: Column<Item>[] = [
-    { id: 'rank', header: <span className="th-label"><span className="th-text">#</span></span>, width: 168, accessor: ({ a }) => <RankCell a={a} /> },
-    {
-      id: 'score',
-      header: (
-        <Hint tip="Total points: required + nice to have + industry bonus">
-          <Head icon={StarIcon} label="Score" />
-        </Hint>
-      ),
-      width: 96,
-      accessor: ({ a }) => <span className="score">{a.candidate.profile ? a.points.total : '–'}</span>,
-    },
-    {
-      id: 'candidate',
-      header: <Head icon={UserIcon} label="Candidate" />,
-      width: '18%',
-      accessor: ({ a, row }) => who(a.candidate, currentRole(row)),
-    },
-    { id: 'about', header: <Head icon={File02Icon} label="About candidate" />, width: '20%', accessor: ({ a }) => about(a.candidate) },
-    { id: 'why', header: <Head icon={CheckmarkCircle02Icon} label="Why" />, accessor: ({ a }) => quiet(fitReason(a)) },
-    {
-      id: 'gap',
-      header: <Head icon={AlertCircleIcon} label="Main gap" />,
-      accessor: ({ a }) => {
-        const gap = mainGap(a);
-        return quiet(gap.text, gap.unknown);
-      },
-    },
-    { id: 'ref', header: <Head icon={<WscMark />} label="WSC connections" />, width: '16%', accessor: ({ a }) => connections(a) },
-  ];
-
-  return (
-    <DataTable
-      className="candidates by-job"
-      aria-label="Candidates"
-      columns={columns}
-      data={items}
-      getRowId={({ a }) => a.candidate.candidateKey}
-      onRowClick={({ a }) => onOpen(a.candidate.candidateKey)}
-      emptyState={emptyState}
-    />
-  );
-}
 
 /** One pill per job, shortlist first: green when shortlisted, outlined grey in needs review. */
 function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
