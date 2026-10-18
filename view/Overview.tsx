@@ -1,5 +1,5 @@
 import { HugeiconsIcon } from '@hugeicons/react';
-import { AiMagicIcon, NoteEditIcon } from '@hugeicons/core-free-icons';
+import { AiFileIcon } from '@hugeicons/core-free-icons';
 import { Hint } from '@meir-labs/ui-kit';
 import type { Candidate } from '../pipeline';
 import ai from '../data/ai_summaries.json';
@@ -31,15 +31,12 @@ export function Overview({ c }: { c: Candidate }) {
   if (!o) return null;
   return (
     <span className={`overview overview-${o.source}`}>
-      <Hint tip={o.origin} focusable={false} className="overview-mark">
-        <HugeiconsIcon
-          icon={o.source === 'ai' ? AiMagicIcon : NoteEditIcon}
-          size={13}
-          strokeWidth={1.75}
-          aria-label={o.source === 'ai' ? 'AI-written' : "Recruiter's note"}
-        />
-      </Hint>
-      <span>{o.source === 'recruiter' ? `“${o.text}”` : o.text}</span>
+      {o.source === 'ai' && (
+        <Hint tip={o.origin} focusable={false} className="overview-mark">
+          <HugeiconsIcon icon={AiFileIcon} size={14} strokeWidth={1.75} aria-label="AI-written" />
+        </Hint>
+      )}
+      <span>{o.text}</span>
     </span>
   );
 }
