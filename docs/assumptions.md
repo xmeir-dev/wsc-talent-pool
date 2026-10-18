@@ -6,6 +6,8 @@ The [written assignment](../assignment/index.html) defines the scope; the [disco
 
 **Use the tools recruiters already work in.** Prefer showing recommendations and next actions inside HubSpot and Comeet, using their existing lists, records and supported extensions. Add a separate dashboard only when an essential recruiting task cannot be handled well there. The current standalone view demonstrates the assignment; the [integration demo plan](native-integration-demo-plan.md) shows the intended production experience.
 
+**Plans are unknown.** The production design assumes Comeet Enterprise (API and custom fields) and, for the interactive contact card, HubSpot Enterprise. If WSC is on lower plans, the fallback keeps results on HubSpot properties and lists. See [platform requirements](design.md#production-version).
+
 ## Selection rules
 
 - **A focused shortlist.** Promising candidates with insufficient evidence go into `needs_review`. Missing information is not proof of missing ability.
@@ -41,7 +43,7 @@ Consistent with the [design document](design.md#privacy-and-gdpr):
 - **Retention.** Contacts not engaged within 12 months are deleted or asked to re-confirm (the period is an assumption to confirm with legal); deletion on request is honoured across HubSpot, the assessment store and Comeet.
 - **Restricted, logged access.** Only the recruiting team sees candidate data, and views and exports are logged.
 
-**Refresh cadence:** reassess relevant open roles after each conference import and when a role opens or its requirements change. **Trigger:** assume the responsible recruiter manually starts each selected-job run. The take-home uses the supplied snapshot; scheduled background refresh and automatic triggers are outside this version.
+**Refresh cadence:** reassess relevant open roles when new contacts arrive and when a role opens or its requirements change. **Trigger:** in this take-home a recruiter starts each run on the supplied snapshot. In production the triggers are automatic (a new HubSpot contact, a Comeet position change), as described in the [design document](design.md#production-version); the [integration demo](../integration-demo/README.md) simulates them.
 
 ## How candidates are ranked
 

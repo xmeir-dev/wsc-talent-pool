@@ -20,13 +20,20 @@ The CSVs stand in for four systems. In production:
 
 | Today (CSV) | Production source |
 |---|---|
-| `conference_attendees.csv` | **Capture at the event.** A registration form or badge-scan app writes each attendee straight into HubSpot as a contact, tagged with the event, date and recruiter notes. This removes the separate spreadsheet per event. The form asks for the LinkedIn URL, current role and consent to be contacted about jobs. |
+| `conference_attendees.csv` | **Capture at the event.** Each attendee lands in HubSpot as a contact, tagged with the event, date and recruiter notes, with no spreadsheet per event: a HubSpot form opened from a QR code or tablet at the booth, a badge or business-card scan, or the event platform's HubSpot integration pushing the attendee list. A spreadsheet that still comes back goes through HubSpot's import. The form asks for the LinkedIn URL, current role and consent to be contacted about jobs. A repeat attendee is matched on email and gets the new event on their existing contact. |
 | `linkedin_profiles.csv` | **Enrichment.** LinkedIn's API does not offer general profile lookup to arbitrary companies; its sign-in gives only basic identity, and richer access is limited to approved partner programs. So production relies on (1) data the candidate provides at capture (role, skills, CV or LinkedIn URL), (2) a licensed enrichment vendor whose data use is permitted, and (3) a recruiter opening the LinkedIn profile for anyone in "needs review". Which of these WSC can use needs confirming with legal and LinkedIn. |
 | `wsc_employees.csv` and connections | **Employee roster** from the HR system. Mutual connections are not available through LinkedIn's API, so the first version relies on shared employers in work history (already implemented as "possible references") and employees confirming whom they know. |
-| `job_openings.csv` | **Comeet.** A Comeet webhook or scheduled API call reports new and changed roles, which starts an assessment for that role. Comeet also supplies whether a person has already applied or was previously rejected, so the shortlist can flag them ([stance in Assumptions](assumptions.md#people-already-in-comeet)). The exact Comeet endpoints and fields need confirming with Comeet. |
-| `output/candidates_<job>.csv` | **HubSpot API.** Results are written back through HubSpot's contacts API into custom `talent_` properties, matched on email, so recruiters see them in the tool they already use. Shortlisted people can be added to a HubSpot list for follow-up. |
+| `job_openings.csv` | **Comeet.** Comeet's position webhook (created, updated, deleted) starts an assessment for that role. Comeet also supplies whether a person has already applied or was previously rejected, so the shortlist can flag them ([stance in Assumptions](assumptions.md#people-already-in-comeet)). Comeet documents no webhook for candidate status changes, so a scheduled sync reads candidate status and writes it to a HubSpot "Comeet status" property. |
+| `output/candidates_<job>.csv` | **HubSpot API.** Results are written back through HubSpot's contacts API into custom `talent_` properties, matched on email, so recruiters see them in the tool they already use. One self-updating list per open role holds its shortlist, and a HubSpot workflow sends the recruiter an in-app notification when results change. |
 
-**Who triggers it:** a new role in Comeet, a finished conference import, or a recruiter on demand.
+**Who triggers it:** a new contact in HubSpot (HubSpot's contact-created webhook, so people are scored as they arrive), a new or changed role in Comeet, or a recruiter on demand.
+
+**Platform requirements, to confirm with WSC:**
+
+- **Comeet Enterprise** for API access (requested through Comeet support, with a sandbox) and custom candidate fields.
+- **HubSpot Enterprise** for an in-house app card on the contact record. Without it, the `talent_` properties, per-role lists and import still work; only the interactive card and its Add to Comeet button are lost, and the handoff moves to a list action or a workflow.
+- **HubSpot Professional or higher** for workflows (the in-app notification).
+- **A small integration service** (for example in N8N or Workato) that runs the scoring and talks to both tools, plus an approved enrichment source.
 
 ## At scale
 

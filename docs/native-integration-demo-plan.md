@@ -2,7 +2,7 @@
 
 **Outcome:** show a recruiter finding a conference contact in HubSpot, understanding the recommendation, and handing that person into Comeet for a role, without learning another dashboard.
 
-Status: built as a simulated prototype in [`integration-demo/`](../integration-demo/README.md) (`npm run demo:integrations`). This is a follow-on concept, separate from the working take-home app. Not connected to either service. The preference is recorded in [Assumptions](assumptions.md#where-recruiters-work).
+Status: built as a simulated prototype in [`integration-demo/`](../integration-demo/README.md) (`npm run demo:integrations`). This is a follow-on concept, separate from the working take-home app. Not connected to either service. The built demo goes further than the four steps below: it opens on the morning-after notification, imports a spreadsheet, scores a new Comeet position, and shows Comeet status back in HubSpot ([walkthrough](../integration-demo/README.md)). The preference is recorded in [Assumptions](assumptions.md#where-recruiters-work).
 
 ## Demo to build
 
@@ -19,6 +19,9 @@ Build a small clickable prototype with synthetic data and simulated service resp
 
 - **HubSpot lists:** saved views support filtering and chosen columns. The single-role list is the simplest demonstration. [Saved views](https://knowledge.hubspot.com/records/create-and-manage-saved-views).
 - **HubSpot app cards:** a supported place for the proposed interactive contact panel and handoff button. A real implementation uses HubSpot's UI components and an integration service. [UI extensions](https://developers.hubspot.com/docs/apps/developer-platform/add-features/ui-extensions/overview).
+- **HubSpot app card plan:** HubSpot's docs say UI extensions for private apps, and the serverless functions they use, require an Enterprise subscription; a developer test account works while building. [Private apps](https://developers.hubspot.com/docs/apps/legacy-apps/private-apps/build-with-projects/create-private-apps-with-projects), [serverless functions](https://developers.hubspot.com/docs/apps/developer-platform/add-features/serverless-functions/create-serverless-functions).
+- **HubSpot notifications:** the workflow action "Send in-app notification" posts to the HubSpot notification centre. [Workflow actions](https://knowledge.hubspot.com/workflows/choose-your-workflow-actions).
+- **Comeet positions:** a position webhook reports creation, update and deletion; no candidate-status webhook is documented, so status comes back by scheduled sync. Since April 2026 the API also has Leads endpoints, an alternative home for sourced prospects. [Position webhook](https://developers.comeet.com/reference/position-updates), [changelog](https://developers.comeet.com/reference/changelog).
 - **Comeet records:** candidate creation supports a position, sourced status, custom fields and a note. Custom candidate fields and customer Recruiting API access require Enterprise; access involves Comeet support. This establishes a supported route, not a verified WSC installation. [Create candidate](https://developers.comeet.com/reference/create-a-candidate-new), [custom fields](https://recruit-support.sparkhire.com/hc/en-us/articles/40045151370267-Custom-candidate-fields), [access](https://developers.comeet.com/reference/getting-started-comeet-customers).
 
 ## Developer handoff
@@ -26,7 +29,7 @@ Build a small clickable prototype with synthetic data and simulated service resp
 1. Add a separate `integration-demo/` entry and a documented `npm run demo:integrations` command. Reuse the existing React/TypeScript setup; keep the current app and pipeline behavior intact.
 2. Import `buildDataset` and `assessJob` from `pipeline/index.ts`. Use `data/` and the existing assessment types; derive counts, ranks and explanations from the engine. Reuse formatting where helpful, while matching the host tools' visual style.
 3. Keep assessments keyed by person, job and rule version. Contact fields are only a selected-job snapshot; switching roles in the card must preserve every assessment. A production card can read this history from the assessment store described in [Design](design.md#at-scale).
-4. Put simulated lookup/create behavior behind a small service interface. Keep fictional Comeet statuses in demo-only fixtures, separate from source CSVs. Cover a new prospect, an existing active candidate and an unavailable integration. Repeating a handoff must return the existing simulated record; a failed handoff must not show success.
+4. Put simulated lookup/create behavior behind a small service interface. Keep fictional Comeet statuses in demo-only fixtures, separate from source CSVs. Cover a new prospect, an existing active candidate and an unavailable integration (the last is covered by unit tests; the demo has no outage switch). Repeating a handoff must return the existing simulated record; a failed handoff must not show success.
 5. Add Reset demo and a short walkthrough. Capture the shortlist, contact card and Comeet destination using synthetic data. Document exactly which interactions are simulated.
 
 ## Done when
