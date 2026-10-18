@@ -170,20 +170,9 @@ test('Comeet opens on its own; a person already in a process shows the owner and
   expect(errors).toEqual([]);
 });
 
-test('an outage never reads as success and creates nothing; Reset demo clears handoffs', async ({ page }) => {
+test('Reset demo clears handoffs', async ({ page }) => {
   const errors = watchErrors(page);
   await openContact(page, 'Mason Young');
-  await card(page).getByRole('button', { name: 'Add to Comeet' }).click();
-  await handoff(page).getByRole('button', { name: 'Confirm' }).waitFor();
-
-  await page.getByLabel('Simulate Comeet outage').check();
-  await handoff(page).getByRole('button', { name: 'Confirm' }).click();
-  await expect(handoff(page)).toContainText('Comeet did not respond. Nothing was created.');
-  await expect(handoff(page).getByRole('button', { name: 'Open in Comeet' })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Dismiss' }).click();
-  await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toBeVisible();
-
-  await page.getByLabel('Simulate Comeet outage').uncheck();
   await card(page).getByRole('button', { name: 'Add to Comeet' }).click();
   await handoff(page).getByRole('button', { name: 'Confirm' }).click();
   await expect(handoff(page)).toContainText('Added to Senior ML Engineer as Sourced.');

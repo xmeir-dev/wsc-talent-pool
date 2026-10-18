@@ -28,7 +28,7 @@ npx playwright test --project integration-demo
 8. **New role.** In Comeet, **+** next to Positions opens a new position (prefilled). Publishing it scores the whole pool for that role; HubSpot gets a notification and a new saved view.
    ![New position](../docs/screenshots/integration-8-comeet-new-position.png)
 
-Also try **Simulate Comeet outage** before Confirm (the dialog says nothing was created), and **Reset demo** to start over.
+**Reset demo** starts over.
 
 ## What is simulated
 

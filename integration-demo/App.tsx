@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { buildDataset, type SourceTexts } from '../pipeline';
 import { bundledSources } from '../view/data';
 import { buildAssessmentStore, type AssessmentStore } from './assessments';
@@ -46,12 +46,9 @@ export function App({ sources: initialSources = bundledSources, delayMs }: Props
   const [sources, setSources] = useState(initialSources);
   const store = useMemo(() => buildAssessmentStore(buildDataset(sources)), [sources]);
   const [session, setSession] = useState(0);
-  const [available, setAvailable] = useState(true);
-  const availableRef = useRef(available);
-  availableRef.current = available;
   // A fresh simulated Comeet per demo session; Reset demo discards everything handed off.
   const comeet: ComeetService = useMemo(
-    () => createSimulatedComeet({ isAvailable: () => availableRef.current, delayMs }),
+    () => createSimulatedComeet({ isAvailable: () => true, delayMs }),
     [session, delayMs],
   );
   const firstPosition = comeet.positions()[0]!.uid;
@@ -71,7 +68,6 @@ export function App({ sources: initialSources = bundledSources, delayMs }: Props
   const reset = () => {
     setSession((s) => s + 1);
     setSources(initialSources);
-    setAvailable(true);
     setHost('hubspot');
     setHubspot({ name: 'list', view: 'all' });
     setComeetScreen({ positionUid: firstPosition, openUid: null });
@@ -130,10 +126,6 @@ export function App({ sources: initialSources = bundledSources, delayMs }: Props
         </div>
         <p className="demo-label">Integration concept · synthetic data · no live connection.</p>
         <div className="demo-controls">
-          <label className="demo-switch">
-            <input type="checkbox" checked={!available} onChange={(e) => setAvailable(!e.target.checked)} />
-            Simulate Comeet outage
-          </label>
           <button type="button" className="demo-reset" onClick={reset}>
             Reset demo
           </button>
