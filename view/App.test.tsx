@@ -57,14 +57,14 @@ describe('recruiter view: list', () => {
     expect(screen.getByRole('button', { name: 'Export' })).toBeTruthy();
   });
 
-  it('shows the jobs each attendee is relevant for with their rank, and nothing when none', () => {
+  it('shows the jobs each attendee is relevant for and nothing when none', () => {
     render(<App />);
     const adaora = screen.getByRole('row', { name: /Adaora Okafor/ });
-    expect(adaora.querySelector('.jobs')?.textContent).toBe('#9Senior ML Engineer: Needs review');
+    expect(adaora.querySelector('.jobs')?.textContent).toBe('Senior ML Engineer: Needs review');
     const noah = screen.getByRole('row', { name: /Noah Anderson/ });
     expect([...noah.querySelectorAll('.jobs .ml-status-pill')].map((p) => p.textContent)).toEqual([
-      '#2Data Engineer: Shortlist',
-      '#5Backend Engineer: Needs review',
+      'Data Engineer: Shortlist',
+      'Backend Engineer: Needs review',
     ]);
     expect(adaora.textContent).not.toContain('JOB001');
     expect(adaora.textContent).toContain('Data & AI Summit Europe');
