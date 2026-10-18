@@ -1,30 +1,45 @@
-# Mock call summary — 15 Oct 2026
+# Mock call summary: 15 October 2026
 
-Second-round interview with Shir Einy (WSC Sports). Shir played an HR recruiter describing a real pain point; the goal was to ask discovery questions, understand the problem, then propose a solution. The take-home assignment was sent after the call.
+The central problem is helping a recruiter find and act on suitable people already in a scattered talent pool. Adding more candidates alone does not solve the screening and management burden.
 
-## The problem (recruiter's view)
+Second-round interview with Shir Einy (WSC Sports), on Thursday, 15 October. Shir played an HR recruiter; the goal was to ask discovery questions, understand the problem, then propose a solution. She explicitly said the scenario was fictional and did not describe WSC's actual recruiting process.
 
-- A team of 5 recruiters, overwhelmed by volume across many sourcing channels: LinkedIn, conferences, referrals, and direct applications through Comeet.
-- Comeet's built-in filter is not accurate enough.
-- Three core pain points:
-  1. **Finding qualified candidates** in noisy inbound volume.
-  2. **Conference attendees get lost.** Attendees fill a form (name, LinkedIn, role) that lands in a one-off Excel per event. The data is never consolidated, so when a relevant role opens later, those people fall through the cracks. Conferences have produced some of the best candidates.
-  3. **Referral signal gets buried.** It exists in Comeet but is lost in the general pipeline.
+The call supplies context and feedback; the separate [written assignment](../assignment/index.html) specifies the deliverables.
 
-## What was proposed in the call
+## The problem in the simulation
 
-- The recruiter's own idea: a notification when a tech company has layoffs.
-- I extended it to automatically sourcing laid-off people from LinkedIn.
-- Shir's pushback: a notification alone solves maybe 10–20% of the problem. It adds candidates instead of filtering them, and doesn't touch the lost conference data.
+A team of five recruiters handles LinkedIn sourcing, conferences, referrals, and direct applications through Comeet. Each role has one recruiter responsible for it. Comeet's existing filter is not accurate enough.
 
-## The brief that came out of it
+- **Finding qualified candidates:** too much information to screen and too little help deciding whom to approach first.
+- **Losing conference contacts:** each event's registration form feeds a separate spreadsheet. Good candidates have come from conferences, but past attendees are easily forgotten when a relevant role opens later.
+- **Missing employee connections outside Comeet:** she clarified that referrals already receive priority inside Comeet. She wants comparable visibility for sourced people and conference attendees who have not applied, so colleagues who know them or worked with them can provide a reference.
 
-- Build a tool that gives the recruiter one end-to-end view of all potential candidates, not just those who applied.
-- Inputs: conference attendee CSVs, mock LinkedIn profiles, the employee roster, open roles (Comeet).
-- Expected features:
-  - Match candidates to open roles, with ranked recommendations and explanations.
-  - Show whether a candidate knows current employees, without asking them directly.
-  - Manage the full pipeline in one place, not only Comeet applicants.
-- Shir's tip: think like the recruiter and cover edge cases — repeat attendees, candidates already in Comeet, new roles opening mid-process.
-- All data is synthetic; external AI tools are fine to use.
-- A standalone tool is preferred over a Comeet integration (Comeet is closed), but data flow between systems is desirable.
+## What was proposed and challenged
+
+- The recruiter's initial idea was a notification when a tech company announces layoffs. I extended this to automatically sourcing people from LinkedIn.
+- I suggested that notifications alone might solve “10–20%” of the problem. This was my informal estimate, not Shir's assessment or a measured result.
+- Shir challenged both the assumption that we could identify which employees were laid off and the focus on adding candidates. Her main pushback: filtering, managing the existing pool, and recovering lost conference contacts still needed a solution.
+
+## Details that should shape the solution
+
+- **Attendance is not qualification or job-seeking intent.** Some attendees are unsuitable; others are good prospects but are not looking for work. LinkedIn URLs are optional on the registration form, so profiles may be unavailable.
+- **Make capture easy.** Shir questioned moving spreadsheets between locations when registration forms could feed the shared candidate pool directly. That was feedback for the real-world design; the exercise supplies CSVs.
+- **Fit the recruiter's daily work.** Roles open in Comeet. Show relevant people, explain recommendations, and make it clear how the recruiter proceeds with them. Account for returning attendees, earlier conferences, candidates already in Comeet, and newly opened roles.
+- **Reveal possible references without asking candidates.** She wanted to know who knows or previously worked with current employees. She pushed back on messaging attendees to ask whom they know. A connection is a lead for a reference, not proof of an endorsement.
+- **Avoid fragmented tools.** Building inside Comeet was not expected; she described it as closed to that kind of customization. She still wanted data to move between systems and fewer places for recruiters to manage the same people.
+
+## Written assignment requirements
+
+The written brief places the talent pool in HubSpot's existing contact infrastructure, with Comeet handling active applicants. Its concrete scope is:
+
+- A runnable pipeline using the four supplied datasets: conference attendees, mock LinkedIn profiles, employees, and open roles. Accept a selected `job_id` and produce HubSpot-ready results.
+- Ranked role matches with explanations, domain relevance, and employee connections. Include output CSV results for `JOB001` (Senior ML Engineer).
+- Defined processing steps and output fields, plus a design document covering choices, real-world capture and integrations, scale, and future additions.
+- Explicit assumptions and handling of missing data, plus README setup and run instructions. Submit the code, output, and documentation as a repository link or zip.
+- A recruiter-facing HTML or CLI view and a short executive summary are optional. The call's broader workflow discussion does not make a complete recruiting platform a required deliverable.
+
+All supplied data is synthetic, and external AI tools are allowed. The written brief requires working entirely with the supplied CSVs, without real personal data, API keys, or live LinkedIn, HubSpot, or Comeet connections.
+
+## Submission discussed on the call
+
+Send the submission to Shir before the presentation so she can review it. Yael was to arrange the presentation; its date was not confirmed during this call.

@@ -1,28 +1,23 @@
 # Assumptions
 
-## Domain relevance
+The [written assignment](../assignment/index.html) defines the scope; the [prep call](mock-call-summary.md) supplies context. Build against synthetic CSVs, with HubSpot-ready output. The assignment makes a recruiter screen optional; this build includes the requested webapp. Live connections and outreach are outside this exercise.
 
-Job title alone can't separate signal from noise. In the data, attendees with sports, media, video or broadcast backgrounds sit next to people from healthcare, banking, insurance, real estate and farming who hold the same titles ("Software Engineer", "Data Engineer", "Data Scientist"). The industry they work in is what tells them apart, so the pipeline looks at industry and work history, not only the title.
+## Selection rules
 
-Being outside sports doesn't automatically make someone noise. Several contacts from outside sports are real specialists in their conference's field, such as a Platform Engineer and a DevOps Lead at the DevOps conference, a Senior Data Engineer at the data conference, and broadcast and camera engineers at the broadcast conference. They're relevant to their conference and may fit a role, even if they're a weaker match for a sports-video role.
+- **A focused shortlist.** Promising candidates with insufficient evidence go into `needs_review`. Missing information is not proof of missing ability.
+- **Expertise first.** Assess skills, responsibilities, and relevant seniority. Conference relevance and job fit are separate; attendance and job titles alone do not establish either.
+- **Allow supporting gaps.** For JOB001, senior ML and computer-vision evidence matter; missing AWS evidence alone does not exclude someone. Keep every unconfirmed requirement visible, including Object Detection.
+- **Industry is a bonus for JOB001.** Sports/media experience can help, but is not required. Other roles retain their own requirements, such as JOB003's Sports Analytics skill.
+- **Connections only break close ties.** They cannot lift a clearly weaker candidate above a stronger one. A connection or shared employer suggests a possible reference, not an endorsement. More connections do not automatically mean more value.
 
-## Relevance and connections are two separate questions
+## Data and operating limits
 
-- **Relevance** answers "is this person right for the role?" It's judged on industry, skills and experience.
-- **Connections** answer "who at WSC can vouch for them?" They're a bonus on top, the way referrals get a bonus in Comeet.
+All 75 supplied attendees match a profile: **42 list WSC employee connections and 33 list none**. Unconnected contacts include broadcast specialists, so assess industry and job fit independently of connections. Missing-profile handling still needs testing: retain unmatched attendees for review, and flag conflicting identities instead of guessing.
 
-In this sample data the two line up exactly: all 42 contacts with a WSC connection work in sports, media, video or broadcast, and all 33 without one work elsewhere. If relevance were scored using connections, a strong candidate who simply knows no one at WSC would get buried, and that's exactly the kind of person a conference is good for finding. So the pipeline never uses connections to decide relevance. The neat split is also most likely how the synthetic data was built, and real data won't be that clean.
+Profile freshness, application history, previous rejection, job interest, and permission to contact are unknown. Total experience is not specialty experience; employment-history lists cannot safely be paired by position. A production version must establish data permissions, retention, access controls, and an appropriate outreach process.
 
-## Contacts with no LinkedIn match
+**Refresh cadence:** reassess relevant open roles after each conference import and when a role opens or its requirements change. **Trigger:** assume the responsible recruiter manually starts each selected-job run. The take-home uses the supplied snapshot; scheduled background refresh and automatic triggers are outside this version.
 
-## Number of mutual connections
+## Still to decide
 
-## Candidates already in Comeet
-
-## Refresh cadence
-
-## Who triggers the pipeline
-
-## Privacy and GDPR
-
-## Data quality
+Define each role's essential versus supporting requirements, any score weights and shortlist thresholds, what counts as a close tie, and whether connection count matters within it. Keeping clear mismatches under `not_recommended_for_role` is a proposal; they would remain available for other roles.

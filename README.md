@@ -2,6 +2,8 @@
 
 Take-home task for the AI Solution Manager role at WSC Sports: turn conference attendees into a ranked, explained candidate list for an open role, ready to import into HubSpot.
 
+Developer starting point: [Webapp build plan](docs/webapp-plan.md).
+
 ## Deliverables
 
 | Deliverable | Where |
