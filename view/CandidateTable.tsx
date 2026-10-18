@@ -13,6 +13,7 @@ import {
 import { DataTable, Hint, StatusPill, type Column } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee, Item } from './attendees';
+import { Overview } from './Overview';
 import { currentRole, fitReason, mainGap, OUTCOME_TONE, referenceSummary, shortDate, TABLE_OUTCOME_LABEL } from './format';
 
 interface Shared {
@@ -69,8 +70,13 @@ export function CandidateTable({ items, onOpen, toolbar, emptyState }: Shared & 
     {
       id: 'candidate',
       header: <Head icon={UserIcon} label="Candidate" />,
-      width: '13%',
-      accessor: ({ a }) => <span className="name">{a.candidate.fullName}</span>,
+      width: '22%',
+      accessor: ({ a }) => (
+        <span className="who">
+          <span className="name">{a.candidate.fullName}</span>
+          <Overview c={a.candidate} />
+        </span>
+      ),
     },
     { id: 'role', header: <Head icon={Briefcase01Icon} label="Role" />, width: '15%', accessor: ({ row }) => quiet(currentRole(row)) },
     { id: 'why', header: <Head icon={CheckmarkCircle02Icon} label="Why" />, accessor: ({ a }) => quiet(fitReason(a)) },
@@ -121,10 +127,15 @@ export function AttendeeTable({ attendees, onOpen, toolbar, emptyState }: Shared
     {
       id: 'candidate',
       header: <Head icon={UserIcon} label="Candidate" />,
-      width: '17%',
-      accessor: ({ candidate }) => <span className="name">{candidate.fullName}</span>,
+      width: '30%',
+      accessor: ({ candidate }) => (
+        <span className="who">
+          <span className="name">{candidate.fullName}</span>
+          <Overview c={candidate} />
+        </span>
+      ),
     },
-    { id: 'role', header: <Head icon={Briefcase01Icon} label="Role" />, width: '23%', accessor: ({ role }) => quiet(role) },
+    { id: 'role', header: <Head icon={Briefcase01Icon} label="Role" />, width: '18%', accessor: ({ role }) => quiet(role) },
     {
       id: 'conference',
       header: <Head icon={Calendar03Icon} label="Conference" />,

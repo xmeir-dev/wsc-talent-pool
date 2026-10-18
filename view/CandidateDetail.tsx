@@ -13,6 +13,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { Hint, StatusPill } from '@meir-labs/ui-kit';
 import type { CandidateAssessment, EmploymentSpell, OutputRow, PossibleReference, SkillMatch } from '../pipeline';
+import { Overview } from './Overview';
 import { currentRole, OUTCOME_LABEL, OUTCOME_TONE, years } from './format';
 
 interface Props {
@@ -102,6 +103,7 @@ export function CandidateDetail({ a, row, jobPicker }: Props) {
       <header className="d-head">
         <h1>{c.fullName}</h1>
         <p className="muted">{currentRole(row)}</p>
+        <Overview c={c} />
       </header>
 
       {jobPicker}

@@ -44,6 +44,16 @@ describe('recruiter view: list', () => {
     expect(screen.getByRole('row', { name: /Alexei Volkov/ }).textContent).toContain('—');
   });
 
+  it("shows the recruiter's note under a name, else a marked AI-written summary", () => {
+    render(<App />);
+    const adaora = screen.getByRole('row', { name: /Adaora Okafor/ });
+    expect(adaora.querySelector('.overview-recruiter')?.textContent).toContain('“Building video analytics platform');
+    const amara = screen.getByRole('row', { name: /Amara Diallo/ });
+    expect(amara.querySelector('.overview-recruiter')).toBeNull();
+    expect(amara.querySelector('.overview-ai')?.textContent).toContain('telecom network engineer');
+    expect(within(amara).getByLabelText('AI-written')).toBeTruthy();
+  });
+
   it('filters by conference', async () => {
     const user = userEvent.setup();
     render(<App />);

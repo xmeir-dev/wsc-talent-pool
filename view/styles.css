@@ -364,3 +364,37 @@ ul {
     display: none;
   }
 }
+
+/* One-line overview under a name: recruiter's note (quoted) or AI-written summary (violet, italic). */
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.overview {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ml-text-muted);
+}
+.overview-mark {
+  display: inline-flex;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.overview-ai {
+  --ai: #8250df;
+  font-style: italic;
+}
+[data-meirlabs-theme='dark'] .overview-ai {
+  --ai: #a371f7;
+}
+.overview-ai .overview-mark {
+  color: var(--ai);
+}
+.d-head .overview {
+  margin-top: 8px;
+  font-size: 13px;
+}
