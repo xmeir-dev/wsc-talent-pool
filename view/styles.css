@@ -234,14 +234,26 @@ select {
 }
 
 .candidates .col-rank {
-  width: 96px;
+  width: 80px;
 }
 .candidates .col-score {
-  width: 64px;
+  width: 96px;
   font-variant-numeric: tabular-nums;
 }
 .candidates th.col-candidate {
-  width: 24%;
+  width: 14%;
+}
+.candidates th.col-role {
+  width: 16%;
+}
+
+.th-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.th-label svg {
+  flex-shrink: 0;
 }
 .candidates th.col-ref {
   width: 18%;
@@ -273,10 +285,7 @@ select {
   font-size: 12px;
 }
 
-.col-name {
-  display: flex;
-  flex-direction: column;
-}
+
 
 .row-link {
   align-self: flex-start;
@@ -523,7 +532,7 @@ select {
     grid-row: 1 / span 4;
     width: auto;
   }
-  .candidates .col-name {
+  .candidates td.col-role {
     margin-bottom: 4px;
   }
   .candidates td.col-ref,

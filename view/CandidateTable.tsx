@@ -1,3 +1,12 @@
+import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
+import {
+  AlertCircleIcon,
+  Briefcase01Icon,
+  CheckmarkCircle02Icon,
+  StarIcon,
+  UserIcon,
+  UserMultipleIcon,
+} from '@hugeicons/core-free-icons';
 import type { CandidateAssessment, OutputRow } from '../pipeline';
 import { currentRole, fitReason, mainGap, OUTCOME_LABEL, referenceSummary } from './format';
 
@@ -31,21 +40,41 @@ function RankCell({ a, showOutcome }: { a: CandidateAssessment; showOutcome: boo
   return <span className={`outcome outcome-${a.recommendation}`}>{OUTCOME_LABEL[a.recommendation]}</span>;
 }
 
+function Head({ icon, label }: { icon: IconSvgElement; label: string }) {
+  return (
+    <span className="th-label">
+      <HugeiconsIcon icon={icon} size={14} strokeWidth={1.75} aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
+
 export function CandidateTable({ items, showOutcome, openKey, onOpen, registerRow }: Props) {
   return (
     <table className="candidates">
       <thead>
         <tr>
           <th scope="col" className="col-rank">
-            {showOutcome ? 'Rank / outcome' : 'Rank'}
+            #
           </th>
           <th scope="col" className="col-score" title="Total points (required + nice to have + industry bonus)">
-            Score
+            <Head icon={StarIcon} label="Score" />
           </th>
-          <th scope="col" className="col-candidate">Candidate</th>
-          <th scope="col">Why</th>
-          <th scope="col">Main gap</th>
-          <th scope="col" className="col-ref">WSC connections</th>
+          <th scope="col" className="col-candidate">
+            <Head icon={UserIcon} label="Candidate" />
+          </th>
+          <th scope="col" className="col-role">
+            <Head icon={Briefcase01Icon} label="Role" />
+          </th>
+          <th scope="col">
+            <Head icon={CheckmarkCircle02Icon} label="Why" />
+          </th>
+          <th scope="col">
+            <Head icon={AlertCircleIcon} label="Main gap" />
+          </th>
+          <th scope="col" className="col-ref">
+            <Head icon={UserMultipleIcon} label="WSC connections" />
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -59,23 +88,21 @@ export function CandidateTable({ items, showOutcome, openKey, onOpen, registerRo
                 <RankCell a={a} showOutcome={showOutcome} />
               </td>
               <td className="col-score">{a.candidate.profile ? a.points.total : '–'}</td>
-              <td>
-                <div className="col-name">
-                  <button
-                    type="button"
-                    className="row-link"
-                    ref={(el) => registerRow(key, el)}
-                    aria-expanded={key === openKey}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpen(key);
-                    }}
-                  >
-                    {a.candidate.fullName}
-                  </button>
-                  <span className="muted">{currentRole(row)}</span>
-                </div>
+              <td className="col-name">
+                <button
+                  type="button"
+                  className="row-link"
+                  ref={(el) => registerRow(key, el)}
+                  aria-expanded={key === openKey}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpen(key);
+                  }}
+                >
+                  {a.candidate.fullName}
+                </button>
               </td>
+              <td className="col-role muted">{currentRole(row)}</td>
               <td className="col-why">{fitReason(a)}</td>
               <td className={`col-gap${gap.unknown ? ' unknown' : ''}`}>{gap.text}</td>
               <td className={`col-ref${ref.unknown ? ' unknown' : ''}`}>{ref.text}</td>
