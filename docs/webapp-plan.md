@@ -1,6 +1,6 @@
 # Webapp build plan
 
-**Build one recruiter workspace: select a role, review an explained shortlist, inspect a candidate, and export the results.** The webapp is now requested, although the [assignment](../assignment/index.html) makes a UI optional. The required runnable pipeline and JOB001 output still ship with it.
+**Build one recruiter workspace: select a role, review an explained shortlist, inspect a candidate, and export the results.** The [assignment](../assignment/index.html) makes a UI optional; this build includes one. The required runnable pipeline and JOB001 output still ship with it.
 
 ## The interface
 
@@ -24,7 +24,7 @@ Style it with plain CSS (design tokens on `:root`) and text controls, with no ic
 
 ## Build sequence
 
-1. **Settle the assessment contract.** Start from [assumptions](assumptions.md). Document each role's essential/supporting evidence, shortlist thresholds, skill equivalences, and definition of a close tie. Show provisional decisions on contrasting candidates before finalizing ranking. The third outcome, `not_recommended_for_role`, and any advantage from multiple connections are still proposals, not agreed policy.
+1. **Fix the assessment contract.** Start from [assumptions](assumptions.md). Document each role's must-haves and supporting evidence, shortlist thresholds, skill equivalents, and the close-tie rule in [How candidates are ranked](scoring.md). People with no evidence of a role's core discipline are marked `not_recommended_for_role` and stay in the pool; the number of connections gives no extra advantage.
 2. **Build the shared pipeline.** Validate/join the four files, preserve attendance and evidence, assess conference relevance separately from job fit, then rank and serialize. Keep every candidate accounted for, including uncertain or conflicting records. Generate `output/candidates_JOB001.csv` from the implementation.
 3. **Build the workspace.** Load the real supplied data, wire role/view selection, candidate details, and download to that pipeline. Add the empty, error, and keyboard states alongside the main flow.
 4. **Verify and package.** Add tests, run the production build, and update README setup/run instructions and the concise design documents to match the implementation. Preserve the private repository.
@@ -32,7 +32,7 @@ Style it with plain CSS (design tokens on `:root`) and text controls, with no ic
 ## Acceptance checks
 
 - Changing roles updates reasons, gaps, ranking, and exported job IDs; old results never masquerade as the new role. All views account for the supplied contacts without multiplying rows for connections or repeat attendance.
-- Tests preserve the agreed rules: missing AWS alone does not exclude a strong JOB001 candidate; sports industry is a bonus; employee connections cannot outrank clearly stronger qualifications. Missing/ambiguous profiles and unresolved employee IDs remain explicit.
+- Tests preserve the rules: missing AWS alone does not exclude a strong JOB001 candidate; sports industry is a bonus; employee connections cannot outrank clearly stronger qualifications. Missing/ambiguous profiles and unresolved employee IDs remain explicit.
 - Browser export and CLI output agree on rows, order, all defined columns, and rule version. Repeated runs are deterministic. Keep synthetic source IDs separate from real HubSpot IDs; do not claim a tested live import.
 - Use Vitest/Testing Library for logic and component behavior, and Playwright for role selection, detail inspection, CSV download, and narrow-screen/keyboard use. No page overflow or browser errors in the tested flow.
 - A fresh checkout installs, runs, tests, builds, and generates JOB001 output without service credentials. Document `dev`, `build`, `typecheck`, `test:all`, and a pipeline command accepting `job_id`.
