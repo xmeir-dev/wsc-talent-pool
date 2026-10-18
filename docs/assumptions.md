@@ -25,6 +25,18 @@ Profile freshness, application history, previous rejection, job interest, and pe
 
 Roles have no location in the data, so location does not affect the score; recruiters can filter by where attendees are based. **Made up for the recruiter view only:** the files do not say who wrote a conference note, so each conference has an invented recruiter (`data/demo_recruiters.json`), and employee and recruiter avatars are generated illustrations. None of this feeds the ranking.
 
+## How conference lists arrive
+
+**The organizer's attendee list is the main source,** matching the supplied `conference_attendees.csv`. Organizers often share only attendees who opted in, sometimes only with sponsors, and sometimes without email or LinkedIn URL; thinner rows land in `needs_review`. Whether attendees agreed to be contacted about jobs is confirmed before a list is sent in.
+
+Options for getting lists into HubSpot without a manual upload, all run by the same integration service:
+
+1. **A dedicated email address (preferred),** for example `talent-lists@wsc-sports.com`. The organizer or anyone at WSC forwards the spreadsheet; the service imports it, runs the matching and replies with a summary ("Imported 120 people from Sports Video AI Meetup").
+2. **A shared folder** (Google Drive or SharePoint, "Conference lists"). A new file starts the same import. Outside organizers usually cannot write to it, so someone at WSC copies the file in.
+3. **The event platform's own HubSpot integration,** where the organizer uses one and agrees to share, usually for sponsors. Attendees arrive with no file.
+
+**Fallbacks:** HubSpot's Import button for one-off files, and a booth sign-up form for events that will not share a list. A file missing required columns imports nothing and the sender is told what is missing, as the demo's import does.
+
 ## People already in Comeet
 
 Comeet status is unknown in this exercise: the `comeet_status` column is reserved and always reads `unknown`. In production, before anyone is contacted:
@@ -40,8 +52,8 @@ The 6-month window is an assumption to agree with the recruiting team.
 
 These are the privacy rules the [design document](design.md#at-scale) relies on:
 
-- **Lawful basis and notice at capture.** The event form says what is stored and why, and records consent or the legitimate-interest basis.
-- **Consented or licensed sources only.** Data the candidate gives at capture, a licensed enrichment vendor whose terms permit recruiting use, or a recruiter reading a profile by hand. No LinkedIn scraping.
+- **Lawful basis and notice at capture.** The organizer's registration (or WSC's booth form) says what is shared and why, and records consent or the legitimate-interest basis.
+- **Consented or licensed sources only.** Data from the attendee list or given by the candidate, a licensed enrichment vendor whose terms permit recruiting use, or a recruiter reading a profile by hand. No LinkedIn scraping.
 - **Retention.** Contacts not engaged within 12 months are deleted or asked to re-confirm (the period is an assumption to confirm with legal); access, correction and deletion requests are honoured across HubSpot, the assessment store and Comeet.
 - **Restricted, logged access.** Only the recruiting team sees candidate data, and views and exports are logged.
 
