@@ -126,6 +126,10 @@ ul {
 .confs {
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+.who-role {
+  font-size: 13px;
 }
 
 /* Candidate profile page */

@@ -2,9 +2,9 @@ import type { ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import {
   AlertCircleIcon,
-  Briefcase01Icon,
   Calendar03Icon,
   CheckmarkCircle02Icon,
+  InformationCircleIcon,
   StarIcon,
   Target02Icon,
   UserIcon,
@@ -33,6 +33,16 @@ function Head({ icon, label }: { icon: IconSvgElement; label: string }) {
 }
 
 const quiet = (text: string, unknown = false) => <span className={unknown ? 'unknown' : 'muted'}>{text}</span>;
+
+/** Name with the current role under it. */
+const who = (name: string, role: string) => (
+  <span className="who">
+    <span className="name">{name}</span>
+    {role && <span className="muted who-role">{role}</span>}
+  </span>
+);
+
+const about = (c: CandidateAssessment['candidate']) => <Overview c={c} />;
 
 const connections = (a: CandidateAssessment) => {
   const ref = referenceSummary(a);
@@ -70,15 +80,10 @@ export function CandidateTable({ items, onOpen, toolbar, emptyState }: Shared & 
     {
       id: 'candidate',
       header: <Head icon={UserIcon} label="Candidate" />,
-      width: '22%',
-      accessor: ({ a }) => (
-        <span className="who">
-          <span className="name">{a.candidate.fullName}</span>
-          <Overview c={a.candidate} />
-        </span>
-      ),
+      width: '18%',
+      accessor: ({ a, row }) => who(a.candidate.fullName, currentRole(row)),
     },
-    { id: 'role', header: <Head icon={Briefcase01Icon} label="Role" />, width: '15%', accessor: ({ row }) => quiet(currentRole(row)) },
+    { id: 'about', header: <Head icon={InformationCircleIcon} label="About candidate" />, width: '20%', accessor: ({ a }) => about(a.candidate) },
     { id: 'why', header: <Head icon={CheckmarkCircle02Icon} label="Why" />, accessor: ({ a }) => quiet(fitReason(a)) },
     {
       id: 'gap',
@@ -127,29 +132,25 @@ export function AttendeeTable({ attendees, onOpen, toolbar, emptyState }: Shared
     {
       id: 'candidate',
       header: <Head icon={UserIcon} label="Candidate" />,
-      width: '30%',
-      accessor: ({ candidate }) => (
-        <span className="who">
-          <span className="name">{candidate.fullName}</span>
-          <Overview c={candidate} />
-        </span>
-      ),
+      width: '22%',
+      accessor: ({ candidate, role }) => who(candidate.fullName, role),
     },
-    { id: 'role', header: <Head icon={Briefcase01Icon} label="Role" />, width: '18%', accessor: ({ role }) => quiet(role) },
     {
       id: 'conference',
       header: <Head icon={Calendar03Icon} label="Conference" />,
-      width: '24%',
+      width: '20%',
       accessor: ({ candidate }) => (
         <span className="confs">
           {candidate.attendances.map((at) => (
-            <span key={at.hubspotId}>
-              {at.conferenceName} <span className="muted">· {shortDate(at.conferenceDate)}</span>
+            <span key={at.hubspotId} className="who">
+              <span>{at.conferenceName}</span>
+              <span className="muted who-role">{shortDate(at.conferenceDate)}</span>
             </span>
           ))}
         </span>
       ),
     },
+    { id: 'about', header: <Head icon={InformationCircleIcon} label="About candidate" />, width: '24%', accessor: ({ candidate }) => about(candidate) },
     {
       id: 'relevant',
       header: <Head icon={Target02Icon} label="Relevant for" />,
