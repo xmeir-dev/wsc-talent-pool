@@ -2,10 +2,10 @@
  * The list page's model: every attendee once, with the jobs they are worth a look for.
  * Every decision still comes from the pipeline (assessJob); this file only groups and filters it.
  */
-
 import { assessJob, splitName, toCsv, toOutputRows } from '../pipeline';
 import type { Candidate, CandidateAssessment, Dataset, Job, JobAssessment, OutputRow } from '../pipeline';
 import { currentRole } from './format';
+import { placeOf } from './place';
 
 /** One person's assessment for one job, with its CSV row. */
 export interface Item {
@@ -81,18 +81,43 @@ export function buildPool(dataset: Dataset): Pool {
 export const attended = (c: Candidate, conferences: readonly string[]): boolean =>
   conferences.length === 0 || c.attendances.some((at) => conferences.includes(at.conferenceName));
 
-/** The job's shortlist then needs review, in pipeline rank order, at the chosen conferences. */
-export function jobItems(pool: Pool, jobId: string, conferences: readonly string[]): Item[] {
-  return [...pool.items.get(jobId)!.values()].filter(({ a }) => isRelevant(a) && attended(a.candidate, conferences));
+/** True when the person is based in any of the chosen countries (ISO codes); none chosen means anywhere. */
+export const basedIn = (c: Candidate, countries: readonly string[]): boolean =>
+  countries.length === 0 || countries.includes(placeOf(c)?.code ?? '');
+
+/** The job's shortlist then needs review, in pipeline rank order, at the chosen conferences and countries. */
+export function jobItems(pool: Pool, jobId: string, conferences: readonly string[], countries: readonly string[] = []): Item[] {
+  return [...pool.items.get(jobId)!.values()].filter(
+    ({ a }) => isRelevant(a) && attended(a.candidate, conferences) && basedIn(a.candidate, countries),
+  );
 }
 
 /** The attendee list: at any chosen conference, and shortlist or needs review for any chosen job. Empty = no filter. */
-export function filterAttendees(pool: Pool, conferences: readonly string[], jobIds: readonly string[]): Attendee[] {
+export function filterAttendees(
+  pool: Pool,
+  conferences: readonly string[],
+  jobIds: readonly string[],
+  countries: readonly string[] = [],
+): Attendee[] {
   return pool.attendees.filter(
     (p) =>
       attended(p.candidate, conferences) &&
+      basedIn(p.candidate, countries) &&
       (jobIds.length === 0 || p.relevantFor.some((r) => jobIds.includes(r.job.jobId))),
   );
+}
+
+/** Where attendees are based: one entry per country, A–Z by name, with how many attendees live there. */
+export function countryCounts(pool: Pool): { code: string; country: string; count: number }[] {
+  const byCode = new Map<string, { code: string; country: string; count: number }>();
+  for (const p of pool.attendees) {
+    const place = placeOf(p.candidate);
+    if (!place) continue;
+    const entry = byCode.get(place.code) ?? { code: place.code, country: place.country, count: 0 };
+    entry.count += 1;
+    byCode.set(place.code, entry);
+  }
+  return [...byCode.values()].sort((x, y) => x.country.localeCompare(y.country, 'en'));
 }
 
 /** How many attendees went to each conference, and how many are shortlist or needs review for each job. */
@@ -152,6 +177,7 @@ export function attendeesCsv(
   attendees: Attendee[],
   conferences: readonly string[] = [],
   jobIds: readonly string[] = [],
+  countries: readonly string[] = [],
 ): { fileName: string; text: string } {
   const rows = attendees.map(({ candidate: c, any, relevantFor }) => ({
     full_name: c.fullName,
@@ -164,6 +190,6 @@ export function attendeesCsv(
     linkedin_url: c.linkedinUrl,
     relevant_for: relevantFor.map((r) => `${r.job.jobId} ${OUTCOME_WORDS[r.outcome]}`).join('; '),
   }));
-  const parts = [...conferences.map(slug), ...jobIds.map((id) => id.toLowerCase())];
+  const parts = [...conferences.map(slug), ...jobIds.map((id) => id.toLowerCase()), ...countries.map((c) => c.toLowerCase())];
   return { fileName: ['attendees', ...parts].join('_') + '.csv', text: toCsv(ATTENDEE_COLUMNS, rows) };
 }

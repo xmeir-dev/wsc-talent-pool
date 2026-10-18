@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildDataset, parseCsv } from '../pipeline';
-import { attendeesCsv, attended, bestJobId, buildPool, filterAttendees, filterCounts, jobItems } from './attendees';
+import { attendeesCsv, attended, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems } from './attendees';
+import { placeOf } from './place';
 import { bundledSources } from './data';
 
 const pool = buildPool(buildDataset(bundledSources));
@@ -105,5 +106,23 @@ describe('attendees export', () => {
     const multi = csv.records.find((r) => r.relevant_for?.includes(';'));
     expect(multi?.relevant_for).toMatch(/^JOB00\d (shortlist|needs review); JOB00\d (shortlist|needs review)/);
     expect(csv.records.find((r) => r.full_name === 'Alexei Volkov')!.relevant_for).toBe('');
+  });
+
+  it('reads where people are based, and filters by country', () => {
+    const at = (location: string) => placeOf({ profile: { location } } as Parameters<typeof placeOf>[0]);
+    expect(at('Tel Aviv IL')).toMatchObject({ code: 'IL', country: 'Israel', city: 'Tel Aviv' });
+    expect(at('Chicago IL')).toMatchObject({ code: 'US' });
+    expect(at('Austin TX')).toMatchObject({ code: 'US' });
+    expect(at('London UK')).toMatchObject({ code: 'GB', country: 'United Kingdom' });
+    expect(at('Dubai UAE')).toMatchObject({ code: 'AE' });
+    expect(at('')).toBeNull();
+
+    const counts = countryCounts(pool);
+    expect(counts.map((c) => c.country)).toEqual([...counts.map((c) => c.country)].sort((a, b) => a.localeCompare(b, 'en')));
+    const gb = counts.find((c) => c.code === 'GB')!;
+    expect(filterAttendees(pool, [], [], ['GB'])).toHaveLength(gb.count);
+    expect(filterAttendees(pool, [], [], ['GB']).every((p) => placeOf(p.candidate)?.code === 'GB')).toBe(true);
+    expect(jobItems(pool, 'JOB001', [], ['GB']).every(({ a }) => placeOf(a.candidate)?.code === 'GB')).toBe(true);
+    expect(attendeesCsv(filterAttendees(pool, [], [], ['GB']), [], [], ['GB']).fileName).toBe('attendees_gb.csv');
   });
 });

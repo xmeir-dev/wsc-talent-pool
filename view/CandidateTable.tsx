@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { isValidElement, type ReactElement, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import {
   AlertCircleIcon,
@@ -8,12 +8,13 @@ import {
   StarIcon,
   Target02Icon,
   UserIcon,
-  UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
 import { Avatar, DataTable, Hint, StatusPill, Tag, type Column } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee, Item } from './attendees';
+import { CountryFlag } from './Location';
 import { Overview } from './Overview';
+import { WscMark } from './WscMark';
 import { currentRole, fitReason, mainGap, OUTCOME_TONE, shortDate, TABLE_OUTCOME_LABEL } from './format';
 
 interface Shared {
@@ -22,10 +23,10 @@ interface Shared {
 }
 
 /** Header label with its icon: inline-flex so the icon sits centred on the text, never on the baseline. */
-function Head({ icon, label }: { icon: IconSvgElement; label: string }) {
+function Head({ icon, label }: { icon: IconSvgElement | ReactElement; label: string }) {
   return (
     <span className="th-label">
-      <HugeiconsIcon icon={icon} size={14} strokeWidth={1.75} aria-hidden="true" />
+      {isValidElement(icon) ? icon : <HugeiconsIcon icon={icon} size={14} strokeWidth={1.75} aria-hidden="true" />}
       <span className="th-text">{label}</span>
     </span>
   );
@@ -34,9 +35,12 @@ function Head({ icon, label }: { icon: IconSvgElement; label: string }) {
 const quiet = (text: string, unknown = false) => <span className={unknown ? 'unknown' : 'muted'}>{text}</span>;
 
 /** Name with the current role under it. */
-const who = (name: string, role: string) => (
+const who = (c: CandidateAssessment['candidate'], role: string) => (
   <span className="who">
-    <span className="name">{name}</span>
+    <span className="name">
+      {c.fullName}
+      <CountryFlag c={c} />
+    </span>
     {role && <span className="muted who-role">{role}</span>}
   </span>
 );
@@ -45,6 +49,14 @@ const about = (c: CandidateAssessment['candidate']) => <Overview c={c} />;
 
 /** An empty cell gets a faint hairline instead of words. */
 const empty = <span className="empty-line" role="img" aria-label="None" />;
+
+/** Generated illustrations, one per employee (DiceBear Notionists, CC0); none for IDs not in the roster. */
+const AVATAR: Record<string, string> = Object.fromEntries(
+  Object.entries(import.meta.glob('./assets/avatars/*.svg', { eager: true, query: '?url', import: 'default' })).map(([path, url]) => [
+    path.replace(/^.*\/(.+)\.svg$/, '$1'),
+    url as string,
+  ]),
+);
 
 const initials = (name: string) =>
   name
@@ -58,17 +70,18 @@ const initials = (name: string) =>
 const connections = (a: CandidateAssessment) => {
   const c = a.connections;
   if (c.status === 'unknown') return quiet('Unknown', true);
-  const names = [...c.resolved.map((e) => e.fullName), ...c.unresolvedIds];
-  if (names.length === 0) return empty;
+  const people = [...c.resolved.map((e) => ({ id: e.employeeId, name: e.fullName })), ...c.unresolvedIds.map((id) => ({ id, name: id }))];
+  if (people.length === 0) return empty;
+  const names = people.map((p) => p.name);
   const rest = names.slice(2);
   return (
     <span className="conns">
       <span className="conn-count">{names.length}</span>
       <span className="conn-tags">
-        {names.slice(0, 2).map((n) => (
-          <Tag key={n} size="sm" className="conn-tag">
-            <Avatar size="xs" fallback={initials(n)} aria-hidden="true" />
-            {n}
+        {people.slice(0, 2).map((p) => (
+          <Tag key={p.id} size="sm" className="conn-tag">
+            <Avatar size="xs" src={AVATAR[p.id]} fallback={initials(p.name)} aria-hidden="true" />
+            {p.name}
           </Tag>
         ))}
         {rest.length > 0 && (
@@ -113,7 +126,7 @@ export function CandidateTable({ items, onOpen, emptyState }: Shared & { items: 
       id: 'candidate',
       header: <Head icon={UserIcon} label="Candidate" />,
       width: '18%',
-      accessor: ({ a, row }) => who(a.candidate.fullName, currentRole(row)),
+      accessor: ({ a, row }) => who(a.candidate, currentRole(row)),
     },
     { id: 'about', header: <Head icon={File02Icon} label="About candidate" />, width: '20%', accessor: ({ a }) => about(a.candidate) },
     { id: 'why', header: <Head icon={CheckmarkCircle02Icon} label="Why" />, accessor: ({ a }) => quiet(fitReason(a)) },
@@ -125,7 +138,7 @@ export function CandidateTable({ items, onOpen, emptyState }: Shared & { items: 
         return quiet(gap.text, gap.unknown);
       },
     },
-    { id: 'ref', header: <Head icon={UserMultipleIcon} label="WSC connections" />, width: '16%', accessor: ({ a }) => connections(a) },
+    { id: 'ref', header: <Head icon={<WscMark />} label="WSC connections" />, width: '16%', accessor: ({ a }) => connections(a) },
   ];
 
   return (
@@ -166,7 +179,7 @@ export function AttendeeTable({ attendees, onOpen, emptyState }: Shared & { atte
       id: 'candidate',
       header: <Head icon={UserIcon} label="Candidate" />,
       width: '22%',
-      accessor: ({ candidate, role }) => who(candidate.fullName, role),
+      accessor: ({ candidate, role }) => who(candidate, role),
     },
     {
       id: 'conference',
@@ -183,14 +196,14 @@ export function AttendeeTable({ attendees, onOpen, emptyState }: Shared & { atte
         </span>
       ),
     },
-    { id: 'about', header: <Head icon={File02Icon} label="About candidate" />, width: '24%', accessor: ({ candidate }) => about(candidate) },
     {
       id: 'relevant',
       header: <Head icon={Target02Icon} label="Relevant job" />,
       width: 176,
       accessor: ({ relevantFor }) => <RelevantFor list={relevantFor} />,
     },
-    { id: 'ref', header: <Head icon={UserMultipleIcon} label="WSC connections" />, accessor: ({ any }) => connections(any.a) },
+    { id: 'about', header: <Head icon={File02Icon} label="About candidate" />, width: '24%', accessor: ({ candidate }) => about(candidate) },
+    { id: 'ref', header: <Head icon={<WscMark />} label="WSC connections" />, accessor: ({ any }) => connections(any.a) },
   ];
 
   return (

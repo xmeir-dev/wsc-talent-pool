@@ -39,6 +39,7 @@
     "@hugeicons/core-free-icons": "4.3.5",
     "@hugeicons/react": "1.1.10",
     "@meir-labs/ui-kit": "file:vendor/meir-labs-ui-kit-0.3.2.tgz",
+    "country-flag-icons": "1.6.20",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   }
