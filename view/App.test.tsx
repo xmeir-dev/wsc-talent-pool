@@ -80,7 +80,7 @@ describe('recruiter view: list', () => {
     expect(adaora.querySelector('.overview-recruiter')?.textContent).toBe('Building video analytics platform for African leagues');
     const amara = screen.getByRole('row', { name: /Amara Diallo/ });
     expect(amara.querySelector('.overview-recruiter')).toBeNull();
-    expect(amara.querySelector('.overview-ai')?.textContent).toContain('telecom network engineer');
+    expect(amara.querySelector('.overview-ai')?.textContent).toBe('Telecom network engineer for 4 years, previously at Sonatel, focused on MPLS and LTE.');
     expect(within(amara).getByLabelText('AI-written')).toBeTruthy();
   });
 
