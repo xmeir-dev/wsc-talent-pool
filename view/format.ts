@@ -18,6 +18,23 @@ export function jobLabel(job: Job): string {
   return `${job.jobId} · ${job.title}`;
 }
 
+const CONFERENCE_SHORT: Record<string, string> = {
+  'SportsTech Innovation Summit': 'SportsTech',
+  'Broadcast & Streaming Technology Expo': 'Broadcast Expo',
+  'Data & AI Summit Europe': 'Data & AI Summit',
+  'DevOps World 2025': 'DevOps World',
+};
+
+/** "Data & AI Summit Europe" → "Data & AI Summit": how a conference reads in the filter. Unknown names stay whole. */
+export function conferenceShort(name: string): string {
+  return CONFERENCE_SHORT[name] ?? name;
+}
+
+/** "Senior Product Manager - Sports Data" → "Senior PM - Sports Data": the job filter's button only. */
+export function jobShort(job: Job): string {
+  return job.title.replace(/\bProduct Manager\b/, 'PM');
+}
+
 /** "2024-11-14" → "14 Nov 2024"; anything else is shown as given. */
 export function shortDate(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);

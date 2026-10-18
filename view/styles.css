@@ -62,10 +62,115 @@ ul {
   gap: var(--ml-space-sm);
   margin-bottom: var(--ml-space-md);
 }
-.filters .ml-select-trigger {
-  width: auto;
-  min-width: 220px;
+.list-title {
+  /* Room for the widest count, so the filters do not shift while a menu is open. */
+  min-width: 9.5em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Filter trigger: quiet surface, icon, muted label, the chosen value, chevron. */
+.filter-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
   max-width: 100%;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ml-bg-surface);
+  color: var(--ml-text);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.filter-trigger:hover {
+  background: var(--ml-border-subtle);
+}
+.filter-trigger:focus-visible {
+  outline: 2px solid var(--ml-text);
+  outline-offset: 2px;
+}
+.filter-icon {
+  flex-shrink: 0;
+  display: block;
+  color: var(--ml-text-muted);
+}
+.filter-label {
+  font-weight: 500;
+  color: var(--ml-text-muted);
+}
+.filter-value {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Filter menu: wrap-around toggle chips, Clear underneath. */
+.ml-popover.filter-menu {
+  box-sizing: border-box;
+  min-width: 320px;
+  padding: 4px;
+  border-radius: 10px;
+}
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--ml-border);
+  border-radius: 999px;
+  background: var(--ml-bg-card);
+  color: var(--ml-text);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.filter-chip:hover {
+  border-color: var(--ml-text-muted);
+}
+.filter-chip:focus-visible {
+  outline: 2px solid var(--ml-text);
+  outline-offset: 2px;
+}
+.filter-chip em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ml-text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.filter-chip[aria-pressed='true'] {
+  background: var(--ml-text);
+  border-color: var(--ml-text);
+  color: var(--ml-bg);
+}
+.filter-chip[aria-pressed='true'] em {
+  color: var(--ml-bg);
+  opacity: 0.7;
+}
+.filter-foot {
+  margin-top: 4px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--ml-border-subtle);
+}
+.filter-clear {
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--ml-text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.filter-clear:hover {
+  color: var(--ml-text);
 }
 .filters .export {
   margin-left: auto;
@@ -325,11 +430,19 @@ ul {
   }
   .filters .list-title {
     flex: 1 1 100%;
+    min-width: 0;
     margin-bottom: 4px;
   }
-  .filters .ml-select-trigger {
+  .filter-trigger {
     flex: 1 1 100%;
+  }
+  .filter-trigger .filter-value {
+    flex: 1;
+    text-align: left;
+  }
+  .ml-popover.filter-menu {
     min-width: 0;
+    width: calc(100vw - 32px);
   }
   .filters .export {
     flex: 1 1 100%;
@@ -382,7 +495,7 @@ ul {
   }
 }
 
-/* One-line overview under a name: recruiter's note (quoted) or AI-written summary (violet, italic). */
+/* One-line overview under a name: recruiter's note as plain text; AI-written summary marked only by a violet sparkle. */
 .who {
   display: flex;
   flex-direction: column;
@@ -391,27 +504,20 @@ ul {
 .overview {
   display: inline-flex;
   align-items: flex-start;
-  gap: 5px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--ml-text-muted);
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ml-text);
 }
 .overview-mark {
   display: inline-flex;
-  margin-top: 1px;
+  margin-top: 3px;
   flex-shrink: 0;
+  color: #8250df;
 }
-.overview-ai {
-  --ai: #8250df;
-  font-style: italic;
-}
-[data-meirlabs-theme='dark'] .overview-ai {
-  --ai: #a371f7;
-}
-.overview-ai .overview-mark {
-  color: var(--ai);
+[data-meirlabs-theme='dark'] .overview-mark {
+  color: #a371f7;
 }
 .d-head .overview {
   margin-top: 8px;
-  font-size: 13px;
 }

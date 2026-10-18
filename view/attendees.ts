@@ -77,20 +77,44 @@ export function buildPool(dataset: Dataset): Pool {
   return { jobs: dataset.jobs, results, items, attendees, conferences };
 }
 
-export const attended = (c: Candidate, conference: string | null): boolean =>
-  conference === null || c.attendances.some((at) => at.conferenceName === conference);
+/** True when the person attended any of the chosen conferences; none chosen means every conference. */
+export const attended = (c: Candidate, conferences: readonly string[]): boolean =>
+  conferences.length === 0 || c.attendances.some((at) => conferences.includes(at.conferenceName));
 
-/** The job's shortlist then needs review, in pipeline rank order, at the chosen conference. */
-export function jobItems(pool: Pool, jobId: string, conference: string | null): Item[] {
-  return [...pool.items.get(jobId)!.values()].filter(({ a }) => isRelevant(a) && attended(a.candidate, conference));
+/** The job's shortlist then needs review, in pipeline rank order, at the chosen conferences. */
+export function jobItems(pool: Pool, jobId: string, conferences: readonly string[]): Item[] {
+  return [...pool.items.get(jobId)!.values()].filter(({ a }) => isRelevant(a) && attended(a.candidate, conferences));
 }
 
-/** The job a profile opens on when no job is chosen: shortlist before needs review, then points, then job order. */
-export function bestJobId(pool: Pool, key: string): string {
+/** The attendee list: at any chosen conference, and shortlist or needs review for any chosen job. Empty = no filter. */
+export function filterAttendees(pool: Pool, conferences: readonly string[], jobIds: readonly string[]): Attendee[] {
+  return pool.attendees.filter(
+    (p) =>
+      attended(p.candidate, conferences) &&
+      (jobIds.length === 0 || p.relevantFor.some((r) => jobIds.includes(r.job.jobId))),
+  );
+}
+
+/** How many attendees went to each conference, and how many are shortlist or needs review for each job. */
+export function filterCounts(pool: Pool): { conferences: Map<string, number>; jobs: Map<string, number> } {
+  const conferences = new Map(pool.conferences.map((c) => [c.name, 0]));
+  for (const p of pool.attendees)
+    for (const name of new Set(p.candidate.attendances.map((at) => at.conferenceName)))
+      conferences.set(name, (conferences.get(name) ?? 0) + 1);
+  const jobs = new Map(pool.jobs.map((j) => [j.jobId, jobItems(pool, j.jobId, []).length]));
+  return { conferences, jobs };
+}
+
+/**
+ * The job a profile opens on: shortlist before needs review, then points, then job order.
+ * Limited to `among` when given (the jobs chosen in the filter), else every job.
+ */
+export function bestJobId(pool: Pool, key: string, among: readonly string[] = []): string {
   const order = { shortlist: 0, needs_review: 1, not_recommended_for_role: 2 } as const;
-  let best = pool.jobs[0]!.jobId;
+  const jobs = among.length ? pool.jobs.filter((j) => among.includes(j.jobId)) : pool.jobs;
+  let best = jobs[0]!.jobId;
   let bestA = pool.items.get(best)!.get(key)!.a;
-  for (const job of pool.jobs.slice(1)) {
+  for (const job of jobs.slice(1)) {
     const a = pool.items.get(job.jobId)!.get(key)!.a;
     const better =
       order[a.recommendation] < order[bestA.recommendation] ||
@@ -118,8 +142,17 @@ export const ATTENDEE_COLUMNS = [
   'relevant_for',
 ] as const;
 
-/** The attendee list as shown (filtered rows, same order). Several conferences are joined with "; ". */
-export function attendeesCsv(attendees: Attendee[], conference: string | null): { fileName: string; text: string } {
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+/**
+ * The attendee list as shown (filtered rows, same order). A person's several conferences are joined with "; ".
+ * The file name carries the filter: attendees_<conference slugs>_<job ids>.csv.
+ */
+export function attendeesCsv(
+  attendees: Attendee[],
+  conferences: readonly string[] = [],
+  jobIds: readonly string[] = [],
+): { fileName: string; text: string } {
   const rows = attendees.map(({ candidate: c, any, relevantFor }) => ({
     full_name: c.fullName,
     ...splitName(c.fullName),
@@ -131,6 +164,6 @@ export function attendeesCsv(attendees: Attendee[], conference: string | null): 
     linkedin_url: c.linkedinUrl,
     relevant_for: relevantFor.map((r) => `${r.job.jobId} ${OUTCOME_WORDS[r.outcome]}`).join('; '),
   }));
-  const slug = conference ? '_' + conference.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : '';
-  return { fileName: `attendees${slug}.csv`, text: toCsv(ATTENDEE_COLUMNS, rows) };
+  const parts = [...conferences.map(slug), ...jobIds.map((id) => id.toLowerCase())];
+  return { fileName: ['attendees', ...parts].join('_') + '.csv', text: toCsv(ATTENDEE_COLUMNS, rows) };
 }

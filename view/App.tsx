@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { ArrowLeft01Icon, Briefcase01Icon, Calendar03Icon } from '@hugeicons/core-free-icons';
 import { Button, Callout, EmptyState, Select, TopBar } from '@meir-labs/ui-kit';
 import { buildDataset, DataValidationError, type Dataset, type SourceTexts } from '../pipeline';
-import { attended, attendeesCsv, bestJobId, buildPool, jobItems } from './attendees';
+import { attendeesCsv, bestJobId, buildPool, filterAttendees, filterCounts, jobItems } from './attendees';
 import { CandidateDetail } from './CandidateDetail';
 import { AttendeeTable, CandidateTable } from './CandidateTable';
 import { bundledSources } from './data';
 import { downloadFile, exportCsv } from './download';
-import { jobLabel } from './format';
-
-/** Select value for "no filter"; real values are conference names and job IDs. */
-const ALL = '*';
+import { FilterMenu, type FilterOption } from './FilterMenu';
+import { conferenceShort, jobLabel, jobShort } from './format';
 
 function keyFromHash(): string | null {
   const m = /^#\/candidate\/(.+)$/.exec(window.location.hash);
@@ -51,20 +49,35 @@ export function App({ sources = bundledSources }: { sources?: SourceTexts }) {
 function Workspace({ dataset }: { dataset: Dataset }) {
   const pool = useMemo(() => buildPool(dataset), [dataset]);
   // Filters live here, so they survive a trip to a profile and back.
-  const [conference, setConference] = useState(ALL);
-  const [jobFilter, setJobFilter] = useState(ALL);
+  // Empty means no filter. Values are conference names and job IDs, in list order.
+  const [conferences, setConferences] = useState<string[]>([]);
+  const [jobIds, setJobIds] = useState<string[]>([]);
   const [openKey, setOpenKeyState] = useState<string | null>(keyFromHash);
   const [profileJob, setProfileJob] = useState<string | null>(null);
 
-  const conf = conference === ALL ? null : conference;
-  const job = jobFilter === ALL ? null : jobFilter;
-  const attendees = useMemo(() => pool.attendees.filter((p) => attended(p.candidate, conf)), [pool, conf]);
-  const items = useMemo(() => (job ? jobItems(pool, job, conf) : []), [pool, job, conf]);
+  // Exactly one job: that job's ranked view. None or several: the attendee list.
+  const job = jobIds.length === 1 ? jobIds[0]! : null;
+  const attendees = useMemo(() => filterAttendees(pool, conferences, jobIds), [pool, conferences, jobIds]);
+  const items = useMemo(() => (job ? jobItems(pool, job, conferences) : []), [pool, job, conferences]);
   const shown = job ? items.length : attendees.length;
+  const { conferenceOptions, jobOptions } = useMemo(() => {
+    const counts = filterCounts(pool);
+    const conferenceOptions: FilterOption[] = pool.conferences.map((c) => {
+      const short = conferenceShort(c.name);
+      return { value: c.name, label: short, short, count: counts.conferences.get(c.name)!, title: short === c.name ? undefined : c.name };
+    });
+    const jobOptions: FilterOption[] = pool.jobs.map((j) => ({
+      value: j.jobId,
+      label: j.title,
+      short: jobShort(j),
+      count: counts.jobs.get(j.jobId)!,
+    }));
+    return { conferenceOptions, jobOptions };
+  }, [pool]);
   const total = pool.attendees.length;
 
   const isKnown = openKey !== null && pool.items.get(pool.jobs[0]!.jobId)!.has(openKey);
-  const viewJob = isKnown ? (profileJob ?? job ?? bestJobId(pool, openKey)) : null;
+  const viewJob = isKnown ? (profileJob ?? job ?? bestJobId(pool, openKey, jobIds)) : null;
   const open = isKnown && viewJob ? pool.items.get(viewJob)!.get(openKey)! : undefined;
 
   // The profile is its own page: #/candidate/<key>, so the browser back button works too.
@@ -163,33 +176,20 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   }
 
   const onExport = () =>
-    downloadFile(job ? exportCsv(pool.results.get(job)!) : attendeesCsv(attendees, conf));
+    downloadFile(job ? exportCsv(pool.results.get(job)!) : attendeesCsv(attendees, conferences, jobIds));
 
+  const filtered = conferences.length > 0 || jobIds.length > 0;
   const filters = (
     <div className="filters">
-      <h1 className="list-title">{conf || job ? `${shown} of ${total} attendees` : `All ${total} attendees`}</h1>
-      <Select value={conference} onValueChange={setConference}>
-        <Select.Trigger aria-label="Conference" />
-        <Select.Content>
-          <Select.Item value={ALL}>All conferences</Select.Item>
-          {pool.conferences.map((c) => (
-            <Select.Item key={c.name} value={c.name}>
-              {c.name}
-            </Select.Item>
-          ))}
-        </Select.Content>
-      </Select>
-      <Select value={jobFilter} onValueChange={setJobFilter}>
-        <Select.Trigger aria-label="Job" />
-        <Select.Content>
-          <Select.Item value={ALL}>All jobs</Select.Item>
-          {pool.jobs.map((j) => (
-            <Select.Item key={j.jobId} value={j.jobId}>
-              {jobLabel(j)}
-            </Select.Item>
-          ))}
-        </Select.Content>
-      </Select>
+      <h1 className="list-title">{filtered ? `${shown} of ${total} attendees` : `All ${total} attendees`}</h1>
+      <FilterMenu
+        label="Conference"
+        icon={Calendar03Icon}
+        options={conferenceOptions}
+        selected={conferences}
+        onChange={setConferences}
+      />
+      <FilterMenu label="Job" icon={Briefcase01Icon} options={jobOptions} selected={jobIds} onChange={setJobIds} />
       <Button variant="secondary" className="export" onClick={onExport}>
         Export
       </Button>

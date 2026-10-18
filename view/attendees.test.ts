@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildDataset, parseCsv } from '../pipeline';
-import { attendeesCsv, attended, bestJobId, buildPool, jobItems } from './attendees';
+import { attendeesCsv, attended, bestJobId, buildPool, filterAttendees, filterCounts, jobItems } from './attendees';
 import { bundledSources } from './data';
 
 const pool = buildPool(buildDataset(bundledSources));
@@ -20,24 +20,50 @@ describe('attendee list model', () => {
   });
 
   it('a job lists its shortlist then needs review, in pipeline order', () => {
-    const job1 = jobItems(pool, 'JOB001', null);
+    const job1 = jobItems(pool, 'JOB001', []);
     expect(job1).toHaveLength(12);
     expect(job1.map(({ a }) => a.recommendation)).toEqual([...Array(7).fill('shortlist'), ...Array(5).fill('needs_review')]);
     expect(job1[0]!.a.candidate.fullName).toBe('Priya Anand');
-    expect(jobItems(pool, 'JOB003', null).map(({ a }) => a.recommendation)).toEqual(Array(5).fill('needs_review'));
-    expect(jobItems(pool, 'JOB001', 'DevOps World 2025')).toHaveLength(0);
+    expect(jobItems(pool, 'JOB003', []).map(({ a }) => a.recommendation)).toEqual(Array(5).fill('needs_review'));
+    expect(jobItems(pool, 'JOB001', ['DevOps World 2025'])).toHaveLength(0);
+    expect(jobItems(pool, 'JOB001', ['Data & AI Summit Europe'])).toHaveLength(4);
+  });
+
+  it('several conferences keep anyone at any of them; several jobs keep anyone relevant for any of them', () => {
+    const two = filterAttendees(pool, ['SportsTech Innovation Summit', 'Data & AI Summit Europe'], []);
+    const either = pool.attendees.filter(
+      (p) => attended(p.candidate, ['SportsTech Innovation Summit']) || attended(p.candidate, ['Data & AI Summit Europe']),
+    );
+    expect(two).toEqual(either);
+    expect(two.length).toBeGreaterThan(40);
+
+    const union = new Set([...jobItems(pool, 'JOB001', []), ...jobItems(pool, 'JOB003', [])].map(({ a }) => a.candidate.candidateKey));
+    const both = filterAttendees(pool, [], ['JOB001', 'JOB003']);
+    expect(both.map((p) => p.candidate.candidateKey).sort()).toEqual([...union].sort());
+    expect(filterAttendees(pool, [], [])).toHaveLength(75);
+  });
+
+  it('counts attendees per conference and shortlist + needs review per job', () => {
+    const counts = filterCounts(pool);
+    expect(counts.conferences.get('SportsTech Innovation Summit')).toBe(40);
+    expect(counts.conferences.get('Data & AI Summit Europe')).toBe(12);
+    expect(counts.jobs.get('JOB001')).toBe(12);
+    expect(counts.jobs.get('JOB003')).toBe(5);
   });
 
   it('a profile opens on the best job: shortlist, then needs review, then points', () => {
     expect(bestJobId(pool, keyOf('Mason Young'))).toBe('JOB001');
     expect(bestJobId(pool, keyOf('Alex Turner'))).toBe('JOB003'); // needs review for JOB003 only
+    // Several jobs chosen: the best among them.
+    expect(bestJobId(pool, keyOf('Mason Young'), ['JOB002', 'JOB004'])).toMatch(/^JOB00[24]$/);
+    expect(bestJobId(pool, keyOf('Alex Turner'), ['JOB001', 'JOB002'])).not.toBe('JOB003');
   });
 });
 
 describe('attendees export', () => {
   it('writes the filtered rows in list order, with the jobs each person is relevant for', () => {
-    const rows = pool.attendees.filter((p) => attended(p.candidate, 'Data & AI Summit Europe'));
-    const { fileName, text } = attendeesCsv(rows, 'Data & AI Summit Europe');
+    const rows = pool.attendees.filter((p) => attended(p.candidate, ['Data & AI Summit Europe']));
+    const { fileName, text } = attendeesCsv(rows, ['Data & AI Summit Europe']);
     expect(fileName).toBe('attendees_data-ai-summit-europe.csv');
     const csv = parseCsv(text);
     expect(csv.header).toEqual([
@@ -70,8 +96,11 @@ describe('attendees export', () => {
   });
 
   it('names every relevant job and leaves the cell empty when there is none', () => {
-    const csv = parseCsv(attendeesCsv(pool.attendees, null).text);
-    expect(attendeesCsv(pool.attendees, null).fileName).toBe('attendees.csv');
+    const csv = parseCsv(attendeesCsv(pool.attendees).text);
+    expect(attendeesCsv(pool.attendees).fileName).toBe('attendees.csv');
+    expect(attendeesCsv([], ['DevOps World 2025', 'Data & AI Summit Europe'], ['JOB001', 'JOB003']).fileName).toBe(
+      'attendees_devops-world-2025_data-ai-summit-europe_job001_job003.csv',
+    );
     expect(csv.records).toHaveLength(75);
     const multi = csv.records.find((r) => r.relevant_for?.includes(';'));
     expect(multi?.relevant_for).toMatch(/^JOB00\d (shortlist|needs review); JOB00\d (shortlist|needs review)/);
