@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "recruitment-task",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/shir.einy/Documents/Shir-Einy-Workspace/recruitment-task", "-p", "3456", "-n"],
+      "port": 3456
+    }
+  ]
+}
