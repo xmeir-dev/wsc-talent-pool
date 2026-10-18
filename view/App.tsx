@@ -167,6 +167,7 @@ function Workspace({ dataset }: { dataset: Dataset }) {
 
   const filters = (
     <div className="filters">
+      <h1 className="list-title">{conf || job ? `${shown} of ${total} attendees` : `All ${total} attendees`}</h1>
       <Select value={conference} onValueChange={setConference}>
         <Select.Trigger aria-label="Conference" />
         <Select.Content>
@@ -198,11 +199,11 @@ function Workspace({ dataset }: { dataset: Dataset }) {
 
   return (
     <main className="content">
-      <h1 className="list-title">{conf || job ? `${shown} of ${total} attendees` : `All ${total} attendees`}</h1>
+      {filters}
       {job ? (
-        <CandidateTable items={items} onOpen={openProfile} toolbar={filters} emptyState={empty} />
+        <CandidateTable items={items} onOpen={openProfile} emptyState={empty} />
       ) : (
-        <AttendeeTable attendees={attendees} onOpen={openProfile} toolbar={filters} emptyState={empty} />
+        <AttendeeTable attendees={attendees} onOpen={openProfile} emptyState={empty} />
       )}
     </main>
   );

@@ -47,7 +47,7 @@ function Label({ icon, children, meta }: { icon: IconSvgElement; children: React
     <div className="d-label">
       <span className="d-label-name">
         <HugeiconsIcon icon={icon} size={14} strokeWidth={1.75} aria-hidden="true" />
-        {children}
+        <span className="th-text">{children}</span>
       </span>
       {meta !== undefined && <span className="d-meta">{meta}</span>}
     </div>

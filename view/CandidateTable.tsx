@@ -4,7 +4,7 @@ import {
   AlertCircleIcon,
   Calendar03Icon,
   CheckmarkCircle02Icon,
-  InformationCircleIcon,
+  File02Icon,
   StarIcon,
   Target02Icon,
   UserIcon,
@@ -18,7 +18,6 @@ import { currentRole, fitReason, mainGap, OUTCOME_TONE, referenceSummary, shortD
 
 interface Shared {
   onOpen: (key: string) => void;
-  toolbar: ReactNode;
   emptyState: ReactNode;
 }
 
@@ -27,7 +26,7 @@ function Head({ icon, label }: { icon: IconSvgElement; label: string }) {
   return (
     <span className="th-label">
       <HugeiconsIcon icon={icon} size={14} strokeWidth={1.75} aria-hidden="true" />
-      {label}
+      <span className="th-text">{label}</span>
     </span>
   );
 }
@@ -64,9 +63,9 @@ function RankCell({ a }: { a: CandidateAssessment }) {
 }
 
 /** One job's shortlist and needs review, in pipeline rank order. */
-export function CandidateTable({ items, onOpen, toolbar, emptyState }: Shared & { items: Item[] }) {
+export function CandidateTable({ items, onOpen, emptyState }: Shared & { items: Item[] }) {
   const columns: Column<Item>[] = [
-    { id: 'rank', header: '#', width: 168, accessor: ({ a }) => <RankCell a={a} /> },
+    { id: 'rank', header: <span className="th-label"><span className="th-text">#</span></span>, width: 168, accessor: ({ a }) => <RankCell a={a} /> },
     {
       id: 'score',
       header: (
@@ -83,7 +82,7 @@ export function CandidateTable({ items, onOpen, toolbar, emptyState }: Shared & 
       width: '18%',
       accessor: ({ a, row }) => who(a.candidate.fullName, currentRole(row)),
     },
-    { id: 'about', header: <Head icon={InformationCircleIcon} label="About candidate" />, width: '20%', accessor: ({ a }) => about(a.candidate) },
+    { id: 'about', header: <Head icon={File02Icon} label="About candidate" />, width: '20%', accessor: ({ a }) => about(a.candidate) },
     { id: 'why', header: <Head icon={CheckmarkCircle02Icon} label="Why" />, accessor: ({ a }) => quiet(fitReason(a)) },
     {
       id: 'gap',
@@ -104,7 +103,6 @@ export function CandidateTable({ items, onOpen, toolbar, emptyState }: Shared & 
       data={items}
       getRowId={({ a }) => a.candidate.candidateKey}
       onRowClick={({ a }) => onOpen(a.candidate.candidateKey)}
-      toolbar={toolbar}
       emptyState={emptyState}
     />
   );
@@ -127,7 +125,7 @@ function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
 }
 
 /** Every attendee once, A–Z. */
-export function AttendeeTable({ attendees, onOpen, toolbar, emptyState }: Shared & { attendees: Attendee[] }) {
+export function AttendeeTable({ attendees, onOpen, emptyState }: Shared & { attendees: Attendee[] }) {
   const columns: Column<Attendee>[] = [
     {
       id: 'candidate',
@@ -150,7 +148,7 @@ export function AttendeeTable({ attendees, onOpen, toolbar, emptyState }: Shared
         </span>
       ),
     },
-    { id: 'about', header: <Head icon={InformationCircleIcon} label="About candidate" />, width: '24%', accessor: ({ candidate }) => about(candidate) },
+    { id: 'about', header: <Head icon={File02Icon} label="About candidate" />, width: '24%', accessor: ({ candidate }) => about(candidate) },
     {
       id: 'relevant',
       header: <Head icon={Target02Icon} label="Relevant for" />,
@@ -168,7 +166,6 @@ export function AttendeeTable({ attendees, onOpen, toolbar, emptyState }: Shared
       data={attendees}
       getRowId={({ candidate }) => candidate.candidateKey}
       onRowClick={({ candidate }) => onOpen(candidate.candidateKey)}
-      toolbar={toolbar}
       emptyState={emptyState}
     />
   );

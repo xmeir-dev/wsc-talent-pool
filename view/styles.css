@@ -47,19 +47,20 @@ ul {
 }
 
 .list-title {
-  margin: 0 0 var(--ml-space-md);
+  margin: 0 var(--ml-space-sm) 0 0;
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
 
-/* Filter line in the table's toolbar slot: pickers left, Export right. */
+/* One line above the table: count, pickers, then Export at the right edge. */
 
 .filters {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--ml-space-sm);
+  margin-bottom: var(--ml-space-md);
 }
 .filters .ml-select-trigger {
   width: auto;
@@ -94,6 +95,14 @@ ul {
 }
 .th-label svg {
   flex-shrink: 0;
+  display: block;
+}
+.th-label {
+  white-space: nowrap;
+}
+/* Centre all-caps labels on their cap height, so the icon and the letters line up exactly. */
+.th-text {
+  text-box: trim-both cap alphabetic;
 }
 
 .candidates td {
@@ -313,6 +322,10 @@ ul {
   }
   .ml-select-trigger {
     font-size: 16px;
+  }
+  .filters .list-title {
+    flex: 1 1 100%;
+    margin-bottom: 4px;
   }
   .filters .ml-select-trigger {
     flex: 1 1 100%;
