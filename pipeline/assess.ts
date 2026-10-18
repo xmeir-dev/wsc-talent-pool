@@ -43,7 +43,7 @@ export function policyFor(job: Job): { policy: RolePolicy; isDefault: boolean } 
     policy: {
       essentials: [],
       coreDiscipline: {
-        label: `any required skill (${job.requiredSkills.join(', ')})`,
+        label: `required (${job.requiredSkills.join(', ')})`,
         terms: job.requiredSkills.flatMap((s) => evidenceRule(s).named),
       },
       industryBonus: null,
@@ -125,9 +125,9 @@ export function connectionInfo(candidate: Candidate, employees: Map<string, Empl
 }
 
 function describeMatch(m: SkillMatch): string {
-  if (m.match === 'named') return m.evidence && normalize(m.evidence) !== normalize(m.skill) ? `${m.skill} (as "${m.evidence}")` : m.skill;
-  if (m.match === 'equivalent') return `${m.skill} (partial: "${m.evidence}")`;
-  if (m.match === 'inferred') return `${m.skill} (inferred from "${m.evidence}", verify)`;
+  if (m.match === 'named') return m.evidence && normalize(m.evidence) !== normalize(m.skill) ? `${m.skill} (listed as ${m.evidence})` : m.skill;
+  if (m.match === 'equivalent') return `${m.skill} (related skill: ${m.evidence})`;
+  if (m.match === 'inferred') return `${m.skill} (likely, from ${m.evidence}; please confirm)`;
   return m.skill;
 }
 
@@ -135,8 +135,8 @@ function fitEvidence(skills: SkillMatch[]): string[] {
   const req = skills.filter((s) => s.kind === 'required' && s.match !== 'none');
   const nice = skills.filter((s) => s.kind === 'nice_to_have' && s.match !== 'none');
   const out: string[] = [];
-  if (req.length > 0) out.push(`required: ${req.map(describeMatch).join(', ')}`);
-  if (nice.length > 0) out.push(`nice-to-have: ${nice.map(describeMatch).join(', ')}`);
+  if (req.length > 0) out.push(`Required skills: ${req.map(describeMatch).join(', ')}`);
+  if (nice.length > 0) out.push(`Nice to have: ${nice.map(describeMatch).join(', ')}`);
   return out;
 }
 
@@ -145,11 +145,15 @@ function skillGaps(skills: SkillMatch[]): string[] {
     .filter((s) => s.kind === 'required' && s.match !== 'named')
     .map((s) =>
       s.match === 'none'
-        ? `${s.skill} (not listed)`
+        ? `${s.skill}: not on profile`
         : s.match === 'equivalent'
-          ? `${s.skill} (only "${s.evidence}", partial)`
-          : `${s.skill} (inferred from "${s.evidence}", verify)`,
+          ? `${s.skill}: only a related skill (${s.evidence})`
+          : `${s.skill}: likely (from ${s.evidence}), please confirm`,
     );
+}
+
+function yearsText(n: number): string {
+  return n === 1 ? "1 year's" : `${n} years'`;
 }
 
 type Draft = Omit<CandidateAssessment, 'shortlistRank' | 'tieNote'>;
@@ -173,7 +177,7 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
   // Say when related evidence exists but is not enough (e.g. "Sports Broadcasting" for Sports Analytics).
   const missingEssentialDetail = unmet.map((e) => {
     const partial = e.anyOf.map((skill) => byName.get(normalize(skill))).find((m) => m && m.points > 0);
-    return partial ? `${e.label} (only "${partial.evidence}", which does not satisfy it)` : e.label;
+    return partial ? `${e.label} (only a related skill, ${partial.evidence}, which is not enough)` : e.label;
   });
   const coreEvidence = profile ? profile.skills.filter((s) => policy.coreDiscipline.terms.includes(normalize(s))) : [];
   const minYears = minYearsFor(job);
@@ -193,29 +197,36 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
     !!profile && minYears !== null && (profile.yearsExperience === null || profile.yearsExperience < minYears);
   if (!profile) {
     recommendation = 'needs_review';
-    reasons.push(`no usable LinkedIn profile (${candidate.profileStatus}); missing information is not proof of missing ability`);
+    reasons.push(`No usable LinkedIn profile (${candidate.profileStatus.replace('_', ' ')}); missing information is not proof of missing ability`);
   } else if (candidate.profileStatus === 'conflict') {
     recommendation = 'needs_review';
-    reasons.push('profile may belong to someone else; confirm identity before trusting this assessment');
+    reasons.push('Profile may belong to someone else; confirm who this is before trusting this assessment');
   } else if (profile.skills.length === 0) {
     recommendation = 'needs_review';
-    reasons.push('profile lists no skills; cannot assess');
+    reasons.push('Profile lists no skills, so fit cannot be judged');
   } else if (coreEvidence.length === 0) {
     recommendation = 'not_recommended_for_role';
-    reasons.push(`no ${policy.coreDiscipline.label} evidence in skills; stays in the pool for other roles`);
+    reasons.push(`No ${policy.coreDiscipline.label} skill on profile; stays in the pool for other roles`);
   } else {
-    if (missingEssentials.length > 0) reasons.push(`missing essential: ${missingEssentialDetail.join(', ')}`);
-    if (required < threshold) reasons.push(`required skills ${required}/${requiredMax}, below the ${threshold}-point bar`);
+    if (missingEssentials.length > 0) reasons.push(`Missing must-have: ${missingEssentialDetail.join(', ')}`);
+    if (required < threshold) reasons.push(`Only ${required} of ${requiredMax} required-skill points (needs ${threshold})`);
     if (yearsShort) {
       reasons.push(
         profile.yearsExperience === null
-          ? 'years of experience not given'
-          : `${profile.yearsExperience}y, below the ${minYears}y minimum`,
+          ? 'Years of experience not on profile'
+          : `${yearsText(profile.yearsExperience)} experience (needs ${minYears})`,
       );
     }
     recommendation = reasons.length === 0 ? 'shortlist' : 'needs_review';
     if (recommendation === 'shortlist') {
-      reasons.push(`all essentials present; required skills ${required}/${requiredMax} (bar ${threshold}); ${profile.yearsExperience}y`);
+      const early = seniority.earlyCareerRoles.length > 0;
+      reasons.push(
+        [
+          'Has every must-have skill',
+          `${required} of ${requiredMax} required-skill points (needs ${threshold})`,
+          `${yearsText(profile.yearsExperience!)} experience${early ? ' (includes intern or junior roles; confirm non-intern years)' : ''}`,
+        ].join(' · '),
+      );
     }
   }
 
@@ -270,13 +281,15 @@ function nextStep(
   const unconfirmed = skills.filter((s) => s.kind === 'required' && s.match !== 'named').map((s) => s.skill);
   const steps: string[] = [];
   if (recommendation === 'needs_review') {
-    if (missingEssentials.length > 0) steps.push(`Look for ${missingEssentials.join(' and ')} evidence (CV, portfolio, call) before deciding`);
+    if (missingEssentials.length > 0) steps.push(`Look for evidence of ${missingEssentials.join(' and ')} (CV, portfolio or a call) before deciding`);
     else if (unconfirmed.length > 0) steps.push(`Ask about ${unconfirmed.join(', ')} (not confirmed on the profile) before deciding`);
-    if (yearsShort) steps.push('confirm years in the specialty');
   } else {
     steps.push(unconfirmed.length > 0 ? `Screening call: confirm ${unconfirmed.join(', ')}` : 'Screening call: confirm depth of hands-on work');
   }
   if (seniorFlag) steps.push('confirm they still work hands-on');
-  if (hasEarlyCareer) steps.push('confirm relevant (non-intern) years');
+  // One instruction about years, even when both apply.
+  if (yearsShort && hasEarlyCareer) steps.push('confirm non-intern years in the specialty');
+  else if (yearsShort) steps.push('confirm years in the specialty');
+  else if (hasEarlyCareer) steps.push('confirm non-intern years');
   return steps.join('; ');
 }

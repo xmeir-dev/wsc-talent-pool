@@ -44,7 +44,7 @@ export { assessCandidate, matchSkill, minYearsFor, policyFor, requiredThreshold 
 export { assessEvent } from './conference';
 export { findPossibleReferences, sameEmployer } from './history';
 export { rankAssessments } from './rank';
-export { assessmentToCsv, outputFileName, OUTPUT_COLUMNS, toOutputRows, type OutputColumn, type OutputRow } from './output';
+export { assessmentToCsv, outputFileName, OUTPUT_COLUMNS, splitName, toOutputRows, type OutputColumn, type OutputRow } from './output';
 export { parseCsv, toCsv } from './csv';
 export * as rules from './rules';
 export { ASSESSMENT_VERSION } from './rules';

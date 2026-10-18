@@ -26,6 +26,8 @@ export const OUTPUT_COLUMNS = [
   'candidate_key',
   'source_contact_ids',
   'full_name',
+  'firstname',
+  'lastname',
   'email',
   'linkedin_url',
   'current_company',
@@ -51,6 +53,16 @@ export const OUTPUT_COLUMNS = [
 
 export type OutputColumn = (typeof OUTPUT_COLUMNS)[number];
 export type OutputRow = Record<OutputColumn, string | number | null>;
+
+/**
+ * HubSpot's First name / Last name. First word → firstname, the rest → lastname
+ * ("Maria de la Cruz" → "Maria" / "de la Cruz"); a single word leaves lastname blank.
+ * A recruiter should correct unusual name orders before import.
+ */
+export function splitName(fullName: string): { firstname: string; lastname: string } {
+  const words = fullName.trim().split(/\s+/).filter(Boolean);
+  return { firstname: words[0] ?? '', lastname: words.slice(1).join(' ') };
+}
 
 function formatEvent(e: EventAssessment): string {
   const a = e.attendance;
@@ -81,13 +93,14 @@ export function toOutputRow(a: CandidateAssessment, jobTitle: string, version: s
     required_points_max: a.points.requiredMax,
     nice_to_have_points: p ? a.points.niceToHave : null,
     industry_bonus_points: p ? a.points.industryBonus : null,
-    fit_evidence: p ? joinOr(a.fitEvidence, 'no required skill found in top_skills') : '',
+    fit_evidence: p ? joinOr(a.fitEvidence, 'no required skill on profile') : '',
     skill_gaps: p ? joinOr(a.skillGaps, 'none identified') : 'unknown: no profile',
     seniority_evidence: a.seniority.summary,
     industry_bonus_evidence: a.industryBonusEvidence,
     candidate_key: c.candidateKey,
     source_contact_ids: c.sourceContactIds.join(';'),
     full_name: c.fullName,
+    ...splitName(c.fullName),
     email: c.email,
     linkedin_url: c.linkedinUrl,
     current_company: p?.currentCompany ?? latest?.listedCompany ?? '',

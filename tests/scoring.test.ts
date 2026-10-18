@@ -16,7 +16,7 @@ describe('skill evidence', () => {
 
   it('treats TensorFlow as a PARTIAL match for PyTorch and shows it as a gap', () => {
     const theo = byName(fixture, 'Theo Tensor');
-    expect(theo.skillGaps).toContain('PyTorch (only "TensorFlow", partial)');
+    expect(theo.skillGaps).toContain('PyTorch: only a related skill (TensorFlow)');
   });
 
   it('infers Object Detection from tracking/pose/sports CV for 1 point, labelled "inferred, verify"', () => {
@@ -25,8 +25,22 @@ describe('skill evidence', () => {
     const pia = byName(fixture, 'Pia Pose');
     const od = pia.skills.find((s) => s.skill === 'Object Detection')!;
     expect(od).toMatchObject({ match: 'inferred', points: 1, evidence: 'Pose Estimation' });
-    expect(pia.fitEvidence.join(' ')).toContain('Object Detection (inferred from "Pose Estimation", verify)');
-    expect(pia.skillGaps.join(' ')).toContain('inferred from "Pose Estimation", verify');
+    expect(pia.fitEvidence.join(' ')).toContain('Object Detection (likely, from Pose Estimation; please confirm)');
+    expect(pia.skillGaps).toContain('Object Detection: likely (from Pose Estimation), please confirm');
+  });
+
+  it('infers Object Detection from Highlight Detection and Event Detection the same way (1 point, verify)', () => {
+    expect(matchSkill(['Highlight Detection'], 'Object Detection')).toEqual({ match: 'inferred', evidence: 'Highlight Detection' });
+    expect(matchSkill(['Event Detection'], 'Object Detection')).toEqual({ match: 'inferred', evidence: 'Event Detection' });
+    expect(matchSkill(['Action Detection'], 'Object Detection').match).toBe('inferred');
+    // A named skill still wins.
+    expect(matchSkill(['Highlight Detection', 'YOLO'], 'Object Detection')).toEqual({ match: 'named', evidence: 'YOLO' });
+
+    const mason = byName(assessJob(realDataset(), 'JOB001'), 'Mason Young');
+    expect(mason.skills.find((s) => s.skill === 'Object Detection')).toMatchObject({ match: 'inferred', points: 1, evidence: 'Highlight Detection' });
+    expect(mason.points.required).toBe(6); // Python 2 + TensorFlow 1 + Computer Vision 2 + Highlight Detection 1
+    expect(mason.recommendation).toBe('shortlist');
+    expect(mason.skillGaps).toContain('Object Detection: likely (from Highlight Detection), please confirm');
   });
 
   it('prefers a named match over an equivalent one', () => {
@@ -85,7 +99,7 @@ describe('thresholds', () => {
     const yan = byName(fixture, 'Yan Young');
     expect(yan.points.required).toBe(10);
     expect(yan.recommendation).toBe('needs_review');
-    expect(yan.outcomeReasons.join(' ')).toContain('3y, below the 5y minimum');
+    expect(yan.outcomeReasons.join(' ')).toContain("3 years' experience (needs 5)");
   });
 });
 
@@ -108,7 +122,7 @@ describe('essentials gate the shortlist', () => {
   it('does not exclude a strong JOB001 candidate for missing AWS alone', () => {
     const ada = byName(fixture, 'Ada NoAws');
     expect(ada.recommendation).toBe('shortlist');
-    expect(ada.skillGaps).toContain('AWS (not listed)');
+    expect(ada.skillGaps).toContain('AWS: not on profile');
   });
 
   it('shortlists a strong JOB001 candidate with neither a preferred industry nor any WSC connection', () => {
@@ -131,7 +145,7 @@ describe('JOB003 stays strict on Sports Analytics', () => {
     const bob = byName(job3, 'Bob BroadcastPM');
     expect(bob.skills.find((s) => s.skill === 'Sports Analytics')).toMatchObject({ match: 'equivalent', points: 1 });
     expect(bob.recommendation).toBe('needs_review');
-    expect(bob.outcomeReasons.join(' ')).toContain('only "Sports Broadcasting", which does not satisfy it');
+    expect(bob.outcomeReasons.join(' ')).toContain('Sports Analytics (only a related skill, Sports Broadcasting, which is not enough)');
   });
 
   it('accepts one (or zero) shortlisted people as a valid result', () => {

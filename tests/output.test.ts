@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { assessmentToCsv, OUTPUT_COLUMNS, parseCsv, toCsv } from '../pipeline';
+import { assessmentToCsv, OUTPUT_COLUMNS, parseCsv, splitName, toCsv } from '../pipeline';
 import { assessJob, byName, fixtureDataset, realDataset, ROOT, shortlistNames } from './helpers';
 
 describe('CSV reader/writer', () => {
@@ -45,6 +45,50 @@ describe('output contract', () => {
   });
 });
 
+describe('HubSpot name columns', () => {
+  it('splits full_name into firstname (first word) and lastname (the rest)', () => {
+    expect(splitName('Priya Anand')).toEqual({ firstname: 'Priya', lastname: 'Anand' });
+    expect(splitName('  Maria  de la Cruz ')).toEqual({ firstname: 'Maria', lastname: 'de la Cruz' });
+    expect(splitName('Madonna')).toEqual({ firstname: 'Madonna', lastname: '' });
+    expect(splitName('')).toEqual({ firstname: '', lastname: '' });
+  });
+
+  it('writes firstname and lastname next to full_name', () => {
+    const parsed = parseCsv(assessmentToCsv(assessJob(realDataset(), 'JOB001')));
+    const i = parsed.header.indexOf('full_name');
+    expect(parsed.header.slice(i, i + 3)).toEqual(['full_name', 'firstname', 'lastname']);
+    const mason = parsed.records.find((r) => r.full_name === 'Mason Young')!;
+    expect([mason.firstname, mason.lastname]).toEqual(['Mason', 'Young']);
+  });
+});
+
+describe('recruiter wording', () => {
+  const result = assessJob(realDataset(), 'JOB001');
+
+  it('reads once, without repeated words', () => {
+    for (const c of result.candidates) expect(c.reviewNextStep).not.toMatch(/\b(\w+) \1\b/);
+  });
+
+  it('gives one combined years instruction, never two', () => {
+    const fixture = assessJob(fixtureDataset(), 'JOB001');
+    for (const c of [...result.candidates, ...fixture.candidates]) {
+      const step = c.reviewNextStep;
+      expect(step.includes('confirm years in the specialty') && step.includes('non-intern')).toBe(false);
+    }
+  });
+
+  it('flags intern years on the shortlist reason itself', () => {
+    for (const name of ['Nathan Brooks', 'James Thornton']) {
+      const c = byName(result, name);
+      expect(c.recommendation).toBe('shortlist');
+      expect(c.outcomeReasons[0]).toContain('confirm non-intern years');
+    }
+    expect(byName(result, 'Chiara Russo').outcomeReasons[0]).toBe(
+      "Has every must-have skill · 8 of 10 required-skill points (needs 6) · 7 years' experience",
+    );
+  });
+});
+
 describe('real JOB001 result', () => {
   const result = assessJob(realDataset(), 'JOB001');
 
@@ -52,12 +96,12 @@ describe('real JOB001 result', () => {
     expect(result.candidates).toHaveLength(75);
   });
 
-  it('produces 6 shortlist, 6 needs_review, 63 not_recommended_for_role', () => {
-    expect(result.counts).toEqual({ shortlist: 6, needs_review: 6, not_recommended_for_role: 63 });
+  it('produces 7 shortlist, 5 needs_review, 63 not_recommended_for_role', () => {
+    expect(result.counts).toEqual({ shortlist: 7, needs_review: 5, not_recommended_for_role: 63 });
   });
 
   it('shortlists the computer-vision engineers, best first', () => {
-    expect(shortlistNames(result)).toEqual(['Priya Anand', 'Chiara Russo', 'Lucas Evans', 'James Thornton', 'Marcus Reid', 'Nathan Brooks']);
+    expect(shortlistNames(result)).toEqual(['Priya Anand', 'Chiara Russo', 'Lucas Evans', 'James Thornton', 'Marcus Reid', 'Nathan Brooks', 'Mason Young']);
     expect(byName(result, 'Priya Anand').shortlistRank).toBe(1);
   });
 

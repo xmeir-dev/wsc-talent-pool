@@ -5,7 +5,7 @@
  * All terms are compared after normalize(): lower case, trimmed, single spaces.
  */
 
-export const ASSESSMENT_VERSION = 'rules-v1';
+export const ASSESSMENT_VERSION = 'rules-v2';
 
 // ---------- Points ----------
 
@@ -49,7 +49,8 @@ export const SKILL_EVIDENCE: Record<string, SkillEvidenceRule> = {
   },
   'object detection': {
     named: ['object detection', 'yolo'],
-    inferred: ['sports tracking', 'pose estimation', 'sports cv'],
+    // Highlight/event detection in sports video usually means detecting players, ball or actions; verify.
+    inferred: ['sports tracking', 'pose estimation', 'sports cv', 'highlight detection', 'event detection', 'action detection'],
   },
   aws: { named: ['aws', 'sagemaker'], equivalent: ['gcp', 'azure'] },
   'sports analytics': {
@@ -103,14 +104,14 @@ export const ROLE_POLICIES: Record<string, RolePolicy> = {
   JOB001: {
     essentials: [
       { label: 'Computer Vision', anyOf: ['Computer Vision'], minPoints: 1 },
-      { label: 'PyTorch or related deep-learning evidence', anyOf: ['PyTorch'], minPoints: 1 },
+      { label: 'PyTorch or related deep learning', anyOf: ['PyTorch'], minPoints: 1 },
     ],
     coreDiscipline: {
       label: 'machine learning or computer vision',
       terms: [
         'pytorch', 'tensorflow', 'keras', 'deep learning', 'machine learning', 'computer vision', 'opencv',
         'yolo', 'object detection', 'sports cv', 'pose estimation', 'sports tracking', 'video understanding',
-        'video analytics',
+        'video analytics', 'highlight detection', 'event detection', 'action detection',
       ],
     },
     industryBonus: {
