@@ -18,6 +18,8 @@ import { currentRole, OUTCOME_LABEL, OUTCOME_TONE, years } from './format';
 interface Props {
   a: CandidateAssessment;
   row: OutputRow;
+  /** The job picker: the profile is one job's assessment. */
+  jobPicker?: ReactNode;
 }
 
 type SkillState = 'has' | 'likely' | 'missing';
@@ -87,7 +89,7 @@ function spellYears(spell: EmploymentSpell): string {
 }
 
 /** One candidate's profile page for the selected role. */
-export function CandidateDetail({ a, row }: Props) {
+export function CandidateDetail({ a, row, jobPicker }: Props) {
   const c = a.candidate;
   const profile = c.profile;
   const required = a.skills.filter((s) => s.kind === 'required');
@@ -101,6 +103,8 @@ export function CandidateDetail({ a, row }: Props) {
         <h1>{c.fullName}</h1>
         <p className="muted">{currentRole(row)}</p>
       </header>
+
+      {jobPicker}
 
       <div className="d-score">
         <div className="d-score-num">

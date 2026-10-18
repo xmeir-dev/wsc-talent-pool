@@ -1,42 +1,24 @@
+import type { ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import {
   AlertCircleIcon,
   Briefcase01Icon,
+  Calendar03Icon,
   CheckmarkCircle02Icon,
   StarIcon,
+  Target02Icon,
   UserIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
 import { DataTable, Hint, StatusPill, type Column } from '@meir-labs/ui-kit';
-import type { CandidateAssessment, OutputRow } from '../pipeline';
-import { currentRole, fitReason, mainGap, OUTCOME_TONE, referenceSummary, TABLE_OUTCOME_LABEL } from './format';
+import type { CandidateAssessment } from '../pipeline';
+import type { Attendee, Item } from './attendees';
+import { currentRole, fitReason, mainGap, OUTCOME_TONE, referenceSummary, shortDate, TABLE_OUTCOME_LABEL } from './format';
 
-export interface Item {
-  a: CandidateAssessment;
-  row: OutputRow;
-}
-
-interface Props {
-  items: Item[];
-  showOutcome: boolean;
+interface Shared {
   onOpen: (key: string) => void;
-}
-
-function RankCell({ a, showOutcome }: { a: CandidateAssessment; showOutcome: boolean }) {
-  if (a.shortlistRank !== null) {
-    return (
-      <span className="rank-cell">
-        <span className="rank">{a.shortlistRank}</span>
-        {a.tieNote && (
-          <span className="tie" title={a.tieNote}>
-            tied
-          </span>
-        )}
-      </span>
-    );
-  }
-  if (!showOutcome) return null;
-  return <StatusPill tone={OUTCOME_TONE[a.recommendation]}>{TABLE_OUTCOME_LABEL[a.recommendation]}</StatusPill>;
+  toolbar: ReactNode;
+  emptyState: ReactNode;
 }
 
 /** Header label with its icon: inline-flex so the icon sits centred on the text, never on the baseline. */
@@ -51,14 +33,29 @@ function Head({ icon, label }: { icon: IconSvgElement; label: string }) {
 
 const quiet = (text: string, unknown = false) => <span className={unknown ? 'unknown' : 'muted'}>{text}</span>;
 
-export function CandidateTable({ items, showOutcome, onOpen }: Props) {
+const connections = (a: CandidateAssessment) => {
+  const ref = referenceSummary(a);
+  return quiet(ref.text, ref.unknown);
+};
+
+function RankCell({ a }: { a: CandidateAssessment }) {
+  return (
+    <span className="rank-cell">
+      {a.shortlistRank !== null && <span className="rank">{a.shortlistRank}</span>}
+      <StatusPill tone={OUTCOME_TONE[a.recommendation]}>{TABLE_OUTCOME_LABEL[a.recommendation]}</StatusPill>
+      {a.tieNote && (
+        <span className="tie" title={a.tieNote}>
+          tied
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** One job's shortlist and needs review, in pipeline rank order. */
+export function CandidateTable({ items, onOpen, toolbar, emptyState }: Shared & { items: Item[] }) {
   const columns: Column<Item>[] = [
-    {
-      id: 'rank',
-      header: '#',
-      width: showOutcome ? 152 : 88,
-      accessor: ({ a }) => <RankCell a={a} showOutcome={showOutcome} />,
-    },
+    { id: 'rank', header: '#', width: 168, accessor: ({ a }) => <RankCell a={a} /> },
     {
       id: 'score',
       header: (
@@ -66,26 +63,17 @@ export function CandidateTable({ items, showOutcome, onOpen }: Props) {
           <Head icon={StarIcon} label="Score" />
         </Hint>
       ),
-      width: 104,
+      width: 96,
       accessor: ({ a }) => <span className="score">{a.candidate.profile ? a.points.total : '–'}</span>,
     },
     {
       id: 'candidate',
       header: <Head icon={UserIcon} label="Candidate" />,
-      width: '14%',
+      width: '13%',
       accessor: ({ a }) => <span className="name">{a.candidate.fullName}</span>,
     },
-    {
-      id: 'role',
-      header: <Head icon={Briefcase01Icon} label="Role" />,
-      width: '16%',
-      accessor: ({ row }) => quiet(currentRole(row)),
-    },
-    {
-      id: 'why',
-      header: <Head icon={CheckmarkCircle02Icon} label="Why" />,
-      accessor: ({ a }) => quiet(fitReason(a)),
-    },
+    { id: 'role', header: <Head icon={Briefcase01Icon} label="Role" />, width: '15%', accessor: ({ row }) => quiet(currentRole(row)) },
+    { id: 'why', header: <Head icon={CheckmarkCircle02Icon} label="Why" />, accessor: ({ a }) => quiet(fitReason(a)) },
     {
       id: 'gap',
       header: <Head icon={AlertCircleIcon} label="Main gap" />,
@@ -94,25 +82,82 @@ export function CandidateTable({ items, showOutcome, onOpen }: Props) {
         return quiet(gap.text, gap.unknown);
       },
     },
-    {
-      id: 'ref',
-      header: <Head icon={UserMultipleIcon} label="WSC connections" />,
-      width: '18%',
-      accessor: ({ a }) => {
-        const ref = referenceSummary(a);
-        return quiet(ref.text, ref.unknown);
-      },
-    },
+    { id: 'ref', header: <Head icon={UserMultipleIcon} label="WSC connections" />, width: '16%', accessor: ({ a }) => connections(a) },
   ];
 
   return (
     <DataTable
-      className="candidates"
+      className="candidates by-job"
       aria-label="Candidates"
       columns={columns}
       data={items}
       getRowId={({ a }) => a.candidate.candidateKey}
       onRowClick={({ a }) => onOpen(a.candidate.candidateKey)}
+      toolbar={toolbar}
+      emptyState={emptyState}
+    />
+  );
+}
+
+function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
+  if (list.length === 0) return quiet('—');
+  return (
+    <span className="jobs">
+      {list.map(({ job, outcome }) => (
+        <Hint key={job.jobId} focusable={false} tip={`${job.title}: ${TABLE_OUTCOME_LABEL[outcome]}`}>
+          <StatusPill tone={OUTCOME_TONE[outcome]}>
+            {job.jobId}
+            <span className="ml-visually-hidden">{`, ${job.title}: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
+          </StatusPill>
+        </Hint>
+      ))}
+    </span>
+  );
+}
+
+/** Every attendee once, A–Z. */
+export function AttendeeTable({ attendees, onOpen, toolbar, emptyState }: Shared & { attendees: Attendee[] }) {
+  const columns: Column<Attendee>[] = [
+    {
+      id: 'candidate',
+      header: <Head icon={UserIcon} label="Candidate" />,
+      width: '17%',
+      accessor: ({ candidate }) => <span className="name">{candidate.fullName}</span>,
+    },
+    { id: 'role', header: <Head icon={Briefcase01Icon} label="Role" />, width: '23%', accessor: ({ role }) => quiet(role) },
+    {
+      id: 'conference',
+      header: <Head icon={Calendar03Icon} label="Conference" />,
+      width: '24%',
+      accessor: ({ candidate }) => (
+        <span className="confs">
+          {candidate.attendances.map((at) => (
+            <span key={at.hubspotId}>
+              {at.conferenceName} <span className="muted">· {shortDate(at.conferenceDate)}</span>
+            </span>
+          ))}
+        </span>
+      ),
+    },
+    {
+      id: 'relevant',
+      header: <Head icon={Target02Icon} label="Relevant for" />,
+      width: 176,
+      accessor: ({ relevantFor }) => <RelevantFor list={relevantFor} />,
+    },
+    { id: 'ref', header: <Head icon={UserMultipleIcon} label="WSC connections" />, accessor: ({ any }) => connections(any.a) },
+  ];
+
+  return (
+    <DataTable
+      className="candidates attendees"
+      aria-label="Attendees"
+      columns={columns}
+      data={attendees}
+      getRowId={({ candidate }) => candidate.candidateKey}
+      onRowClick={({ candidate }) => onOpen(candidate.candidateKey)}
+      toolbar={toolbar}
+      emptyState={emptyState}
     />
   );
 }

@@ -45,7 +45,7 @@ Use `JOB001` (Senior ML Engineer) for the demo. Other IDs: `JOB002`, `JOB003`, `
 
 Each output row is one person for the chosen role: the recommendation (`shortlist`, `needs_review`, `not_recommended_for_role`), the points behind it, matched skills and gaps, seniority evidence, WSC connections and possible references, every conference they attended, and the next step. Rules: [How candidates are ranked](docs/scoring.md). Columns: [Schema and flow](docs/schema-and-flow.md).
 
-The recruiter view (`view/`) picks a role, shows Shortlist / Needs review / All, opens a candidate's evidence in a side panel, and **Export all for role** downloads the same file the CLI writes (a test checks they match byte for byte).
+The recruiter view (`view/`) lists all attendees, filtered by conference and by job (a job shows its Shortlist and Needs review in rank order). A row opens the person's profile for one job, switchable to any of the four. **Export** downloads the attendee list as shown or, with a job chosen, the same file the CLI writes for that job (a test checks they match byte for byte).
 
 The assessment logic in `pipeline/` is plain TypeScript with no file or network access, so a browser view can import it directly (`import { buildDataset, assessJob, assessmentToCsv } from './pipeline'`). The Node command in `cli/` only reads the CSVs and writes the result.
 

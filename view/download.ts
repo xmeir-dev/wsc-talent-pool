@@ -5,8 +5,7 @@ export function exportCsv(result: JobAssessment): { fileName: string; text: stri
   return { fileName: outputFileName(result.job.jobId), text: assessmentToCsv(result) };
 }
 
-export function downloadCsv(result: JobAssessment): void {
-  const { fileName, text } = exportCsv(result);
+export function downloadFile({ fileName, text }: { fileName: string; text: string }): void {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
   const a = document.createElement('a');
   a.href = url;

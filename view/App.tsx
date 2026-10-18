@@ -1,20 +1,17 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
-import { Button, Callout, EmptyState, SegmentedControl, Select, TopBar } from '@meir-labs/ui-kit';
-import {
-  assessJob,
-  buildDataset,
-  DataValidationError,
-  toOutputRows,
-  type Dataset,
-  type SourceTexts,
-} from '../pipeline';
+import { Button, Callout, EmptyState, Select, TopBar } from '@meir-labs/ui-kit';
+import { buildDataset, DataValidationError, type Dataset, type SourceTexts } from '../pipeline';
+import { attended, attendeesCsv, bestJobId, buildPool, jobItems } from './attendees';
 import { CandidateDetail } from './CandidateDetail';
-import { CandidateTable, type Item } from './CandidateTable';
+import { AttendeeTable, CandidateTable } from './CandidateTable';
 import { bundledSources } from './data';
-import { downloadCsv } from './download';
-import { emptyShortlistCopy, VIEWS, type View } from './format';
+import { downloadFile, exportCsv } from './download';
+import { jobLabel } from './format';
+
+/** Select value for "no filter"; real values are conference names and job IDs. */
+const ALL = '*';
 
 function keyFromHash(): string | null {
   const m = /^#\/candidate\/(.+)$/.exec(window.location.hash);
@@ -52,34 +49,46 @@ export function App({ sources = bundledSources }: { sources?: SourceTexts }) {
 }
 
 function Workspace({ dataset }: { dataset: Dataset }) {
-  const [jobId, setJobId] = useState(dataset.jobs[0]?.jobId ?? '');
-  const [view, setView] = useState<View>('shortlist');
+  const pool = useMemo(() => buildPool(dataset), [dataset]);
+  // Filters live here, so they survive a trip to a profile and back.
+  const [conference, setConference] = useState(ALL);
+  const [jobFilter, setJobFilter] = useState(ALL);
   const [openKey, setOpenKeyState] = useState<string | null>(keyFromHash);
+  const [profileJob, setProfileJob] = useState<string | null>(null);
 
-  const result = useMemo(() => assessJob(dataset, jobId), [dataset, jobId]);
-  const rows = useMemo(() => toOutputRows(result), [result]);
-  const indexed = useMemo<Item[]>(() => result.candidates.map((a, i) => ({ a, row: rows[i]! })), [result, rows]);
-  const visible = view === 'all' ? indexed : indexed.filter(({ a }) => a.recommendation === view);
-  const open = openKey ? indexed.find(({ a }) => a.candidate.candidateKey === openKey) : undefined;
+  const conf = conference === ALL ? null : conference;
+  const job = jobFilter === ALL ? null : jobFilter;
+  const attendees = useMemo(() => pool.attendees.filter((p) => attended(p.candidate, conf)), [pool, conf]);
+  const items = useMemo(() => (job ? jobItems(pool, job, conf) : []), [pool, job, conf]);
+  const shown = job ? items.length : attendees.length;
+  const total = pool.attendees.length;
+
+  const isKnown = openKey !== null && pool.items.get(pool.jobs[0]!.jobId)!.has(openKey);
+  const viewJob = isKnown ? (profileJob ?? job ?? bestJobId(pool, openKey)) : null;
+  const open = isKnown && viewJob ? pool.items.get(viewJob)!.get(openKey)! : undefined;
 
   // The profile is its own page: #/candidate/<key>, so the browser back button works too.
   const pushed = useRef(false);
   const returnTo = useRef<{ name: string; scrollY: number } | null>(null);
   useEffect(() => {
-    const onHash = () => setOpenKeyState(keyFromHash());
+    const onHash = () => {
+      setOpenKeyState(keyFromHash());
+      setProfileJob(null);
+    };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
   const openProfile = useCallback(
     (key: string) => {
-      const item = indexed.find(({ a }) => a.candidate.candidateKey === key);
-      returnTo.current = { name: item?.a.candidate.fullName ?? '', scrollY: window.scrollY };
+      const person = pool.attendees.find((p) => p.candidate.candidateKey === key);
+      returnTo.current = { name: person?.candidate.fullName ?? '', scrollY: window.scrollY };
       pushed.current = true;
       window.location.hash = `/candidate/${encodeURIComponent(key)}`;
       setOpenKeyState(key);
+      setProfileJob(null);
     },
-    [indexed],
+    [pool],
   );
 
   const back = useCallback(() => {
@@ -89,6 +98,7 @@ function Workspace({ dataset }: { dataset: Dataset }) {
     } else {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
       setOpenKeyState(null);
+      setProfileJob(null);
     }
   }, []);
 
@@ -104,23 +114,19 @@ function Workspace({ dataset }: { dataset: Dataset }) {
     row?.focus();
   }, [open]);
 
+  const profileOpen = open !== undefined;
   useEffect(() => {
-    if (!open) return;
+    if (!profileOpen) return;
     window.scrollTo(0, 0);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') back();
+      // A picker closing on Escape marks the event handled; only a free Escape leaves the page.
+      if (e.key === 'Escape' && !e.defaultPrevented) back();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, back]);
+  }, [profileOpen, back]);
 
-  const counts: Record<View, number> = {
-    shortlist: result.counts.shortlist,
-    needs_review: result.counts.needs_review,
-    all: result.candidates.length,
-  };
-
-  if (open) {
+  if (open && viewJob) {
     return (
       <>
         <TopBar
@@ -132,66 +138,72 @@ function Workspace({ dataset }: { dataset: Dataset }) {
           }
         />
         <main className="content profile">
-          <CandidateDetail a={open.a} row={open.row} />
+          <CandidateDetail
+            a={open.a}
+            row={open.row}
+            jobPicker={
+              <div className="assessed-for">
+                <span className="muted">Assessed for</span>
+                <Select value={viewJob} onValueChange={setProfileJob}>
+                  <Select.Trigger aria-label="Assessed for" />
+                  <Select.Content>
+                    {pool.jobs.map((j) => (
+                      <Select.Item key={j.jobId} value={j.jobId}>
+                        {jobLabel(j)}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select>
+              </div>
+            }
+          />
         </main>
       </>
     );
   }
 
+  const onExport = () =>
+    downloadFile(job ? exportCsv(pool.results.get(job)!) : attendeesCsv(attendees, conf));
+
+  const filters = (
+    <div className="filters">
+      <Select value={conference} onValueChange={setConference}>
+        <Select.Trigger aria-label="Conference" />
+        <Select.Content>
+          <Select.Item value={ALL}>All conferences</Select.Item>
+          {pool.conferences.map((c) => (
+            <Select.Item key={c.name} value={c.name}>
+              {c.name}
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select>
+      <Select value={jobFilter} onValueChange={setJobFilter}>
+        <Select.Trigger aria-label="Job" />
+        <Select.Content>
+          <Select.Item value={ALL}>All jobs</Select.Item>
+          {pool.jobs.map((j) => (
+            <Select.Item key={j.jobId} value={j.jobId}>
+              {jobLabel(j)}
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select>
+      <Button variant="secondary" className="export" onClick={onExport}>
+        Export
+      </Button>
+    </div>
+  );
+  const empty = <EmptyState variant="no-results" title="No one matches these filters." />;
+
   return (
-    <>
-      <TopBar
-        className="toolbar"
-        left={
-          <Select
-            value={jobId}
-            onValueChange={(v) => {
-              setJobId(v);
-            }}
-          >
-            <Select.Trigger aria-label="Role" />
-            <Select.Content>
-              {dataset.jobs.map((j) => (
-                <Select.Item key={j.jobId} value={j.jobId}>
-                  {`${j.jobId} · ${j.title}`}
-                </Select.Item>
-              ))}
-            </Select.Content>
-          </Select>
-        }
-        right={<Button onClick={() => downloadCsv(result)}>Export all for role</Button>}
-      />
-
-      <main className="content">
-        <h1 className="ml-visually-hidden">Candidates for {result.job.title}</h1>
-        <SegmentedControl
-          className="views"
-          aria-label="View"
-          value={view}
-          onChange={(v) => setView(v as View)}
-          options={VIEWS.map((v) => ({ value: v.id, label: v.label, count: counts[v.id] }))}
-        />
-
-        {visible.length === 0 ? (
-          view === 'shortlist' && result.counts.needs_review > 0 ? (
-            <EmptyState
-              variant="no-results"
-              title={emptyShortlistCopy(result).title}
-              description={emptyShortlistCopy(result).body}
-              action={
-                <Button variant="secondary" onClick={() => setView('needs_review')}>
-                  Open Needs review
-                </Button>
-              }
-            />
-          ) : (
-            <EmptyState variant="no-results" title="No candidates in this view." />
-          )
-        ) : (
-          <CandidateTable items={visible} showOutcome={view === 'all'} onOpen={openProfile} />
-        )}
-      </main>
-
-    </>
+    <main className="content">
+      <h1 className="list-title">{conf || job ? `${shown} of ${total} attendees` : `All ${total} attendees`}</h1>
+      {job ? (
+        <CandidateTable items={items} onOpen={openProfile} toolbar={filters} emptyState={empty} />
+      ) : (
+        <AttendeeTable attendees={attendees} onOpen={openProfile} toolbar={filters} emptyState={empty} />
+      )}
+    </main>
   );
 }

@@ -41,16 +41,48 @@ ul {
   flex: 1;
   max-width: 420px;
 }
-.toolbar .ml-select-value {
-  font-weight: 500;
-}
 
 .content {
   padding: var(--ml-space-lg) var(--ml-space-xl) 48px;
 }
 
-.views {
-  margin-bottom: var(--ml-space-lg);
+.list-title {
+  margin: 0 0 var(--ml-space-md);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Filter line in the table's toolbar slot: pickers left, Export right. */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ml-space-sm);
+}
+.filters .ml-select-trigger {
+  width: auto;
+  min-width: 220px;
+  max-width: 100%;
+}
+.filters .export {
+  margin-left: auto;
+}
+
+.assessed-for {
+  display: flex;
+  align-items: center;
+  gap: var(--ml-space-sm);
+  margin-top: -16px;
+}
+.assessed-for .muted {
+  font-size: 13px;
+  white-space: nowrap;
+}
+.assessed-for .ml-select-trigger {
+  width: auto;
+  min-width: 0;
 }
 
 /* Table cells */
@@ -71,8 +103,8 @@ ul {
 
 .rank-cell {
   display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
 }
 .rank,
 .score {
@@ -85,6 +117,15 @@ ul {
 }
 .name {
   font-weight: 500;
+}
+.jobs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.confs {
+  display: flex;
+  flex-direction: column;
 }
 
 /* Candidate profile page */
@@ -266,16 +307,16 @@ ul {
   .content {
     padding: var(--ml-space-md) var(--ml-space-lg) 48px;
   }
-  .toolbar .ml-select-trigger {
+  .ml-select-trigger {
     font-size: 16px;
   }
-  .views {
-    box-sizing: border-box;
-    width: 100%;
+  .filters .ml-select-trigger {
+    flex: 1 1 100%;
+    min-width: 0;
   }
-  .views .ml-segmented-btn {
-    padding-inline: 4px;
-    white-space: nowrap;
+  .filters .export {
+    flex: 1 1 100%;
+    margin-left: 0;
   }
 
   .candidates thead {
@@ -290,9 +331,10 @@ ul {
     display: block;
   }
   .candidates tbody tr {
-    display: grid;
-    grid-template-columns: 64px minmax(0, 1fr);
-    padding: var(--ml-space-md) 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--ml-space-md) var(--ml-space-lg);
   }
   .candidates tbody tr:not(:last-child) {
     border-bottom: 1px solid var(--ml-border-subtle);
@@ -300,28 +342,25 @@ ul {
   .candidates .ml-dt td {
     display: block;
     width: auto !important;
-    padding: 0 var(--ml-space-lg) 0 0;
+    padding: 0;
     border: 0 !important;
-    grid-column: 2;
   }
-  .candidates .ml-dt td:nth-child(1) {
-    grid-column: 1;
-    grid-row: 1 / span 4;
-    padding: 0 0 0 var(--ml-space-lg);
+  .candidates .ml-dt td.ml-dt-state {
+    padding: var(--ml-space-lg) 0;
   }
-  .candidates .ml-dt td:nth-child(4) {
+  /* By job: rank + outcome on top; score and connections stay on the profile. */
+  .by-job .ml-dt td:nth-child(1) {
     margin-bottom: 4px;
   }
-  .candidates .ml-dt td:nth-child(2),
-  .candidates .ml-dt td:nth-child(7) {
+  .by-job .ml-dt td:nth-child(2),
+  .by-job .ml-dt td:nth-child(7) {
     display: none;
   }
-  .candidates .rank-cell {
-    flex-direction: column;
-    gap: 0;
+  /* Attendees: name, role, conference, jobs; connections stay on the profile. */
+  .attendees .ml-dt td:nth-child(4) {
+    margin-top: 4px;
   }
-  .candidates .ml-status-pill {
-    white-space: normal;
-    text-align: left;
+  .attendees .ml-dt td:nth-child(5) {
+    display: none;
   }
 }

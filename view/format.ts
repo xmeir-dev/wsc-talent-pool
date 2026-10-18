@@ -3,24 +3,28 @@
  * this file just chooses which pipeline field to show and how to label it.
  */
 
-import { policyFor } from '../pipeline';
 import type {
   CandidateAssessment,
-  JobAssessment,
   ConferenceRelevance,
+  Job,
   MatchKind,
   OutputRow,
   PossibleReference,
   Recommendation,
 } from '../pipeline';
 
-export type View = 'shortlist' | 'needs_review' | 'all';
+/** "JOB001 · Senior ML Engineer": how a job reads in pickers. */
+export function jobLabel(job: Job): string {
+  return `${job.jobId} · ${job.title}`;
+}
 
-export const VIEWS: { id: View; label: string }[] = [
-  { id: 'shortlist', label: 'Shortlist' },
-  { id: 'needs_review', label: 'Needs review' },
-  { id: 'all', label: 'All' },
-];
+/** "2024-11-14" → "14 Nov 2024"; anything else is shown as given. */
+export function shortDate(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][Number(m[2]) - 1];
+  return month ? `${Number(m[3])} ${month} ${m[1]}` : iso;
+}
 
 export const OUTCOME_LABEL: Record<Recommendation, string> = {
   shortlist: 'Shortlist',
@@ -68,18 +72,6 @@ export function mainGap(a: CandidateAssessment): { text: string; unknown: boolea
   if (!hasProfile(a)) return { text: 'Unknown: no usable profile', unknown: true };
   const gap = a.missingEssentials[0] ? `Missing must-have: ${a.missingEssentials[0]}` : a.skillGaps[0];
   return { text: gap ?? 'None identified', unknown: false };
-}
-
-/** Empty-shortlist copy, from the data: which must-have nobody in review has, and how many to review. */
-export function emptyShortlistCopy(result: JobAssessment): { title: string; body: string } {
-  const review = result.candidates.filter((c) => c.recommendation === 'needs_review');
-  const n = review.length;
-  const common = (review[0]?.missingEssentials ?? []).filter((e) => review.every((c) => c.missingEssentials.includes(e)));
-  const title =
-    common.length > 0
-      ? `No ${policyFor(result.job).policy.coreDiscipline.label} candidate lists ${common.join(' or ')}.`
-      : 'No one meets every shortlist condition for this role.';
-  return { title, body: `${n} ${n === 1 ? 'is' : 'are'} worth a recruiter's review.` };
 }
 
 export function referenceSummary(a: CandidateAssessment): { text: string; unknown: boolean } {
