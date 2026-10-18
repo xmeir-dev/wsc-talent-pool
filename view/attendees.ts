@@ -21,7 +21,7 @@ export interface Attendee {
   /** Any job's assessment: connections and contact details do not depend on the job. */
   any: Item;
   /** Jobs where the person is shortlist or needs review, in job order. */
-  relevantFor: { job: Job; outcome: Relevant; a: CandidateAssessment }[];
+  relevantFor: { job: Job; outcome: Relevant; a: CandidateAssessment; rank: number }[];
 }
 
 export interface Conference {
@@ -51,6 +51,13 @@ export function buildPool(dataset: Dataset): Pool {
     items.set(job.jobId, new Map(result.candidates.map((a, i) => [a.candidate.candidateKey, { a, row: rows[i]! }])));
   }
 
+  // Place on each job's list: the shortlist rank (ties kept), else position after the shortlist.
+  const places = new Map<string, Map<string, number>>();
+  for (const job of dataset.jobs) {
+    const relevant = results.get(job.jobId)!.candidates.filter(isRelevant);
+    places.set(job.jobId, new Map(relevant.map((a, i) => [a.candidate.candidateKey, a.shortlistRank ?? i + 1])));
+  }
+
   const first = dataset.jobs[0]!.jobId;
   // Name order, A–Z; the candidate key breaks ties so the order never depends on input order.
   const attendees: Attendee[] = dataset.candidates
@@ -59,7 +66,7 @@ export function buildPool(dataset: Dataset): Pool {
       const any = items.get(first)!.get(key)!;
       const relevantFor = dataset.jobs.flatMap((job) => {
         const a = items.get(job.jobId)!.get(key)!.a;
-        return isRelevant(a) ? [{ job, outcome: a.recommendation, a }] : [];
+        return isRelevant(a) ? [{ job, outcome: a.recommendation, a, rank: places.get(job.jobId)!.get(key)! }] : [];
       });
       return { candidate, role: currentRole(any.row), any, relevantFor };
     })

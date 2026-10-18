@@ -108,13 +108,16 @@ export function CandidateTable({ items, onOpen, emptyState }: Shared & { items: 
   );
 }
 
+/** One pill per job, shortlist first: the rank is green when shortlisted, grey in needs review. */
 function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
-  if (list.length === 0) return quiet('—');
+  if (list.length === 0) return null;
+  const ordered = [...list].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1));
   return (
     <span className="jobs">
-      {list.map(({ job, outcome }) => (
-        <Hint key={job.jobId} focusable={false} tip={TABLE_OUTCOME_LABEL[outcome]}>
-          <StatusPill tone={OUTCOME_TONE[outcome]}>
+      {ordered.map(({ job, outcome, rank }) => (
+        <Hint key={job.jobId} focusable={false} tip={`${TABLE_OUTCOME_LABEL[outcome]} #${rank}`}>
+          <StatusPill tone={outcome === 'shortlist' ? 'good' : 'neutral'}>
+            <span className="job-rank">#{rank}</span>
             {job.title}
             <span className="ml-visually-hidden">{`: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
           </StatusPill>

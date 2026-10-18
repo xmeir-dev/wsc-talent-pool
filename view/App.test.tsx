@@ -57,14 +57,19 @@ describe('recruiter view: list', () => {
     expect(screen.getByRole('button', { name: 'Export' })).toBeTruthy();
   });
 
-  it('shows the jobs each attendee is relevant for, and a dash when none', () => {
+  it('shows the jobs each attendee is relevant for with their rank, and nothing when none', () => {
     render(<App />);
     const adaora = screen.getByRole('row', { name: /Adaora Okafor/ });
-    expect(adaora.textContent).toContain('Senior ML Engineer: Needs review');
+    expect(adaora.querySelector('.jobs')?.textContent).toBe('#9Senior ML Engineer: Needs review');
+    const noah = screen.getByRole('row', { name: /Noah Anderson/ });
+    expect([...noah.querySelectorAll('.jobs .ml-status-pill')].map((p) => p.textContent)).toEqual([
+      '#2Data Engineer: Shortlist',
+      '#5Backend Engineer: Needs review',
+    ]);
     expect(adaora.textContent).not.toContain('JOB001');
     expect(adaora.textContent).toContain('Data & AI Summit Europe');
     expect(adaora.textContent).toContain('21 Mar 2025');
-    expect(screen.getByRole('row', { name: /Alexei Volkov/ }).textContent).toContain('—');
+    expect(screen.getByRole('row', { name: /Alexei Volkov/ }).querySelector('.jobs')).toBeNull();
   });
 
   it("shows the recruiter's note under a name, else a marked AI-written summary", () => {

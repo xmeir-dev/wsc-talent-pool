@@ -234,8 +234,20 @@ ul {
 }
 .jobs {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.job-rank {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin-right: 6px;
+}
+.jobs .ml-status-pill-neutral {
+  box-shadow: inset 0 0 0 1px var(--ml-border);
+}
+.ml-status-pill-neutral .job-rank {
+  color: var(--ml-text-muted);
 }
 .confs {
   display: flex;
