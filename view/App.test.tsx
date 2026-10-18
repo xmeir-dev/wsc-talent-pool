@@ -69,7 +69,9 @@ describe('recruiter view: list', () => {
     expect(adaora.textContent).not.toContain('JOB001');
     expect(adaora.textContent).toContain('Data & AI Summit Europe');
     expect(adaora.textContent).toContain('21 Mar 2025');
-    expect(screen.getByRole('row', { name: /Alexei Volkov/ }).querySelector('.jobs')).toBeNull();
+    const alexei = screen.getByRole('row', { name: /Alexei Volkov/ });
+    expect(alexei.querySelector('.jobs')).toBeNull();
+    expect(alexei.querySelector('.empty-line')).not.toBeNull();
   });
 
   it("shows the recruiter's note under a name, else a marked AI-written summary", () => {

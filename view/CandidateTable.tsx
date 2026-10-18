@@ -43,7 +43,12 @@ const who = (name: string, role: string) => (
 
 const about = (c: CandidateAssessment['candidate']) => <Overview c={c} />;
 
+/** An empty cell gets a faint hairline instead of words. */
+const empty = <span className="empty-line" role="img" aria-label="None" />;
+
 const connections = (a: CandidateAssessment) => {
+  const c = a.connections;
+  if (c.status !== 'unknown' && c.resolved.length === 0 && c.unresolvedIds.length === 0) return empty;
   const ref = referenceSummary(a);
   return quiet(ref.text, ref.unknown);
 };
@@ -110,7 +115,7 @@ export function CandidateTable({ items, onOpen, emptyState }: Shared & { items: 
 
 /** One pill per job, shortlist first: green when shortlisted, outlined grey in needs review. */
 function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
-  if (list.length === 0) return null;
+  if (list.length === 0) return empty;
   const ordered = [...list].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1));
   return (
     <span className="jobs">

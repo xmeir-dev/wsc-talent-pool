@@ -238,6 +238,17 @@ ul {
   align-items: flex-start;
   gap: 6px;
 }
+.jobs .ml-status-pill-neutral {
+  box-shadow: inset 0 0 0 1px var(--ml-border);
+}
+/* An empty cell gets a faint hairline instead of words. */
+.empty-line {
+  display: block;
+  width: 16px;
+  height: 1px;
+  margin-top: 10px;
+  background: var(--ml-border);
+}
 
 .confs {
   display: flex;
