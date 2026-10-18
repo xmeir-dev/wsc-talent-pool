@@ -2,8 +2,6 @@
 
 Take-home task for the AI Solution Manager role at WSC Sports: turn conference attendees into a ranked, explained candidate list for an open role, ready to import into HubSpot.
 
-Developer starting point: [Webapp build plan](docs/webapp-plan.md).
-
 ## Deliverables
 
 | Deliverable | Where |
@@ -54,4 +52,4 @@ The assessment logic in `pipeline/` is plain TypeScript with no file or network 
 - `view/` — the recruiter view (React + Vite, plain CSS)
 - `tests/` — Vitest tests and synthetic fixtures
 - `e2e/` — Playwright browser tests
-- `docs/mock-call-summary.md` — summary of the discovery call the task came out of
+- `docs/discovery-call-context.md` — context from the discovery call the task came out of

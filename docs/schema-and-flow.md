@@ -20,9 +20,9 @@ Keep one person with all their attendance records: rows sharing a LinkedIn URL a
 
 | Group | Columns | Purpose |
 |---|---|---|
-| Recommendation | `recommendation`, `shortlist_rank`, `tie_note`, `outcome_reason`, `fit_evidence`, `skill_gaps`, `seniority_evidence`, `industry_bonus_evidence` | Why this person fits, what is unconfirmed, and their position. Reasons cite the profile skill used; partial and inferred matches are labelled. |
+| Recommendation | `recommendation`, `shortlist_rank`, `tie_note`, `outcome_reason`, `fit_evidence`, `skill_gaps`, `seniority_evidence`, `industry_bonus_evidence` | Why this person fits, what is unconfirmed, and their position. Written for a recruiter: reasons cite the profile skill used, and related-skill or likely matches are labelled ("PyTorch: only a related skill (Deep Learning)", "Object Detection: likely (from Sports CV), please confirm"). |
 | Points | `points_total`, `required_points`, `required_points_max`, `nice_to_have_points`, `industry_bonus_points` | The arithmetic behind the ranking, so anyone can recheck it. |
-| Person | `candidate_key`, `source_contact_ids`, `full_name`, `email`, `linkedin_url`, `current_company`, `current_title`, `years_experience` | Identify the person. Experience is total experience, not necessarily time in the specialty. |
+| Person | `candidate_key`, `source_contact_ids`, `full_name`, `firstname`, `lastname`, `email`, `linkedin_url`, `current_company`, `current_title`, `years_experience` | Identify the person. `firstname` is the first word of `full_name` and `lastname` the rest ("Maria de la Cruz" → Maria / de la Cruz); a one-word name leaves `lastname` blank. Check unusual name orders before import. Experience is total experience, including internships, not necessarily time in the specialty. |
 | Role and history | `job_id`, `job_title`, `event_assessments`, `assessment_version` | Identify the role and rule version. Each event keeps its date, name, domain, relevance with reason, HubSpot ID, source and notes. |
 | References | `employee_connections`, `connection_count`, `connection_status`, `possible_references` | Listed connections: resolved employee names, IDs and titles. Possible references: employees who shared an employer in overlapping years. Kept apart; neither is scored. |
 | Review | `profile_status`, `data_quality_flags`, `review_next_step`, `comeet_status`, `job_interest` | Explain missing/conflicting data and what to check. Comeet status and job interest are `unknown` in this exercise. |
@@ -33,7 +33,7 @@ Export UTF-8 CSV with headers. Years, counts, points, and ranks are numbers; oth
 
 ## HubSpot preparation
 
-Map `email` to Email and other columns to configured `talent_<column>` contact properties, using Number or text as above. Synthetic `HS...` IDs are source identifiers, not HubSpot Record IDs. Resolve identity/email conflicts before import. [HubSpot import guide](https://knowledge.hubspot.com/import-and-export/understand-the-import-tool).
+Map `email` to Email, `firstname` to First name, `lastname` to Last name, and other columns to configured `talent_<column>` contact properties, using Number or text as above. Synthetic `HS...` IDs are source identifiers, not HubSpot Record IDs. Resolve identity/email conflicts before import. [HubSpot import guide](https://knowledge.hubspot.com/import-and-export/understand-the-import-tool).
 
 Contact properties hold one selected-job snapshot: another job can overwrite it. Preserve per-job results. Blank CSV cells do not clear old values, including a former shortlist rank, so production updates need an explicit clearing policy. [HubSpot file requirements](https://knowledge.hubspot.com/import-and-export/set-up-your-import-file).
 
