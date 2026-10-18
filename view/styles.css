@@ -89,63 +89,167 @@ ul {
 
 /* Detail drawer body */
 
-.detail > p:first-child {
-  margin-bottom: var(--ml-space-xl);
-}
-
-.stack {
+.detail {
+  --amber: #d97706;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  gap: 28px;
+}
+[data-meirlabs-theme='dark'] .detail {
+  --amber: #f59e0b;
+}
+.detail > p:first-child {
+  margin-top: -16px;
+}
+
+.d-score {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.d-score-num {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.d-score-num .muted {
+  font-size: 13px;
+  padding-bottom: 4px;
+}
+.d-big {
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.d-tied {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.d-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--ml-text-faint);
+}
+.d-label-name {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
-}
-
-.label {
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.d-label-name svg {
+  flex-shrink: 0;
+}
+.d-meta {
+  font-variant-numeric: tabular-nums;
 }
 
-.plain {
-  padding-left: 18px;
-  color: var(--ml-text-muted);
-}
-
-.rows {
+.d-skills,
+.d-rows,
+.d-flags {
   list-style: none;
   padding: 0;
-  align-self: stretch;
 }
-.rows li {
+.d-skills li,
+.d-rows li {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-  gap: 2px 12px;
+  gap: 12px;
   padding: 8px 0;
   border-bottom: 1px solid var(--ml-border-subtle);
 }
-.rows li:first-child {
-  padding-top: 0;
-}
-.rows li:last-child {
+.d-skills li:last-child,
+.d-rows li:last-child {
   border-bottom: 0;
 }
-
-.event-why {
-  flex-basis: 100%;
-  font-size: 13px;
+.d-skills svg {
+  flex-shrink: 0;
+  display: block;
 }
-
-.relevance {
-  font-weight: 500;
+.d-hint {
+  display: inline-flex;
+  border-radius: 50%;
 }
-.relevance-relevant {
+/* Kit tooltips (--ml-z-tooltip) sit under the kit drawer (z 1500); lift them so they show inside it. */
+:root {
+  --ml-z-tooltip: 1600;
+}
+.s-has {
   color: var(--ml-color-success);
 }
-.relevance-adjacent {
-  color: var(--ml-color-warning);
+.s-likely {
+  color: var(--amber);
 }
-.relevance-not_relevant,
-.relevance-unknown {
-  color: var(--ml-text-muted);
+.s-missing {
+  color: var(--ml-color-danger);
+}
+
+.d-timeline {
+  list-style: none;
+  padding: 2px 0 0 18px;
+  margin: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.d-timeline::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--ml-border);
+}
+.d-timeline li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.d-timeline li::before {
+  content: '';
+  position: absolute;
+  left: -18px;
+  top: 6px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: var(--ml-bg);
+  border: 1.5px solid var(--ml-text-faint);
+}
+.d-timeline li.now::before {
+  background: var(--ml-text);
+  border-color: var(--ml-text);
+}
+.d-timeline .muted {
+  font-size: 13px;
+}
+.d-with {
+  font-size: 12px;
+  color: var(--ml-color-success);
+  margin-top: 2px;
+}
+.d-intern {
+  font-size: 12px;
+  color: var(--amber);
+  margin-top: 2px;
+}
+
+.d-flags li {
+  font-size: 13px;
+  color: var(--amber);
 }
 
 .ml-callout ul {

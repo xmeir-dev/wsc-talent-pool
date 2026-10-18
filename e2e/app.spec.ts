@@ -46,7 +46,8 @@ test('keyboard opens and closes the detail and focus returns to the row', async 
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('heading', { name: 'Priya Anand' })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();
-  await expect(dialog).toContainText('Possible references');
+  await expect(dialog).toContainText('Required skills');
+  await expect(dialog).toContainText('Worked with Maya Levi');
 
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);

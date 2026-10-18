@@ -58,8 +58,10 @@ describe('recruiter view', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Chiara Russo' });
     expect(within(dialog).getByRole('heading', { name: 'Chiara Russo' })).toBeTruthy();
     await waitFor(() => expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: 'Close' })));
-    expect(dialog.textContent).toContain('tied with Lucas Evans');
-    expect(dialog.textContent).toContain('Possible references');
+    expect(dialog.textContent).toContain('tied');
+    expect(dialog.textContent).toContain('Required skills');
+    expect(dialog.textContent).toContain('Nice to have');
+    expect(dialog.textContent).toContain('years of experience');
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(document.activeElement).toBe(row);
