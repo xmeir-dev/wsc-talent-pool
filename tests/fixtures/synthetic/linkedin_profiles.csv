@@ -1,0 +1,31 @@
+linkedin_url,full_name,current_company,current_title,location,years_experience,top_skills,industry,past_companies,past_titles,wsc_mutual_connections
+linkedin.com/in/sam-strong,Sam Strong,ShopCo,Computer Vision Engineer,Berlin DE,8,"Python;PyTorch;Computer Vision;Object Detection;AWS",Retail Technology,startup,"CV Engineer at ShopCo (2018-2024)",
+linkedin.com/in/connie-linked,Connie Linked,ClubTech,ML Engineer,London UK,6,"Python;PyTorch;Computer Vision",Sports Technology,startup,"ML Engineer at ClubTech (2019-2024)",WSC002;WSC013;WSC008
+linkedin.com/in/tia-tied,Tia Tied,LeagueVision,ML Engineer,Madrid ES,7,"Python;PyTorch;Computer Vision;AWS",Sports Technology,startup,"ML Engineer at LeagueVision (2018-2024)",WSC002;WSC013;WSC008
+linkedin.com/in/ula-unlinked,Ula Unlinked,LeagueVision,ML Engineer,Madrid ES,7,"Python;PyTorch;Computer Vision;AWS",Sports Technology,startup,"ML Engineer at LeagueVision (2018-2024)",
+linkedin.com/in/abe-also,Abe Also,LeagueVision,ML Engineer,Madrid ES,7,"Python;PyTorch;Computer Vision;AWS",Sports Technology,startup,"ML Engineer at LeagueVision (2018-2024)",WSC002
+linkedin.com/in/nora-novision,Nora NoVision,SportsRec,Senior ML Engineer,Paris FR,10,"Python;PyTorch;AWS;Docker;Real-time Processing;Sports Analytics",Sports Streaming,startup,"ML Engineer at SportsRec (2015-2024)",WSC002
+linkedin.com/in/ada-noaws,Ada NoAws,FarmVision,CV Engineer,Oslo NO,7,"Python;PyTorch;Computer Vision;Object Detection",Agriculture Technology,startup,"CV Engineer at FarmVision (2018-2024)",
+linkedin.com/in/theo-tensor,Theo Tensor,PlayCV,ML Engineer,Rome IT,6,"Python;TensorFlow;Computer Vision;AWS",Sports Media,startup,"ML Engineer at PlayCV (2019-2024)",
+linkedin.com/in/pia-pose,Pia Pose,MoveLab,ML Engineer,Rome IT,6,"Python;PyTorch;Pose Estimation;AWS",Healthcare,startup,"ML Engineer at MoveLab (2019-2024)",
+linkedin.com/in/yan-young,Yan Young,PlayCV,ML Engineer,Rome IT,3,"Python;PyTorch;Computer Vision;Object Detection;AWS",Sports Media,startup,"ML Engineer at PlayCV (2022-2024)",
+linkedin.com/in/ivan-intern,Ivan Intern,PlayCV,ML Engineer,Rome IT,5,"Python;PyTorch;Computer Vision;AWS",Sports Media,startup,"ML Engineer at PlayCV (2022-2024);ML Intern at PlayCV (2019-2022)",
+linkedin.com/in/hal-head,Hal Head,PlayCV,Head of ML,Rome IT,12,"Python;PyTorch;Computer Vision;AWS",Sports Media,startup,"Lead ML Engineer at PlayCV (2015-2024)",
+linkedin.com/in/pam-product,Pam Product,DataCo,Product Manager,Austin US,6,"Product Management;SQL",Software,startup,"Product Manager at DataCo (2018-2024)",
+linkedin.com/in/sally-sportspm,Sally SportsPM,StatsHub,Senior Product Manager,Austin US,7,"Product Management;Sports Analytics;API Products;Stakeholder Management",Sports Technology,startup,"Product Manager at StatsHub (2017-2024)",
+linkedin.com/in/bob-broadcastpm,Bob BroadcastPM,TVCo,Senior Product Manager,Austin US,8,"Product Management;Sports Broadcasting;Data Products;Stakeholder Management;OTT",Sports Broadcasting,startup,"Product Manager at TVCo (2016-2024)",
+linkedin.com/in/vic-video,Vic Video,Streamly,Senior CV Engineer,Haifa IL,7,"Python;PyTorch;Computer Vision;Object Detection;AWS",Video Technology,startup,"CV Engineer at Streamly (2017-2024)",
+linkedin.com/in/una-unresolved,Una Unresolved,PlayCV,ML Engineer,Rome IT,6,"Python;PyTorch;Computer Vision",Sports Media,startup,"ML Engineer at PlayCV (2019-2024)",WSC002;WSC999
+linkedin.com/in/zoe-ghost,Zoe Ghost,PlayCV,ML Engineer,Rome IT,6,"Python;PyTorch;Computer Vision",Sports Media,startup,"ML Engineer at PlayCV (2019-2024)",WSC998
+linkedin.com/in/rex-reference,Rex Reference,CarVision,CV Engineer,Haifa IL,6,"Python;Computer Vision;OpenCV",Automotive,Mobileye,"CV Engineer at Mobileye (2019-2021);Junior Analyst at Opta (2016-2017)",
+linkedin.com/in/old-timer,Old Timer,CarVision,CV Engineer,Haifa IL,15,"Python;Computer Vision",Automotive,Mobileye,"CV Engineer at Mobileye (2008-2012)",
+linkedin.com/in/jon-smith,Jonathan Smythe,PlayCV,ML Engineer,Rome IT,6,"Python;PyTorch;Computer Vision;Object Detection;AWS",Sports Media,startup,"ML Engineer at PlayCV (2019-2024)",
+linkedin.com/in/dup-profile,Dana Dup,PlayCV,ML Engineer,Rome IT,6,"Python;PyTorch;Computer Vision;AWS",Sports Media,startup,,
+linkedin.com/in/dup-profile,Dana Duplicate,OtherCo,Accountant,Rome IT,9,"Excel",Finance,startup,,
+linkedin.com/in/sam-strong,Sam Strong,ShopCo,Computer Vision Engineer,Berlin DE,8,"Python;PyTorch;Computer Vision;Object Detection;AWS",Retail Technology,startup,"CV Engineer at ShopCo (2018-2024)",
+linkedin.com/in/no-skills,Nils NoSkills,PlayCV,Engineer,Rome IT,6,,Sports Media,startup,,
+linkedin.com/in/nick-network,Nick Network,TelcoNet,Network Engineer,Lagos NG,6,"Cisco;Network Design",Telecommunications,startup,,
+linkedin.com/in/dev-ops,Devi Ops,CloudCo,DevOps Engineer,Pune IN,5,"Kubernetes;Terraform;CI/CD",Cloud Technology,startup,,
+linkedin.com/in/ian-itmanager,Ian ITManager,Clinic,IT Manager,Leeds UK,10,"IT Support;ITIL",Healthcare,startup,,
+linkedin.com/in/chris-same-1,Chris Same,PlayCV,ML Engineer,Rome IT,6,"Python;PyTorch;Computer Vision",Sports Media,startup,,
+linkedin.com/in/chris-same-2,Chris Same,BankCo,Accountant,Rome IT,6,"Excel",Banking,startup,,

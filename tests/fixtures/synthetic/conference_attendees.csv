@@ -1,0 +1,40 @@
+hubspot_id,full_name,email,company,title,conference_name,conference_domain,conference_date,source,notes,linkedin_url
+HS101,Sam Strong,sam@shopco.test,ShopCo,Computer Vision Engineer,DevOps World 2025,DevOps & Platform Engineering,2025-03-10,Conference - Badge Scan,,linkedin.com/in/sam-strong
+HS102,Connie Linked,connie@clubtech.test,ClubTech,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/connie-linked
+HS103,Tia Tied,tia@leaguevision.test,LeagueVision,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/tia-tied
+HS104,Tia Tied,tia@leaguevision.test,LeagueVision,ML Engineer,Data & AI Summit Europe,Data Engineering & AI/ML,2025-03-20,Conference - Badge Scan,Second meeting,https://www.linkedin.com/in/tia-tied/
+HS105,Ula Unlinked,ula@leaguevision.test,LeagueVision,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/ula-unlinked
+HS105,Ula Unlinked,ula@leaguevision.test,LeagueVision,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/ula-unlinked
+HS106,Abe Also,abe@leaguevision.test,LeagueVision,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/abe-also
+HS107,Nora NoVision,nora@sportsrec.test,SportsRec,Senior ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/nora-novision
+HS108,Ada NoAws,ada@farmvision.test,FarmVision,CV Engineer,Data & AI Summit Europe,Data Engineering & AI/ML,2025-03-20,Conference - Badge Scan,,linkedin.com/in/ada-noaws
+HS109,Theo Tensor,theo@playcv.test,PlayCV,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/theo-tensor
+HS110,Pia Pose,pia@movelab.test,MoveLab,ML Engineer,Data & AI Summit Europe,Data Engineering & AI/ML,2025-03-20,Conference - Badge Scan,,linkedin.com/in/pia-pose
+HS111,Yan Young,yan@playcv.test,PlayCV,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/yan-young
+HS112,Ivan Intern,ivan@playcv.test,PlayCV,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/ivan-intern
+HS113,Hal Head,hal@playcv.test,PlayCV,Head of ML,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/hal-head
+HS114,Pam Product,pam@dataco.test,DataCo,Product Manager,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/pam-product
+HS115,Sally SportsPM,sally@statshub.test,StatsHub,Senior Product Manager,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/sally-sportspm
+HS116,Bob BroadcastPM,bob@tvco.test,TVCo,Senior Product Manager,Broadcast & Streaming Technology Expo,Broadcast & Video Technology,2025-02-06,Conference - Badge Scan,,linkedin.com/in/bob-broadcastpm
+HS117,Vic Video,vic@streamly.test,Streamly,Senior CV Engineer,Broadcast & Streaming Technology Expo,Broadcast & Video Technology,2025-02-06,Conference - Badge Scan,,linkedin.com/in/vic-video
+HS118,Una Unresolved,una@playcv.test,PlayCV,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/una-unresolved
+HS119,Zoe Ghost,zoe@playcv.test,PlayCV,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/zoe-ghost
+HS120,Mia Missing,mia@unknown.test,Unknown Co,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Business Card,Card only,
+HS121,Ivy Invalid,ivy@unknown.test,Unknown Co,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,twitter.com/ivy
+HS122,Ned Nomatch,ned@unknown.test,Unknown Co,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/nobody-here
+HS123,Sid Shared,shared@unknown.test,Unknown Co,Data Scientist,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/sid-shared-a
+HS124,Sid Shared,shared@unknown.test,Unknown Co,Data Scientist,Data & AI Summit Europe,Data Engineering & AI/ML,2025-03-20,Conference - Badge Scan,,linkedin.com/in/sid-shared-b
+HS125,Rex Reference,rex@carvision.test,CarVision,CV Engineer,Data & AI Summit Europe,Data Engineering & AI/ML,2025-03-20,Conference - Badge Scan,,linkedin.com/in/rex-reference
+HS126,Old Timer,old@carvision.test,CarVision,CV Engineer,Data & AI Summit Europe,Data Engineering & AI/ML,2025-03-20,Conference - Badge Scan,,linkedin.com/in/old-timer
+HS127,Jon Smith,jon@playcv.test,PlayCV,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/jon-smith
+HS128,Dana Dup,dana@playcv.test,PlayCV,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/dup-profile
+HS129,Nils NoSkills,nils@playcv.test,PlayCV,Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/no-skills
+HS130,Nick Network,nick@telconet.test,TelcoNet,Network Engineer,DevOps World 2025,DevOps & Platform Engineering,2025-03-10,Conference - Badge Scan,,linkedin.com/in/nick-network
+HS131,Devi Ops,devi@cloudco.test,CloudCo,DevOps Engineer,DevOps World 2025,DevOps & Platform Engineering,2025-03-10,Conference - Badge Scan,,linkedin.com/in/dev-ops
+HS132,Ian ITManager,ian@clinic.test,Clinic,IT Manager,DevOps World 2025,DevOps & Platform Engineering,2025-03-10,Conference - Badge Scan,,linkedin.com/in/ian-itmanager
+HS133,Chris Same,chris1@playcv.test,PlayCV,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/chris-same-1
+HS134,Chris Same,chris2@bankco.test,BankCo,Accountant,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/chris-same-2
+HS135,Eve Email,eve@old.test,PlayCV,ML Engineer,SportsTech Innovation Summit,Sports Technology & Analytics,2024-11-14,Conference - Badge Scan,,linkedin.com/in/eve-email
+HS136,Eve Email,eve@new.test,PlayCV,ML Engineer,Data & AI Summit Europe,Data Engineering & AI/ML,2025-03-20,Conference - Badge Scan,,linkedin.com/in/eve-email
+HS137,Hal Head Again,hal2@playcv.test,PlayCV,Head of ML,Data & AI Summit Europe,Data Engineering & AI/ML,2025-03-20,Conference - Badge Scan,,linkedin.com/in/someone-else
+HS137,Different Person,diff@else.test,ElseCo,Analyst,Data & AI Summit Europe,Data Engineering & AI/ML,2025-03-20,Conference - Badge Scan,,linkedin.com/in/different-person

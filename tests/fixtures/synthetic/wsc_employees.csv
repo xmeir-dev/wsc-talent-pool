@@ -1,0 +1,4 @@
+employee_id,full_name,title,department,linkedin_id,work_history
+WSC002,Maya Levi,Senior ML Engineer,AI/ML,maya-levi-ml,"Mobileye (2018-2021);Intel Computer Vision Lab (2016-2018)"
+WSC008,Liron Katz,Sports Data Analyst,Data,liron-katz-sports,"Stats Perform / Opta (2018-2021);freelance sports analyst (2014-2016)"
+WSC013,Itai Nahum,ML Research Engineer,AI/ML,itai-nahum-ml,"Opta Sports (2018-2021);IDF (2013-2016)"
