@@ -28,15 +28,20 @@ npm ci
 ## Run
 
 ```bash
+npm run dev                  # recruiter view at http://localhost:5173 (runs the pipeline in the browser on data/)
 npm run pipeline -- JOB001   # writes output/candidates_JOB001.csv and prints the shortlist
 npm run pipeline:all         # every job in data/job_openings.csv
-npm test                     # rule and edge-case tests (synthetic fixtures in tests/fixtures/)
+npm test                     # rule, edge-case, view and export tests (synthetic fixtures in tests/fixtures/)
 npm run typecheck
+npm run build                # static build of the view into dist/ (npm run preview to serve it)
+npm run test:all             # npm test + Playwright browser tests (first time: npx playwright install chromium)
 ```
 
 Use `JOB001` (Senior ML Engineer) for the demo. Other IDs: `JOB002`, `JOB003`, `JOB004`. Optional flags: `--data <dir>` and `--out <dir>`.
 
 Each output row is one person for the chosen role: the recommendation (`shortlist`, `needs_review`, `not_recommended_for_role`), the points behind it, matched skills and gaps, seniority evidence, WSC connections and possible references, every conference they attended, and the next step. Rules: [How candidates are ranked](docs/scoring.md). Columns: [Schema and flow](docs/schema-and-flow.md).
+
+The recruiter view (`view/`) picks a role, shows Shortlist / Needs review / All, opens a candidate's evidence in a side panel, and **Export all for role** downloads the same file the CLI writes (a test checks they match byte for byte).
 
 The assessment logic in `pipeline/` is plain TypeScript with no file or network access, so a browser view can import it directly (`import { buildDataset, assessJob, assessmentToCsv } from './pipeline'`). The Node command in `cli/` only reads the CSVs and writes the result.
 
@@ -46,5 +51,7 @@ The assessment logic in `pipeline/` is plain TypeScript with no file or network 
 - `data/` — the provided CSVs (synthetic)
 - `pipeline/` — assessment rules (`rules.ts`), scoring, ranking and CSV output
 - `cli/` — the `npm run pipeline` command
+- `view/` — the recruiter view (React + Vite, plain CSS)
 - `tests/` — Vitest tests and synthetic fixtures
+- `e2e/` — Playwright browser tests
 - `docs/mock-call-summary.md` — summary of the discovery call the task came out of

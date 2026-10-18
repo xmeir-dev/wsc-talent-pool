@@ -20,7 +20,7 @@ Use a compact light interface: Geist, monochrome, semantic color only, one prima
 
 Use the supplied CSVs as bundled inputs. Put reusable assessment and CSV-export logic in `pipeline/`, UI in `view/`, and generated deliverables in `output/`. One pure assessment module serves both the browser and a Node CLI; file loading is separate. Use deterministic, documented rules for v1, with explanations generated from the same evidence used to rank. Do not hardcode the shortlist or reimplement scoring in components.
 
-Use `@meir-labs/ui-kit` for applicable controls and tables. Ensure its pinned dependency or packaged MIT distribution travels with the submission; no machine-local paths or private credentials should be needed to run it. Use text controls for this version.
+Style it with plain CSS (design tokens on `:root`) and text controls, with no icon package or private component library, so a fresh clone installs from the public npm registry without credentials. Runtime dependencies are React and React DOM only.
 
 ## Build sequence
 
