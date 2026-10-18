@@ -6,14 +6,14 @@ import {
   Target02Icon,
   UserIcon,
 } from '@hugeicons/core-free-icons';
-import { Avatar, DataTable, Hint, StatusPill, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
+import { Avatar, DataTable, Hint, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee } from './attendees';
 import { AVATAR, initials } from './avatars';
 import { CountryFlag } from './Location';
 import { Overview } from './Overview';
 import { WscMark } from './WscMark';
-import { shortDate, TABLE_OUTCOME_LABEL } from './format';
+import { maxPoints, shortDate, TABLE_OUTCOME_LABEL } from './format';
 
 interface Shared {
   onOpen: (key: string) => void;
@@ -82,14 +82,20 @@ function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
   const ordered = [...list].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1));
   return (
     <span className="jobs">
-      {ordered.map(({ job, outcome }) => (
-        <Hint key={job.jobId} focusable={false} tip={TABLE_OUTCOME_LABEL[outcome]}>
-          <StatusPill tone={outcome === 'shortlist' ? 'good' : 'neutral'}>
-            {job.title}
-            <span className="ml-visually-hidden">{`: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
-          </StatusPill>
-        </Hint>
-      ))}
+      {ordered.map(({ job, outcome, a }) => {
+        const max = maxPoints(a, job);
+        const pct = Math.round((a.points.total / max) * 100);
+        return (
+          <Hint key={job.jobId} focusable={false} tip={`${TABLE_OUTCOME_LABEL[outcome]} · ${a.points.total} of ${max} points`}>
+            <span className={`fit-pill fit-${outcome === 'shortlist' ? 'good' : 'review'}`}>
+              <span className="fit-fill" style={{ width: `${pct}%` }} aria-hidden="true" />
+              <span className="fit-title">{job.title}</span>
+              <span className="fit-pct">{pct}%</span>
+              <span className="ml-visually-hidden">{`: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
+            </span>
+          </Hint>
+        );
+      })}
     </span>
   );
 }

@@ -126,7 +126,7 @@ export type SortKey = 'candidate' | 'conference' | 'relevant';
 /**
  * The attendee list sorted by a column header; ties keep name order (the list arrives A–Z).
  * Candidate: name. Conference: earliest conference first. Relevant job: best match, shortlist before
- * needs review, in job order, no relevant job last. Descending reverses the order.
+ * needs review, in job order, most points first within a job, no relevant job last. Descending reverses the order.
  */
 export function sortAttendees(list: Attendee[], sort: { columnId: string; direction: 'asc' | 'desc' } | null, jobs: Job[]): Attendee[] {
   if (!sort) return list;
@@ -142,8 +142,10 @@ function sortBy(list: Attendee[], by: SortKey, jobs: Job[]): Attendee[] {
       const first = [...p.candidate.attendances].sort((x, y) => x.conferenceDate.localeCompare(y.conferenceDate))[0];
       return first ? [first.conferenceDate, first.conferenceName] : ['~', ''];
     }
-    const best = Math.min(...p.relevantFor.map((r) => rank[r.outcome] * jobs.length + jobs.indexOf(r.job)));
-    return [Number.isFinite(best) ? best : Infinity];
+    const scored = p.relevantFor.map((r) => ({ key: rank[r.outcome] * jobs.length + jobs.indexOf(r.job), points: r.a.points.total }));
+    if (scored.length === 0) return [Infinity, 0];
+    const best = scored.reduce((x, y) => (y.key < x.key ? y : x));
+    return [best.key, -best.points];
   };
   const cmp = (x: (string | number)[], y: (string | number)[]) => {
     for (let i = 0; i < x.length; i++) {

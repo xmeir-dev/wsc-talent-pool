@@ -12,6 +12,7 @@ import type {
   PossibleReference,
   Recommendation,
 } from '../pipeline';
+import { rules } from '../pipeline';
 
 /** "JOB001 · Senior ML Engineer": how a job reads in pickers. */
 export function jobLabel(job: Job): string {
@@ -31,6 +32,12 @@ export function conferenceShort(name: string): string {
 }
 
 /** "Senior Product Manager - Sports Data" → "Senior PM - Sports Data": the job filter's button only. */
+/** The most points a person could score for a job: every required skill named, every nice-to-have, the industry bonus if the role has one. */
+export function maxPoints(a: CandidateAssessment, job: Job): number {
+  const bonus = a.industryBonusEvidence === 'not part of this role' ? 0 : rules.POINTS.industryBonus;
+  return a.points.requiredMax + job.niceToHave.length * rules.POINTS.niceToHave + bonus;
+}
+
 export function jobShort(job: Job): string {
   return job.title.replace(/\bProduct Manager\b/, 'PM');
 }
