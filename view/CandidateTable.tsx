@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
+import type { ReactNode } from 'react';
+import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import {
   AlertCircleIcon,
   Calendar03Icon,
@@ -9,25 +9,12 @@ import {
   Target02Icon,
   UserIcon,
   UserMultipleIcon,
-} from "@hugeicons/core-free-icons";
-import {
-  DataTable,
-  Hint,
-  StatusPill,
-  Tag,
-  type Column,
-} from "@meir-labs/ui-kit";
-import type { CandidateAssessment } from "../pipeline";
-import type { Attendee, Item } from "./attendees";
-import { Overview } from "./Overview";
-import {
-  currentRole,
-  fitReason,
-  mainGap,
-  OUTCOME_TONE,
-  shortDate,
-  TABLE_OUTCOME_LABEL,
-} from "./format";
+} from '@hugeicons/core-free-icons';
+import { Avatar, DataTable, Hint, StatusPill, Tag, type Column } from '@meir-labs/ui-kit';
+import type { CandidateAssessment } from '../pipeline';
+import type { Attendee, Item } from './attendees';
+import { Overview } from './Overview';
+import { currentRole, fitReason, mainGap, OUTCOME_TONE, shortDate, TABLE_OUTCOME_LABEL } from './format';
 
 interface Shared {
   onOpen: (key: string) => void;
@@ -38,20 +25,13 @@ interface Shared {
 function Head({ icon, label }: { icon: IconSvgElement; label: string }) {
   return (
     <span className="th-label">
-      <HugeiconsIcon
-        icon={icon}
-        size={14}
-        strokeWidth={1.75}
-        aria-hidden="true"
-      />
+      <HugeiconsIcon icon={icon} size={14} strokeWidth={1.75} aria-hidden="true" />
       <span className="th-text">{label}</span>
     </span>
   );
 }
 
-const quiet = (text: string, unknown = false) => (
-  <span className={unknown ? "unknown" : "muted"}>{text}</span>
-);
+const quiet = (text: string, unknown = false) => <span className={unknown ? 'unknown' : 'muted'}>{text}</span>;
 
 /** Name with the current role under it. */
 const who = (name: string, role: string) => (
@@ -61,15 +41,23 @@ const who = (name: string, role: string) => (
   </span>
 );
 
-const about = (c: CandidateAssessment["candidate"]) => <Overview c={c} />;
+const about = (c: CandidateAssessment['candidate']) => <Overview c={c} />;
 
 /** An empty cell gets a faint hairline instead of words. */
 const empty = <span className="empty-line" role="img" aria-label="None" />;
 
-/** Count, then up to two names as tags; the rest go in a "+N" tag with the names on hover. */
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter((w) => /^[A-Za-z]/.test(w))
+    .map((w) => w[0]!.toUpperCase())
+    .slice(0, 2)
+    .join('');
+
+/** Count, then up to two names as tags with initials; the rest go in a "+N" tag with the names on hover. */
 const connections = (a: CandidateAssessment) => {
   const c = a.connections;
-  if (c.status === "unknown") return quiet("Unknown", true);
+  if (c.status === 'unknown') return quiet('Unknown', true);
   const names = [...c.resolved.map((e) => e.fullName), ...c.unresolvedIds];
   if (names.length === 0) return empty;
   const rest = names.slice(2);
@@ -78,12 +66,13 @@ const connections = (a: CandidateAssessment) => {
       <span className="conn-count">{names.length}</span>
       <span className="conn-tags">
         {names.slice(0, 2).map((n) => (
-          <Tag key={n} size="sm">
+          <Tag key={n} size="sm" className="conn-tag">
+            <Avatar size="xs" fallback={initials(n)} aria-hidden="true" />
             {n}
           </Tag>
         ))}
         {rest.length > 0 && (
-          <Hint focusable={false} tip={rest.join(", ")}>
+          <Hint focusable={false} tip={rest.join(', ')}>
             <Tag size="sm">+{rest.length}</Tag>
           </Hint>
         )}
@@ -95,12 +84,8 @@ const connections = (a: CandidateAssessment) => {
 function RankCell({ a }: { a: CandidateAssessment }) {
   return (
     <span className="rank-cell">
-      {a.shortlistRank !== null && (
-        <span className="rank">{a.shortlistRank}</span>
-      )}
-      <StatusPill tone={OUTCOME_TONE[a.recommendation]}>
-        {TABLE_OUTCOME_LABEL[a.recommendation]}
-      </StatusPill>
+      {a.shortlistRank !== null && <span className="rank">{a.shortlistRank}</span>}
+      <StatusPill tone={OUTCOME_TONE[a.recommendation]}>{TABLE_OUTCOME_LABEL[a.recommendation]}</StatusPill>
       {a.tieNote && (
         <span className="tie" title={a.tieNote}>
           tied
@@ -111,67 +96,36 @@ function RankCell({ a }: { a: CandidateAssessment }) {
 }
 
 /** One job's shortlist and needs review, in pipeline rank order. */
-export function CandidateTable({
-  items,
-  onOpen,
-  emptyState,
-}: Shared & { items: Item[] }) {
+export function CandidateTable({ items, onOpen, emptyState }: Shared & { items: Item[] }) {
   const columns: Column<Item>[] = [
+    { id: 'rank', header: <span className="th-label"><span className="th-text">#</span></span>, width: 168, accessor: ({ a }) => <RankCell a={a} /> },
     {
-      id: "rank",
-      header: (
-        <span className="th-label">
-          <span className="th-text">#</span>
-        </span>
-      ),
-      width: 168,
-      accessor: ({ a }) => <RankCell a={a} />,
-    },
-    {
-      id: "score",
+      id: 'score',
       header: (
         <Hint tip="Total points: required + nice to have + industry bonus">
           <Head icon={StarIcon} label="Score" />
         </Hint>
       ),
       width: 96,
-      accessor: ({ a }) => (
-        <span className="score">
-          {a.candidate.profile ? a.points.total : "–"}
-        </span>
-      ),
+      accessor: ({ a }) => <span className="score">{a.candidate.profile ? a.points.total : '–'}</span>,
     },
     {
-      id: "candidate",
+      id: 'candidate',
       header: <Head icon={UserIcon} label="Candidate" />,
-      width: "18%",
+      width: '18%',
       accessor: ({ a, row }) => who(a.candidate.fullName, currentRole(row)),
     },
+    { id: 'about', header: <Head icon={File02Icon} label="About candidate" />, width: '20%', accessor: ({ a }) => about(a.candidate) },
+    { id: 'why', header: <Head icon={CheckmarkCircle02Icon} label="Why" />, accessor: ({ a }) => quiet(fitReason(a)) },
     {
-      id: "about",
-      header: <Head icon={File02Icon} label="About candidate" />,
-      width: "20%",
-      accessor: ({ a }) => about(a.candidate),
-    },
-    {
-      id: "why",
-      header: <Head icon={CheckmarkCircle02Icon} label="Why" />,
-      accessor: ({ a }) => quiet(fitReason(a)),
-    },
-    {
-      id: "gap",
+      id: 'gap',
       header: <Head icon={AlertCircleIcon} label="Main gap" />,
       accessor: ({ a }) => {
         const gap = mainGap(a);
         return quiet(gap.text, gap.unknown);
       },
     },
-    {
-      id: "ref",
-      header: <Head icon={UserMultipleIcon} label="WSC connections" />,
-      width: "16%",
-      accessor: ({ a }) => connections(a),
-    },
+    { id: 'ref', header: <Head icon={UserMultipleIcon} label="WSC connections" />, width: '16%', accessor: ({ a }) => connections(a) },
   ];
 
   return (
@@ -188,21 +142,14 @@ export function CandidateTable({
 }
 
 /** One pill per job, shortlist first: green when shortlisted, outlined grey in needs review. */
-function RelevantFor({ list }: { list: Attendee["relevantFor"] }) {
+function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
   if (list.length === 0) return empty;
-  const ordered = [...list].sort(
-    (x, y) =>
-      (x.outcome === "shortlist" ? 0 : 1) - (y.outcome === "shortlist" ? 0 : 1),
-  );
+  const ordered = [...list].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1));
   return (
     <span className="jobs">
       {ordered.map(({ job, outcome }) => (
-        <Hint
-          key={job.jobId}
-          focusable={false}
-          tip={TABLE_OUTCOME_LABEL[outcome]}
-        >
-          <StatusPill tone={outcome === "shortlist" ? "good" : "neutral"}>
+        <Hint key={job.jobId} focusable={false} tip={TABLE_OUTCOME_LABEL[outcome]}>
+          <StatusPill tone={outcome === 'shortlist' ? 'good' : 'neutral'}>
             {job.title}
             <span className="ml-visually-hidden">{`: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
           </StatusPill>
@@ -213,52 +160,37 @@ function RelevantFor({ list }: { list: Attendee["relevantFor"] }) {
 }
 
 /** Every attendee once, A–Z. */
-export function AttendeeTable({
-  attendees,
-  onOpen,
-  emptyState,
-}: Shared & { attendees: Attendee[] }) {
+export function AttendeeTable({ attendees, onOpen, emptyState }: Shared & { attendees: Attendee[] }) {
   const columns: Column<Attendee>[] = [
     {
-      id: "candidate",
+      id: 'candidate',
       header: <Head icon={UserIcon} label="Candidate" />,
-      width: "22%",
+      width: '22%',
       accessor: ({ candidate, role }) => who(candidate.fullName, role),
     },
     {
-      id: "conference",
+      id: 'conference',
       header: <Head icon={Calendar03Icon} label="Conference" />,
-      width: "20%",
+      width: '20%',
       accessor: ({ candidate }) => (
         <span className="confs">
           {candidate.attendances.map((at) => (
             <span key={at.hubspotId} className="who">
               <span>{at.conferenceName}</span>
-              <span className="muted who-role">
-                {shortDate(at.conferenceDate)}
-              </span>
+              <span className="muted who-role">{shortDate(at.conferenceDate)}</span>
             </span>
           ))}
         </span>
       ),
     },
+    { id: 'about', header: <Head icon={File02Icon} label="About candidate" />, width: '24%', accessor: ({ candidate }) => about(candidate) },
     {
-      id: "about",
-      header: <Head icon={File02Icon} label="About candidate" />,
-      width: "24%",
-      accessor: ({ candidate }) => about(candidate),
-    },
-    {
-      id: "relevant",
+      id: 'relevant',
       header: <Head icon={Target02Icon} label="Relevant job" />,
       width: 176,
       accessor: ({ relevantFor }) => <RelevantFor list={relevantFor} />,
     },
-    {
-      id: "ref",
-      header: <Head icon={UserMultipleIcon} label="WSC connections" />,
-      accessor: ({ any }) => connections(any.a),
-    },
+    { id: 'ref', header: <Head icon={UserMultipleIcon} label="WSC connections" />, accessor: ({ any }) => connections(any.a) },
   ];
 
   return (

@@ -246,6 +246,10 @@ ul {
   align-items: flex-start;
   gap: 8px;
 }
+.conn-tag {
+  gap: 6px;
+  padding-left: 2px;
+}
 .conn-tags {
   display: flex;
   flex-wrap: wrap;
@@ -254,8 +258,8 @@ ul {
 .conn-count {
   flex-shrink: 0;
   min-width: 8px;
-  line-height: 20px;
-  font-weight: 500;
+  line-height: 24px;
+  color: var(--ml-text-muted);
   font-variant-numeric: tabular-nums;
 }
 /* An empty cell gets a faint hairline instead of words. */
