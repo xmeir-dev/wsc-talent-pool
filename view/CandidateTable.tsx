@@ -39,10 +39,13 @@ export function CandidateTable({ items, showOutcome, openKey, onOpen, registerRo
           <th scope="col" className="col-rank">
             {showOutcome ? 'Rank / outcome' : 'Rank'}
           </th>
-          <th scope="col">Candidate</th>
+          <th scope="col" className="col-score" title="Total points (required + nice to have + industry bonus)">
+            Score
+          </th>
+          <th scope="col" className="col-candidate">Candidate</th>
           <th scope="col">Why</th>
           <th scope="col">Main gap</th>
-          <th scope="col">WSC connections</th>
+          <th scope="col" className="col-ref">WSC connections</th>
         </tr>
       </thead>
       <tbody>
@@ -55,6 +58,7 @@ export function CandidateTable({ items, showOutcome, openKey, onOpen, registerRo
               <td className="col-rank">
                 <RankCell a={a} showOutcome={showOutcome} />
               </td>
+              <td className="col-score">{a.candidate.profile ? a.points.total : '–'}</td>
               <td>
                 <div className="col-name">
                   <button

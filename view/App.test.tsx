@@ -15,8 +15,9 @@ describe('recruiter view', () => {
   it('opens on the JOB001 shortlist in pipeline order, with tie labels', () => {
     render(<App />);
     expect(screen.getByRole('combobox')).toHaveProperty('value', 'JOB001');
-    expect(rows()).toHaveLength(6);
+    expect(rows()).toHaveLength(7);
     expect(rows()[0]!.textContent).toContain('Priya Anand');
+    expect(within(rows()[0]!).getByText('10')).toBeTruthy(); // Score column
     const ties = screen.getAllByText('tied');
     expect(ties.length).toBeGreaterThan(0);
     expect(ties[0]!.getAttribute('title')).toMatch(/tied with/);
@@ -35,7 +36,8 @@ describe('recruiter view', () => {
     render(<App />);
     await user.selectOptions(screen.getByRole('combobox'), 'JOB003');
     expect(screen.queryByRole('table')).toBeNull();
-    expect(screen.getByText(/No one meets every shortlist condition/)).toBeTruthy();
+    expect(screen.getByText('No product management candidate lists Sports Analytics.')).toBeTruthy();
+    expect(screen.getByText("5 are worth a recruiter's review.")).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Open Needs review' }));
     expect(rows()).toHaveLength(5);
   });

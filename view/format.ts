@@ -3,8 +3,10 @@
  * this file just chooses which pipeline field to show and how to label it.
  */
 
+import { policyFor } from '../pipeline';
 import type {
   CandidateAssessment,
+  JobAssessment,
   ConferenceRelevance,
   MatchKind,
   OutputRow,
@@ -51,8 +53,20 @@ export function fitReason(a: CandidateAssessment): string {
 /** Missing information reads as "Unknown", never as a gap the person was found to have. */
 export function mainGap(a: CandidateAssessment): { text: string; unknown: boolean } {
   if (!hasProfile(a)) return { text: 'Unknown: no usable profile', unknown: true };
-  const gap = a.missingEssentials[0] ? `Missing ${a.missingEssentials[0]}` : a.skillGaps[0];
+  const gap = a.missingEssentials[0] ? `Missing must-have: ${a.missingEssentials[0]}` : a.skillGaps[0];
   return { text: gap ?? 'None identified', unknown: false };
+}
+
+/** Empty-shortlist copy, from the data: which must-have nobody in review has, and how many to review. */
+export function emptyShortlistCopy(result: JobAssessment): { title: string; body: string } {
+  const review = result.candidates.filter((c) => c.recommendation === 'needs_review');
+  const n = review.length;
+  const common = (review[0]?.missingEssentials ?? []).filter((e) => review.every((c) => c.missingEssentials.includes(e)));
+  const title =
+    common.length > 0
+      ? `No ${policyFor(result.job).policy.coreDiscipline.label} candidate lists ${common.join(' or ')}.`
+      : 'No one meets every shortlist condition for this role.';
+  return { title, body: `${n} ${n === 1 ? 'is' : 'are'} worth a recruiter's review.` };
 }
 
 export function referenceSummary(a: CandidateAssessment): { text: string; unknown: boolean } {
@@ -66,13 +80,13 @@ export function referenceSummary(a: CandidateAssessment): { text: string; unknow
 export function matchLabel(skill: string, kind: MatchKind, evidence: string | null): string {
   switch (kind) {
     case 'named':
-      return evidence && evidence.toLowerCase() !== skill.toLowerCase() ? `Named as "${evidence}"` : 'Named';
+      return evidence && evidence.toLowerCase() !== skill.toLowerCase() ? `On profile as ${evidence}` : 'On profile';
     case 'equivalent':
-      return `Partial: "${evidence}"`;
+      return `Related skill: ${evidence}`;
     case 'inferred':
-      return `Inferred from "${evidence}", verify`;
+      return `Likely, from ${evidence}; please confirm`;
     default:
-      return 'Not listed';
+      return 'Not on profile';
   }
 }
 

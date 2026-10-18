@@ -105,17 +105,17 @@ export function CandidateDetail({ a, row, onClose }: Props) {
                 ) : (
                   `${a.seniority.totalYears} years total`
                 )}
-                {a.seniority.earlyCareerRoles.length > 0 && (
-                  <span className="muted"> · includes early-career roles</span>
-                )}
               </p>
-              {a.seniority.seniorTitleFlag && <p className="warn">{a.seniority.seniorTitleFlag}: confirm hands-on</p>}
+              {a.seniority.earlyCareerRoles.length > 0 && (
+                <p className="warn">Total includes intern or junior roles: confirm non-intern years</p>
+              )}
+              {a.seniority.seniorTitleFlag && <p className="warn">{a.seniority.seniorTitleFlag}</p>}
               {a.seniority.roles.length > 0 && (
                 <ul className="plain">
                   {a.seniority.roles.map((r) => (
                     <li key={r.raw}>
                       {r.raw}
-                      {r.isEarlyCareer && <span className="muted"> (early career)</span>}
+                      {r.isEarlyCareer && <span className="muted"> (intern or junior role)</span>}
                     </li>
                   ))}
                 </ul>

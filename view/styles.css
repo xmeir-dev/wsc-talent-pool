@@ -236,10 +236,14 @@ select {
 .candidates .col-rank {
   width: 96px;
 }
-.candidates th:nth-child(2) {
+.candidates .col-score {
+  width: 64px;
+  font-variant-numeric: tabular-nums;
+}
+.candidates th.col-candidate {
   width: 24%;
 }
-.candidates th:nth-child(5) {
+.candidates th.col-ref {
   width: 18%;
 }
 
@@ -522,7 +526,8 @@ select {
   .candidates .col-name {
     margin-bottom: 4px;
   }
-  .candidates td.col-ref {
+  .candidates td.col-ref,
+  .candidates td.col-score {
     display: none;
   }
   .candidates .tie {

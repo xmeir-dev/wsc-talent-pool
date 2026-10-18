@@ -19,12 +19,12 @@ const bodyRows = (page: Page) => page.locator('table tbody tr');
 test('role switch updates the list and shows the empty shortlist for JOB003', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
-  await expect(bodyRows(page)).toHaveCount(6);
+  await expect(bodyRows(page)).toHaveCount(7);
   await expect(bodyRows(page).first()).toContainText('Priya Anand');
 
   await page.getByRole('combobox', { name: 'Role' }).selectOption('JOB003');
   await expect(page.locator('table')).toHaveCount(0);
-  await expect(page.getByText('No one meets every shortlist condition for this role.')).toBeVisible();
+  await expect(page.getByText('No product management candidate lists Sports Analytics.')).toBeVisible();
   await page.getByRole('button', { name: 'Open Needs review' }).click();
   await expect(bodyRows(page)).toHaveCount(5);
   expect(errors).toEqual([]);

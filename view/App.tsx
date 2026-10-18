@@ -11,7 +11,7 @@ import { CandidateDetail } from './CandidateDetail';
 import { CandidateTable } from './CandidateTable';
 import { bundledSources } from './data';
 import { downloadCsv } from './download';
-import { VIEWS, type View } from './format';
+import { emptyShortlistCopy, VIEWS, type View } from './format';
 
 type Loaded = { ok: true; dataset: Dataset } | { ok: false; problems: string[] };
 
@@ -119,11 +119,8 @@ function Workspace({ dataset }: { dataset: Dataset }) {
         {visible.length === 0 ? (
           view === 'shortlist' && result.counts.needs_review > 0 ? (
             <div className="empty">
-              <p className="empty-title">No one meets every shortlist condition for this role.</p>
-              <p>
-                {result.counts.needs_review} {result.counts.needs_review === 1 ? 'person is' : 'people are'} close and
-                need a recruiter's look.
-              </p>
+              <p className="empty-title">{emptyShortlistCopy(result).title}</p>
+              <p>{emptyShortlistCopy(result).body}</p>
               <button type="button" className="btn-secondary" onClick={() => setView('needs_review')}>
                 Open Needs review
               </button>
