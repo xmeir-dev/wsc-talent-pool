@@ -25,7 +25,8 @@ type User = ReturnType<typeof userEvent.setup>;
 const rows = () => within(screen.getByRole('table')).getAllByRole('row').slice(1);
 const heading = () => screen.getByRole('heading', { level: 1 }).textContent;
 
-const trigger = (name: 'Conference' | 'Job') => screen.getByRole('button', { name: new RegExp(`^${name}`) });
+const trigger = (name: 'Conference' | 'Job') =>
+  within(document.querySelector<HTMLElement>('.filters')!).getByRole('button', { name: new RegExp(`^${name}`) });
 const value = (name: 'Conference' | 'Job') => trigger(name).querySelector('.filter-value')!.textContent;
 const menu = (name: string) => screen.queryByRole('dialog', { name });
 

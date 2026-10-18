@@ -17,7 +17,8 @@ function watchErrors(page: Page): string[] {
 const bodyRows = (page: Page) => page.locator('table tbody tr');
 const title = (page: Page) => page.getByRole('heading', { level: 1 });
 
-const trigger = (page: Page, name: 'Conference' | 'Job') => page.getByRole('button', { name: new RegExp(`^${name}`) });
+const trigger = (page: Page, name: 'Conference' | 'Job') =>
+  page.locator('.filters').getByRole('button', { name: new RegExp(`^${name}`) });
 const menu = (page: Page, name: string) => page.getByRole('dialog', { name });
 
 /** Opens a filter menu, toggles chips, and closes it with Escape. */
@@ -99,6 +100,20 @@ test('a filter menu: chips toggle with mouse and keyboard, the menu stays open, 
   const count = Number((await title(page).textContent())!.split(' ')[0]);
   expect(count).toBeGreaterThan(12);
   await expect(bodyRows(page)).toHaveCount(count);
+  expect(errors).toEqual([]);
+});
+
+test('clicking a column header sorts the attendee list', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/');
+  const firstName = () => bodyRows(page).first().locator('.name').textContent();
+  expect(await firstName()).toContain('Adaora Okafor');
+  await page.getByRole('columnheader', { name: /Relevant job/ }).getByRole('button').click();
+  await expect(bodyRows(page).first().locator('.jobs .ml-status-pill-good')).toContainText('Senior ML Engineer');
+  await page.getByRole('columnheader', { name: /Candidate/ }).getByRole('button').click();
+  expect(await firstName()).toContain('Adaora Okafor');
+  await page.getByRole('columnheader', { name: /Candidate/ }).getByRole('button').click();
+  expect(await firstName()).not.toContain('Adaora Okafor');
   expect(errors).toEqual([]);
 });
 

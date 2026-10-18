@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowLeft01Icon, Briefcase01Icon, Calendar03Icon, Location01Icon } from '@hugeicons/core-free-icons';
-import { Button, Callout, EmptyState, Select, TopBar } from '@meir-labs/ui-kit';
+import { Button, Callout, EmptyState, Select, TopBar, type SortState } from '@meir-labs/ui-kit';
 import { buildDataset, DataValidationError, type Dataset, type SourceTexts } from '../pipeline';
-import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems } from './attendees';
+import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
 import { CandidateDetail } from './CandidateDetail';
 import { AttendeeTable, CandidateTable } from './CandidateTable';
 import { bundledSources } from './data';
@@ -53,12 +53,16 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   const [conferences, setConferences] = useState<string[]>([]);
   const [jobIds, setJobIds] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
+  const [sort, setSort] = useState<SortState | null>(null);
   const [openKey, setOpenKeyState] = useState<string | null>(keyFromHash);
   const [profileJob, setProfileJob] = useState<string | null>(null);
 
   // Exactly one job: that job's ranked view. None or several: the attendee list.
   const job = jobIds.length === 1 ? jobIds[0]! : null;
-  const attendees = useMemo(() => filterAttendees(pool, conferences, jobIds, countries), [pool, conferences, jobIds, countries]);
+  const attendees = useMemo(
+    () => sortAttendees(filterAttendees(pool, conferences, jobIds, countries), sort, pool.jobs),
+    [pool, conferences, jobIds, countries, sort],
+  );
   const items = useMemo(() => (job ? jobItems(pool, job, conferences, countries) : []), [pool, job, conferences, countries]);
   const shown = job ? items.length : attendees.length;
   const { conferenceOptions, jobOptions, countryOptions } = useMemo(() => {
@@ -206,7 +210,7 @@ function Workspace({ dataset }: { dataset: Dataset }) {
       {job ? (
         <CandidateTable items={items} onOpen={openProfile} emptyState={empty} />
       ) : (
-        <AttendeeTable attendees={attendees} onOpen={openProfile} emptyState={empty} />
+        <AttendeeTable attendees={attendees} onOpen={openProfile} emptyState={empty} sort={sort} onSort={setSort} />
       )}
     </main>
   );

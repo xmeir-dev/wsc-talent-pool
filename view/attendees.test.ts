@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildDataset, parseCsv } from '../pipeline';
-import { attendeesCsv, attended, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems } from './attendees';
+import { attendeesCsv, attended, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
 import { placeOf } from './place';
 import { bundledSources } from './data';
 
@@ -124,5 +124,20 @@ describe('attendees export', () => {
     expect(filterAttendees(pool, [], [], ['GB']).every((p) => placeOf(p.candidate)?.code === 'GB')).toBe(true);
     expect(jobItems(pool, 'JOB001', [], ['GB']).every(({ a }) => placeOf(a.candidate)?.code === 'GB')).toBe(true);
     expect(attendeesCsv(filterAttendees(pool, [], [], ['GB']), [], [], ['GB']).fileName).toBe('attendees_gb.csv');
+  });
+
+  it('sorts the attendee list by a column header, ties in name order', () => {
+    const all = pool.attendees;
+    const asc = (columnId: string) => sortAttendees(all, { columnId, direction: 'asc' }, pool.jobs);
+    expect(sortAttendees(all, null, pool.jobs)).toBe(all);
+    expect(asc('candidate')).toEqual(all);
+    expect(sortAttendees(all, { columnId: 'candidate', direction: 'desc' }, pool.jobs)[0]).toBe(all.at(-1));
+
+    const byJob = asc('relevant');
+    expect(byJob[0]!.relevantFor.find((r) => r.outcome === 'shortlist')?.job.jobId).toBe('JOB001');
+    expect(byJob.at(-1)!.relevantFor).toEqual([]);
+
+    const byConf = asc('conference').map((p) => p.candidate.attendances[0]!.conferenceDate);
+    expect(byConf).toEqual([...byConf].sort());
   });
 });

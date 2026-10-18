@@ -9,7 +9,7 @@ import {
   Target02Icon,
   UserIcon,
 } from '@hugeicons/core-free-icons';
-import { Avatar, DataTable, Hint, StatusPill, Tag, type Column } from '@meir-labs/ui-kit';
+import { Avatar, DataTable, Hint, StatusPill, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee, Item } from './attendees';
 import { AVATAR, initials } from './avatars';
@@ -158,18 +158,26 @@ function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
 }
 
 /** Every attendee once, A–Z. */
-export function AttendeeTable({ attendees, onOpen, emptyState }: Shared & { attendees: Attendee[] }) {
+export function AttendeeTable({
+  attendees,
+  onOpen,
+  emptyState,
+  sort,
+  onSort,
+}: Shared & { attendees: Attendee[]; sort: SortState | null; onSort: (next: SortState | null) => void }) {
   const columns: Column<Attendee>[] = [
     {
       id: 'candidate',
       header: <Head icon={UserIcon} label="Candidate" />,
       width: '22%',
+      sortable: true,
       accessor: ({ candidate, role }) => who(candidate, role),
     },
     {
       id: 'conference',
       header: <Head icon={Calendar03Icon} label="Conference" />,
       width: '20%',
+      sortable: true,
       accessor: ({ candidate }) => (
         <span className="confs">
           {candidate.attendances.map((at) => (
@@ -184,6 +192,7 @@ export function AttendeeTable({ attendees, onOpen, emptyState }: Shared & { atte
     {
       id: 'relevant',
       header: <Head icon={Target02Icon} label="Relevant job" />,
+      sortable: true,
       width: 176,
       accessor: ({ relevantFor }) => <RelevantFor list={relevantFor} />,
     },
@@ -197,6 +206,9 @@ export function AttendeeTable({ attendees, onOpen, emptyState }: Shared & { atte
       aria-label="Attendees"
       columns={columns}
       data={attendees}
+      sortState={sort}
+      onSortChange={onSort}
+      manualSort
       getRowId={({ candidate }) => candidate.candidateKey}
       onRowClick={({ candidate }) => onOpen(candidate.candidateKey)}
       emptyState={emptyState}

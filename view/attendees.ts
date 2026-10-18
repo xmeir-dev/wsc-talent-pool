@@ -120,6 +120,46 @@ export function countryCounts(pool: Pool): { code: string; country: string; coun
   return [...byCode.values()].sort((x, y) => x.country.localeCompare(y.country, 'en'));
 }
 
+/** The attendee table's sortable columns. */
+export type SortKey = 'candidate' | 'conference' | 'relevant';
+
+/**
+ * The attendee list sorted by a column header; ties keep name order (the list arrives A–Z).
+ * Candidate: name. Conference: earliest conference first. Relevant job: best match, shortlist before
+ * needs review, in job order, no relevant job last. Descending reverses the order.
+ */
+export function sortAttendees(list: Attendee[], sort: { columnId: string; direction: 'asc' | 'desc' } | null, jobs: Job[]): Attendee[] {
+  if (!sort) return list;
+  const sorted = sortBy(list, sort.columnId as SortKey, jobs);
+  return sort.direction === 'desc' ? [...sorted].reverse() : sorted;
+}
+
+function sortBy(list: Attendee[], by: SortKey, jobs: Job[]): Attendee[] {
+  if (by === 'candidate') return list;
+  const rank = { shortlist: 0, needs_review: 1 } as const;
+  const key = (p: Attendee): (string | number)[] => {
+    if (by === 'conference') {
+      const first = [...p.candidate.attendances].sort((x, y) => x.conferenceDate.localeCompare(y.conferenceDate))[0];
+      return first ? [first.conferenceDate, first.conferenceName] : ['~', ''];
+    }
+    const best = Math.min(...p.relevantFor.map((r) => rank[r.outcome] * jobs.length + jobs.indexOf(r.job)));
+    return [Number.isFinite(best) ? best : Infinity];
+  };
+  const cmp = (x: (string | number)[], y: (string | number)[]) => {
+    for (let i = 0; i < x.length; i++) {
+      const a = x[i]!;
+      const b = y[i]!;
+      const d = typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b), 'en');
+      if (d) return d;
+    }
+    return 0;
+  };
+  return list
+    .map((p, i) => ({ p, i, k: key(p) }))
+    .sort((x, y) => cmp(x.k, y.k) || x.i - y.i)
+    .map(({ p }) => p);
+}
+
 /** How many attendees went to each conference, and how many are shortlist or needs review for each job. */
 export function filterCounts(pool: Pool): { conferences: Map<string, number>; jobs: Map<string, number> } {
   const conferences = new Map(pool.conferences.map((c) => [c.name, 0]));
