@@ -37,8 +37,8 @@ describe('recruiter view: list', () => {
   it('shows the jobs each attendee is relevant for, and a dash when none', () => {
     render(<App />);
     const adaora = screen.getByRole('row', { name: /Adaora Okafor/ });
-    expect(adaora.textContent).toContain('JOB001');
     expect(adaora.textContent).toContain('Senior ML Engineer: Needs review');
+    expect(adaora.textContent).not.toContain('JOB001');
     expect(adaora.textContent).toContain('Data & AI Summit Europe');
     expect(adaora.textContent).toContain('21 Mar 2025');
     expect(screen.getByRole('row', { name: /Alexei Volkov/ }).textContent).toContain('—');

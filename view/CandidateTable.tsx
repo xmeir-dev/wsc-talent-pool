@@ -104,10 +104,10 @@ function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
   return (
     <span className="jobs">
       {list.map(({ job, outcome }) => (
-        <Hint key={job.jobId} focusable={false} tip={`${job.title}: ${TABLE_OUTCOME_LABEL[outcome]}`}>
+        <Hint key={job.jobId} focusable={false} tip={TABLE_OUTCOME_LABEL[outcome]}>
           <StatusPill tone={OUTCOME_TONE[outcome]}>
-            {job.jobId}
-            <span className="ml-visually-hidden">{`, ${job.title}: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
+            {job.title}
+            <span className="ml-visually-hidden">{`: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
           </StatusPill>
         </Hint>
       ))}
