@@ -1,0 +1,155 @@
+import { useEffect, useRef, useState } from 'react';
+import type { StoredAssessment } from './assessments';
+import { buildHandoff, type ComeetCandidate, type ComeetService } from './comeet';
+
+interface Props {
+  entry: StoredAssessment;
+  version: string;
+  comeet: ComeetService;
+  onClose: () => void;
+  onOpenComeet: (uid: string) => void;
+}
+
+type State =
+  | { step: 'checking' }
+  | { step: 'review' }
+  | { step: 'sending' }
+  | { step: 'created'; candidate: ComeetCandidate }
+  | { step: 'existing'; candidate: ComeetCandidate }
+  | { step: 'unavailable'; message: string };
+
+/** Review, then confirm. Nothing is sent until Confirm, and a failed call never reads as success. */
+export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet }: Props) {
+  const dialog = useRef<HTMLDivElement>(null);
+  const [state, setState] = useState<State>({ step: 'checking' });
+  const [attempt, setAttempt] = useState(0);
+  const sending = useRef(false);
+
+  const { a, result } = entry;
+  const position = comeet.positionFor(a.jobId);
+  const payload = position ? buildHandoff(a, result.job, version, position) : null;
+
+  // Not a native modal dialog: that would make the demo strip (outage switch, reset) inert while open.
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
+    dialog.current?.focus();
+    return () => opener?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!payload) return;
+    let live = true;
+    setState({ step: 'checking' });
+    comeet.find(payload.email, payload.positionUid).then((r) => {
+      if (!live) return;
+      if (r.kind === 'unavailable') setState({ step: 'unavailable', message: r.message });
+      else setState(r.candidate ? { step: 'existing', candidate: r.candidate } : { step: 'review' });
+    });
+    return () => {
+      live = false;
+    };
+    // payload is derived from props; re-check only on an explicit retry.
+  }, [attempt]);
+
+  const confirm = async () => {
+    if (!payload || sending.current) return;
+    sending.current = true;
+    setState({ step: 'sending' });
+    const r = await comeet.handoff(payload);
+    sending.current = false;
+    if (r.kind === 'unavailable') setState({ step: 'unavailable', message: r.message });
+    else setState({ step: r.kind, candidate: r.candidate });
+  };
+
+  const close = onClose;
+
+  const name = a.candidate.fullName;
+
+  return (
+    <div className="handoff-backdrop">
+      <div ref={dialog} className="handoff" role="dialog" aria-modal="true" aria-labelledby="handoff-title" tabIndex={-1}>
+        <h2 id="handoff-title">Add {name} to Comeet</h2>
+
+        {!payload ? (
+          <p role="alert">No Comeet position is mapped to {result.job.title}.</p>
+        ) : (
+          <>
+            <dl className="handoff-fields">
+              <dt>Position</dt>
+              <dd>{payload.positionName}</dd>
+              <dt>Name</dt>
+              <dd>
+                {payload.firstName} {payload.lastName}
+              </dd>
+              <dt>Email</dt>
+              <dd>{payload.email || <span className="unknown">Not set</span>}</dd>
+              <dt>Status</dt>
+              <dd>{payload.status}</dd>
+              <dt>Role fit</dt>
+              <dd>{payload.customFields.roleFit}</dd>
+              <dt>Evidence</dt>
+              <dd>{payload.customFields.evidence}</dd>
+              <dt>Gaps</dt>
+              <dd>{payload.customFields.gaps}</dd>
+              <dt>Possible references</dt>
+              <dd>{payload.customFields.possibleReferences}</dd>
+              <dt>Assessment</dt>
+              <dd>{payload.customFields.assessment}</dd>
+            </dl>
+
+            <div className="handoff-status" role="status">
+              {state.step === 'checking' && <p className="muted">Checking Comeet…</p>}
+              {state.step === 'review' && <p className="muted">No email or message is sent.</p>}
+              {state.step === 'sending' && <p className="muted">Adding…</p>}
+              {state.step === 'created' && <p className="ok">Added to {payload.positionName} as Sourced.</p>}
+              {state.step === 'existing' && (
+                <p>
+                  Already in Comeet for {state.candidate.positionName} ({state.candidate.status}, {state.candidate.stage}). Owner:{' '}
+                  {state.candidate.owner}. {state.candidate.nextStep}
+                </p>
+              )}
+              {state.step === 'unavailable' && <p className="error-text">{state.message}</p>}
+            </div>
+          </>
+        )}
+
+        <div className="handoff-actions">
+          <button type="button" className="hs-btn-secondary" onClick={close}>
+            {state.step === 'created' || state.step === 'existing' ? 'Close' : 'Cancel'}
+          </button>
+          {(state.step === 'review' || state.step === 'sending') && (
+            <button type="button" className="hs-btn-primary" onClick={confirm} disabled={state.step === 'sending'}>
+              Confirm
+            </button>
+          )}
+          {state.step === 'unavailable' && (
+            <button type="button" className="hs-btn-primary" onClick={() => setAttempt((n) => n + 1)}>
+              Try again
+            </button>
+          )}
+          {(state.step === 'created' || state.step === 'existing') && (
+            <button
+              type="button"
+              className="hs-btn-primary"
+              onClick={() => {
+                const uid = state.candidate.uid;
+                close();
+                onOpenComeet(uid);
+              }}
+            >
+              Open in Comeet
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -2,6 +2,10 @@
 
 The [written assignment](../assignment/index.html) defines the scope; the [discovery call](discovery-call-context.md) supplies context. Build against synthetic CSVs, with HubSpot-ready output. The brief makes a recruiter view optional; one is included. Live connections and outreach are outside this exercise.
 
+## Where recruiters work
+
+**Use the tools recruiters already work in.** Prefer showing recommendations and next actions inside HubSpot and Comeet, using their existing lists, records and supported extensions. Add a separate dashboard only when an essential recruiting task cannot be handled well there. The current standalone view demonstrates the assignment; the [integration demo plan](native-integration-demo-plan.md) shows the intended production experience.
+
 ## Selection rules
 
 - **A focused shortlist.** Promising candidates with insufficient evidence go into `needs_review`. Missing information is not proof of missing ability.

@@ -11,6 +11,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "demo:integrations": "vite --config vite.demo.config.ts",
+    "build:demo": "tsc --noEmit && vite build --config vite.demo.config.ts",
     "pipeline": "tsx cli/run-pipeline.ts",
     "pipeline:all": "tsx cli/run-pipeline.ts --all",
     "test": "vitest run",

@@ -14,6 +14,8 @@ The core pain is signal-to-noise: too many contacts to screen and too little hel
 
 ## Production version
 
+**Recruiter experience:** review the talent pool and recommendations inside HubSpot, then hand selected people into Comeet for a specific role. Prefer existing lists, contact records and supported embedded panels; introduce a separate dashboard only for an essential task those tools cannot support well. The [integration demo plan](native-integration-demo-plan.md) illustrates this future workflow and distinguishes simulated screens from verified integrations.
+
 The CSVs stand in for four systems. In production:
 
 | Today (CSV) | Production source |

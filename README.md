@@ -14,6 +14,11 @@ Take-home task for the AI Solution Manager role at WSC Sports: turn conference a
 | Assumptions | `docs/assumptions.md` |
 | Executive summary (optional) | `docs/executive-summary.md` |
 | Recruiter view (bonus) | `view/` |
+| HubSpot → Comeet integration demo (bonus, simulated) | `integration-demo/` |
+
+## Follow-on integration demo
+
+A clickable concept of how recruiters could review recommendations inside HubSpot and hand people into Comeet: [walkthrough](integration-demo/README.md), [plan](docs/native-integration-demo-plan.md). Synthetic data and simulated services; not connected to either product.
 
 ## Setup
 
@@ -31,6 +36,7 @@ npm run pipeline -- JOB001   # writes output/candidates_JOB001.csv and prints th
 npm run pipeline:all         # every job in data/job_openings.csv
 npm test                     # rule, edge-case, view and export tests (synthetic fixtures in tests/fixtures/)
 npm run typecheck
+npm run demo:integrations    # HubSpot → Comeet integration concept (simulated)
 npm run build                # static build of the view into dist/ (npm run preview to serve it)
 npm run test:all             # npm test + Playwright browser tests (first time: npx playwright install chromium)
 ```
@@ -51,5 +57,6 @@ The assessment logic in `pipeline/` is plain TypeScript with no file or network 
 - `cli/` — the `npm run pipeline` command
 - `view/` — the recruiter view (React + Vite, plain CSS)
 - `tests/` — Vitest tests and synthetic fixtures
+- `integration-demo/` — the simulated HubSpot → Comeet concept
 - `e2e/` — Playwright browser tests
 - `docs/discovery-call-context.md` — context from the discovery call the task came out of
