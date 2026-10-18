@@ -86,7 +86,7 @@ function spellYears(spell: EmploymentSpell): string {
   return spell.periods.map((q) => years(q.start, q.end)).join(', ');
 }
 
-/** The body of the detail drawer; the drawer itself (title, close, Escape, focus) is the kit's. */
+/** One candidate's profile page for the selected role. */
 export function CandidateDetail({ a, row }: Props) {
   const c = a.candidate;
   const profile = c.profile;
@@ -97,7 +97,10 @@ export function CandidateDetail({ a, row }: Props) {
 
   return (
     <div className="detail">
-      <p className="muted">{currentRole(row)}</p>
+      <header className="d-head">
+        <h1>{c.fullName}</h1>
+        <p className="muted">{currentRole(row)}</p>
+      </header>
 
       <div className="d-score">
         <div className="d-score-num">

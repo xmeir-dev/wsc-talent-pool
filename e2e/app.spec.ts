@@ -36,31 +36,35 @@ test('role switch updates the list and shows the empty shortlist for JOB003', as
   expect(errors).toEqual([]);
 });
 
-test('keyboard opens and closes the detail and focus returns to the row', async ({ page }) => {
+test('a row opens a profile page; Back, Escape and the browser back button return to the row', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   const row = page.getByRole('row', { name: /Priya Anand/ });
   await row.focus();
   await page.keyboard.press('Enter');
-  const dialog = page.getByRole('dialog', { name: 'Priya Anand' });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('heading', { name: 'Priya Anand' })).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();
-  await expect(dialog).toContainText('Required skills');
-  await expect(dialog).toContainText('Worked with Maya Levi');
+  const heading = page.getByRole('heading', { level: 1, name: 'Priya Anand' });
+  await expect(heading).toBeVisible();
+  await expect(page).toHaveURL(/#\/candidate\//);
+  await expect(page.getByRole('table')).toHaveCount(0);
+  const main = page.getByRole('main');
+  await expect(main).toContainText('Required skills');
+  await expect(main).toContainText('Worked with Maya Levi');
 
-  await page.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(heading).toHaveCount(0);
   await expect(row).toBeFocused();
 
-  // The detail is modal: the page behind is covered, and clicking outside the panel closes it.
-  // (Role change closing an open detail is covered in view/App.test.tsx; with the modal drawer the
-  // role picker can't be reached while the detail is open.)
   await row.click();
-  await expect(page.getByRole('dialog')).toBeVisible();
-  await page.mouse.click(40, 400);
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(heading).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(heading).toHaveCount(0);
   await expect(row).toBeFocused();
+
+  await row.click();
+  await expect(heading).toBeVisible();
+  await page.goBack();
+  await expect(heading).toHaveCount(0);
+  await expect(row).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -83,7 +87,7 @@ test('export downloads the same bytes the CLI writes', async ({ page }) => {
 test.describe('narrow screen', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true });
 
-  test('no horizontal overflow; detail is a full-width sheet', async ({ page }) => {
+  test('no horizontal overflow on the list or the profile page', async ({ page }) => {
     const errors = watchErrors(page);
     await page.goto('/');
     const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
@@ -93,11 +97,10 @@ test.describe('narrow screen', () => {
     expect(await overflow()).toBeLessThanOrEqual(0);
 
     await page.getByRole('row', { name: /Priya Anand/ }).click();
-    const box = await page.getByRole('dialog').boundingBox();
-    expect(box?.width ?? 0).toBeCloseTo(390, 0);
+    await expect(page.getByRole('heading', { level: 1, name: 'Priya Anand' })).toBeVisible();
     expect(await overflow()).toBeLessThanOrEqual(0);
-    await page.getByRole('button', { name: 'Close' }).click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Back' }).click();
+    await expect(page.getByRole('table')).toBeVisible();
     expect(errors).toEqual([]);
   });
 });

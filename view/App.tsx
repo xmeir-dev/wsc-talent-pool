@@ -1,5 +1,7 @@
-import { useMemo, useRef, useState } from 'react';
-import { Button, Callout, Drawer, EmptyState, SegmentedControl, Select, TopBar } from '@meir-labs/ui-kit';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { Button, Callout, EmptyState, SegmentedControl, Select, TopBar } from '@meir-labs/ui-kit';
 import {
   assessJob,
   buildDataset,
@@ -13,6 +15,11 @@ import { CandidateTable, type Item } from './CandidateTable';
 import { bundledSources } from './data';
 import { downloadCsv } from './download';
 import { emptyShortlistCopy, VIEWS, type View } from './format';
+
+function keyFromHash(): string | null {
+  const m = /^#\/candidate\/(.+)$/.exec(window.location.hash);
+  return m ? decodeURIComponent(m[1]!) : null;
+}
 
 type Loaded = { ok: true; dataset: Dataset } | { ok: false; problems: string[] };
 
@@ -47,7 +54,7 @@ export function App({ sources = bundledSources }: { sources?: SourceTexts }) {
 function Workspace({ dataset }: { dataset: Dataset }) {
   const [jobId, setJobId] = useState(dataset.jobs[0]?.jobId ?? '');
   const [view, setView] = useState<View>('shortlist');
-  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [openKey, setOpenKeyState] = useState<string | null>(keyFromHash);
 
   const result = useMemo(() => assessJob(dataset, jobId), [dataset, jobId]);
   const rows = useMemo(() => toOutputRows(result), [result]);
@@ -55,15 +62,81 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   const visible = view === 'all' ? indexed : indexed.filter(({ a }) => a.recommendation === view);
   const open = openKey ? indexed.find(({ a }) => a.candidate.candidateKey === openKey) : undefined;
 
-  // The drawer dissolves after close; keep showing the last person while it does.
-  const shown = useRef<Item | undefined>(undefined);
-  if (open) shown.current = open;
+  // The profile is its own page: #/candidate/<key>, so the browser back button works too.
+  const pushed = useRef(false);
+  const returnTo = useRef<{ name: string; scrollY: number } | null>(null);
+  useEffect(() => {
+    const onHash = () => setOpenKeyState(keyFromHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  const openProfile = useCallback(
+    (key: string) => {
+      const item = indexed.find(({ a }) => a.candidate.candidateKey === key);
+      returnTo.current = { name: item?.a.candidate.fullName ?? '', scrollY: window.scrollY };
+      pushed.current = true;
+      window.location.hash = `/candidate/${encodeURIComponent(key)}`;
+      setOpenKeyState(key);
+    },
+    [indexed],
+  );
+
+  const back = useCallback(() => {
+    if (pushed.current) {
+      pushed.current = false;
+      window.history.back();
+    } else {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      setOpenKeyState(null);
+    }
+  }, []);
+
+  // Back on the list: restore the scroll position and put focus on the row that was opened.
+  useLayoutEffect(() => {
+    if (open || !returnTo.current) return;
+    const { name, scrollY } = returnTo.current;
+    returnTo.current = null;
+    window.scrollTo(0, scrollY);
+    const row = [...document.querySelectorAll<HTMLElement>('.candidates tbody tr')].find((r) =>
+      r.textContent?.includes(name),
+    );
+    row?.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    window.scrollTo(0, 0);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') back();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, back]);
 
   const counts: Record<View, number> = {
     shortlist: result.counts.shortlist,
     needs_review: result.counts.needs_review,
     all: result.candidates.length,
   };
+
+  if (open) {
+    return (
+      <>
+        <TopBar
+          className="toolbar"
+          left={
+            <Button variant="ghost" onClick={back} leftIcon={<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.75} />}>
+              Back
+            </Button>
+          }
+        />
+        <main className="content profile">
+          <CandidateDetail a={open.a} row={open.row} />
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
@@ -74,7 +147,6 @@ function Workspace({ dataset }: { dataset: Dataset }) {
             value={jobId}
             onValueChange={(v) => {
               setJobId(v);
-              setOpenKey(null);
             }}
           >
             <Select.Trigger aria-label="Role" />
@@ -116,18 +188,10 @@ function Workspace({ dataset }: { dataset: Dataset }) {
             <EmptyState variant="no-results" title="No candidates in this view." />
           )
         ) : (
-          <CandidateTable items={visible} showOutcome={view === 'all'} onOpen={setOpenKey} />
+          <CandidateTable items={visible} showOutcome={view === 'all'} onOpen={openProfile} />
         )}
       </main>
 
-      <Drawer
-        open={open !== undefined}
-        onClose={() => setOpenKey(null)}
-        size="lg"
-        title={shown.current?.a.candidate.fullName}
-      >
-        {shown.current && <CandidateDetail a={shown.current.a} row={shown.current.row} />}
-      </Drawer>
     </>
   );
 }

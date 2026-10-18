@@ -49,31 +49,28 @@ describe('recruiter view', () => {
     expect(rows()).toHaveLength(5);
   });
 
-  it('opens and closes the detail from the keyboard, returning focus to the row', async () => {
+  it('opens a profile page from the keyboard; Back and Escape return to the row', async () => {
     const user = userEvent.setup();
     render(<App />);
     const row = screen.getByRole('row', { name: /Chiara Russo/ });
     row.focus();
     await user.keyboard('{Enter}');
-    const dialog = await screen.findByRole('dialog', { name: 'Chiara Russo' });
-    expect(within(dialog).getByRole('heading', { name: 'Chiara Russo' })).toBeTruthy();
-    await waitFor(() => expect(document.activeElement).toBe(within(dialog).getByRole('button', { name: 'Close' })));
-    expect(dialog.textContent).toContain('tied');
-    expect(dialog.textContent).toContain('Required skills');
-    expect(dialog.textContent).toContain('Nice to have');
-    expect(dialog.textContent).toContain('years of experience');
-    await user.keyboard('{Escape}');
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
-    expect(document.activeElement).toBe(row);
-  });
+    expect(await screen.findByRole('heading', { level: 1, name: 'Chiara Russo' })).toBeTruthy();
+    expect(screen.queryByRole('table')).toBeNull();
+    const main = screen.getByRole('main');
+    expect(main.textContent).toContain('tied');
+    expect(main.textContent).toContain('Required skills');
+    expect(main.textContent).toContain('Nice to have');
+    expect(main.textContent).toContain('years of experience');
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('row', { name: /Chiara Russo/ })));
 
-  it('closes the open detail when the role changes', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    await user.click(screen.getByText('Priya Anand'));
-    expect(await screen.findByRole('dialog')).toBeTruthy();
-    await pickRole(user, 'JOB002');
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    screen.getByRole('row', { name: /Chiara Russo/ }).focus();
+    await user.keyboard('{Enter}');
+    await screen.findByRole('heading', { level: 1, name: 'Chiara Russo' });
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
   });
 
   it('labels missing information as unknown, not as a negative finding', async () => {
@@ -83,9 +80,10 @@ describe('recruiter view', () => {
     const mia = rows().find((r) => r.textContent?.includes('Mia Missing'))!;
     expect(mia.textContent).toContain('Unknown: no usable profile');
     await user.click(within(mia).getByText('Mia Missing'));
-    const dialog = await screen.findByRole('dialog');
-    expect(dialog.textContent).toContain('Missing information is not a negative finding');
-    expect(dialog.textContent).toContain('Unknown: no profile to read connections from');
+    await screen.findByRole('heading', { level: 1, name: 'Mia Missing' });
+    const main = screen.getByRole('main');
+    expect(main.textContent).toContain('Missing information is not a negative finding');
+    expect(main.textContent).toContain('Unknown: no profile to read connections from');
   });
 
   it('shows an error state for invalid source data', () => {

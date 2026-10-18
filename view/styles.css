@@ -87,7 +87,7 @@ ul {
   font-weight: 500;
 }
 
-/* Detail drawer body */
+/* Candidate profile page */
 
 .detail {
   --amber: #d97706;
@@ -98,8 +98,15 @@ ul {
 [data-meirlabs-theme='dark'] .detail {
   --amber: #f59e0b;
 }
-.detail > p:first-child {
-  margin-top: -16px;
+.profile {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.d-head h1 {
+  margin: 0 0 2px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .d-score {
@@ -179,10 +186,6 @@ ul {
 .d-hint {
   display: inline-flex;
   border-radius: 50%;
-}
-/* Kit tooltips (--ml-z-tooltip) sit under the kit drawer (z 1500); lift them so they show inside it. */
-:root {
-  --ml-z-tooltip: 1600;
 }
 .s-has {
   color: var(--ml-color-success);
