@@ -1,0 +1,22 @@
+{
+  "name": "wsc-talent-pool",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Turns conference attendees into a ranked, explained candidate list for an open role, ready for HubSpot import.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "pipeline": "tsx cli/run-pipeline.ts",
+    "pipeline:all": "tsx cli/run-pipeline.ts --all",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.0",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  }
+}
