@@ -1,0 +1,9 @@
+{
+  "about": "Made-up recruiters, one per conference, so a recruiter's note can show who wrote it. The provided data has no note author; these names and avatars are invented for the demo and are not WSC staff.",
+  "byConference": {
+    "SportsTech Innovation Summit": { "id": "REC1", "name": "Neta Harel" },
+    "Broadcast & Streaming Technology Expo": { "id": "REC2", "name": "Gal Ofer" },
+    "Data & AI Summit Europe": { "id": "REC3", "name": "Ronit Sela" },
+    "DevOps World 2025": { "id": "REC4", "name": "Amit Sasson" }
+  }
+}

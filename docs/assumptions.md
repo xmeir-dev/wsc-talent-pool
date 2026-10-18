@@ -23,6 +23,8 @@ All 75 supplied attendees match a profile: **42 list WSC employee connections an
 
 Profile freshness, application history, previous rejection, job interest, and permission to contact are unknown. Total experience is not specialty experience; employment-history lists cannot safely be paired by position.
 
+Roles have no location in the data, so location does not affect the score; recruiters can filter by where attendees are based. **Made up for the recruiter view only:** the files do not say who wrote a conference note, so each conference has an invented recruiter (`data/demo_recruiters.json`), and employee and recruiter avatars are generated illustrations. None of this feeds the ranking.
+
 ## People already in Comeet
 
 Comeet status is unknown in this exercise: the `comeet_status` column is reserved and always reads `unknown`. In production, before anyone is contacted:

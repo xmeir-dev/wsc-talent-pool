@@ -12,6 +12,7 @@ import {
 import { Avatar, DataTable, Hint, StatusPill, Tag, type Column } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee, Item } from './attendees';
+import { AVATAR, initials } from './avatars';
 import { CountryFlag } from './Location';
 import { Overview } from './Overview';
 import { WscMark } from './WscMark';
@@ -49,22 +50,6 @@ const about = (c: CandidateAssessment['candidate']) => <Overview c={c} />;
 
 /** An empty cell gets a faint hairline instead of words. */
 const empty = <span className="empty-line" role="img" aria-label="None" />;
-
-/** Generated illustrations, one per employee (DiceBear Notionists, CC0); none for IDs not in the roster. */
-const AVATAR: Record<string, string> = Object.fromEntries(
-  Object.entries(import.meta.glob('./assets/avatars/*.svg', { eager: true, query: '?url', import: 'default' })).map(([path, url]) => [
-    path.replace(/^.*\/(.+)\.svg$/, '$1'),
-    url as string,
-  ]),
-);
-
-const initials = (name: string) =>
-  name
-    .split(/\s+/)
-    .filter((w) => /^[A-Za-z]/.test(w))
-    .map((w) => w[0]!.toUpperCase())
-    .slice(0, 2)
-    .join('');
 
 /** Count, then up to two names as tags with initials; the rest go in a "+N" tag with the names on hover. */
 const connections = (a: CandidateAssessment) => {

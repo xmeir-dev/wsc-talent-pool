@@ -571,6 +571,18 @@ ul {
 [data-meirlabs-theme='dark'] .overview-mark {
   color: #a371f7;
 }
+.note-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 280px;
+}
+.note-tip-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.75;
+}
 .d-head .overview {
   margin-top: 8px;
 }
