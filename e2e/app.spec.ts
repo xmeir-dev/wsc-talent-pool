@@ -260,7 +260,7 @@ test('QA #003/#009: a chosen status stays visible, and one job offers shown peop
   await expect(page.getByRole('menuitem')).toHaveText([
     'Attendees shown (0), Excel',
     'Full JOB001 assessment (75), Excel',
-    'CRM import CSV, full JOB001 assessment (exact values)',
+    'CRM import CSV, full JOB001 assessment',
   ]);
   const [shown] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /^Attendees shown/ }).click()]);
   expect(readXlsx(readFileSync(await shown.path())).rows).toHaveLength(1);

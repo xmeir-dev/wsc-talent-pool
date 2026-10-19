@@ -28,7 +28,7 @@ npx playwright test --project integration-demo
 8. **New role.** In Comeet, **+** next to Positions opens a new position (prefilled). Publishing it scores the whole pool for that role; HubSpot gets a notification and a new saved view.
    ![New position](../docs/screenshots/integration-8-comeet-new-position.png)
 
-**Reset demo** starts the session over: it discards imported contacts, positions added in Comeet, handed-off Comeet records and notifications. It does not clear the saved outreach history this browser keeps (that needs the site's data cleared; see [identity and history](../docs/identity-and-history.md#stored-state-version-and-upgrade)).
+**Reset demo** starts the session over: it discards imported contacts, positions added in Comeet, handed-off Comeet records and notifications. Imported contacts also go away when the page is reloaded. Reset demo does not clear the saved outreach history this browser keeps (that needs the site's data cleared; see [identity and history](../docs/identity-and-history.md#stored-state-version-and-upgrade)).
 
 ## What is simulated
 

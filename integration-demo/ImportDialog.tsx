@@ -57,7 +57,7 @@ export function ImportDialog({ sources, onClose, onImport }: Props) {
         <div className="import-body">
           {!file ? (
             <>
-              <p>Upload the spreadsheet from an event. Each row becomes a contact tagged with its conference.</p>
+              <p>Upload the spreadsheet from an event. Each row becomes a contact tagged with its conference, until you reload the page or reset the demo.</p>
               <label className="import-drop">
                 <Icon icon={File01Icon} size={28} />
                 <span className="hs-underline">Choose a CSV file</span>

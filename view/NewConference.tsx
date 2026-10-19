@@ -111,7 +111,7 @@ export function NewConference({
           <button type="button" className="new-conf-browse" onClick={() => input.current?.click()}>
             Choose attendee list
           </button>
-          <span className="muted">Drop a CSV here or click to browse</span>
+          <span className="muted">Drop a CSV here or click to browse. It stays until you reload the page.</span>
           <button type="button" className="new-conf-chip" onClick={() => add(sample, sampleProfiles)}>
             Use a sample list
           </button>
