@@ -3,7 +3,7 @@ import { useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { SUPPORTED_SENIORITIES } from '../pipeline';
 import { roleProblems, type NewRole } from './sources';
-import { CRITERIA_LISTS, suggestCriteria, type CriteriaList, type CriteriaRow } from './suggestCriteria';
+import { CRITERIA_LISTS, editRow, suggestCriteria, type CriteriaList, type CriteriaRow } from './suggestCriteria';
 import { useDialog } from './useDialog';
 
 interface Props {
@@ -48,14 +48,15 @@ export function NewPositionDialog({ onClose, onCreate }: Props) {
 
   useDialog(dialog, onClose);
 
-  // A new title or description re-suggests; rows the recruiter added by hand are kept.
+  // A new title or description re-suggests; rows the recruiter added or edited by hand are kept.
   const edit = (next: Draft) => {
     setDraft(next);
     if (next.title !== draft.title || next.description !== draft.description) {
       setRows((prev) => [...suggestCriteria(next.title, next.description), ...prev.filter((r) => r.origin === 'recruiter')]);
     }
   };
-  const setSkill = (id: string, skill: string) => setRows((prev) => prev.map((r) => (r.id === id ? { ...r, skill } : r)));
+  // An edited suggestion becomes the recruiter's row: no source label or quote, and it survives a re-suggest.
+  const setSkill = (id: string, skill: string) => setRows((prev) => prev.map((r) => (r.id === id ? editRow(r, skill) : r)));
   const remove = (id: string) => setRows((prev) => prev.filter((r) => r.id !== id));
   const add = (list: CriteriaList) => {
     setRows((prev) => [...prev, { id: `added-${added}`, list, skill: '', quote: '', origin: 'recruiter' }]);

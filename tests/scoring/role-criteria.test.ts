@@ -101,7 +101,20 @@ describe('core_skills and must_have_skills columns', () => {
     expect(mei.recommendation).toBe('needs_review');
     expect(mei.outcomeReasons[0]).toBe('Missing must-have: AWS (only a related skill, GCP, which is not enough)');
     // AWS on the profile, though not a required skill of this role.
-    expect(byName(result, 'Grace Wilson').missingEssentials).toEqual([]);
+    const grace = byName(result, 'Grace Wilson');
+    expect(grace.missingEssentials).toEqual([]);
+    // ...and shown as evidence (the card's Matched evidence, the handoff's evidence), outside the required tally.
+    expect(grace.mustHaveSkills).toEqual([{ skill: 'AWS', kind: 'must_have', match: 'named', evidence: 'AWS' }]);
+    expect(grace.fitEvidence[0]).toBe('Must-have: AWS');
+    expect(grace.tally.requiredTotal).toBe(3);
+  });
+
+  it('a must-have that is also a required skill is not listed twice', () => {
+    const { result } = newRole('Kubernetes; Terraform; CI/CD; Monitoring', 'AWS');
+    expect(result.candidates.every((c) => c.mustHaveSkills.length === 0)).toBe(true);
+    for (const jobId of ['JOB001', 'JOB002', 'JOB003', 'JOB004']) {
+      expect(assessJob(buildDataset(sources), jobId).candidates.every((c) => c.mustHaveSkills.length === 0)).toBe(true);
+    }
   });
 
   it('the New position path writes the columns only when criteria were confirmed', () => {

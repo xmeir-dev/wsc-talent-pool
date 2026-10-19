@@ -149,7 +149,7 @@ test('importing a spreadsheet adds contacts, merges a repeat attendee and re-sco
   await dialog.getByRole('button', { name: 'Use sample file' }).click();
   await expect(dialog).toContainText('5 rows from Sports Video AI Meetup');
   await expect(dialog).toContainText('4 new contacts · 1 added as an event to an existing contact');
-  await dialog.getByRole('button', { name: 'Import 5 contacts' }).click();
+  await dialog.getByRole('button', { name: 'Import 5 rows' }).click();
 
   await expect(page.getByText('79 records')).toBeVisible();
   await expect(notices(page)).toContainText('Import finished: sample-conference-import.csv');
@@ -333,7 +333,7 @@ for (const [label, file] of [
     const dialog = page.getByRole('dialog', { name: 'Import contacts' });
     await dialog.locator('input[type=file]').setInputFiles({ name: 'ryan.csv', mimeType: 'text/csv', buffer: Buffer.from(file) });
     await expect(dialog).toContainText('1 added as an event to an existing contact');
-    await dialog.getByRole('button', { name: /^Import 1 contact/ }).click();
+    await dialog.getByRole('button', { name: 'Import 1 row', exact: true }).click();
     await expect(notices(page)).toContainText('0 new contacts, 1 added as an event to an existing contact.');
     await page.getByRole('button', { name: 'Close notifications' }).click();
     await expect(page.getByText('75 records')).toBeVisible();

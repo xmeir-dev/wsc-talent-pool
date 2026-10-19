@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { EXAMPLE_POSITION } from '../../integration-demo/NewPositionDialog';
 import { addRole } from '../../integration-demo/sources';
-import { skillsIn, suggestCriteria, type CriteriaList, type CriteriaRow } from '../../integration-demo/suggestCriteria';
+import { editRow, skillsIn, suggestCriteria, type CriteriaList, type CriteriaRow } from '../../integration-demo/suggestCriteria';
 import { assessJob, buildDataset } from '../../pipeline';
 import { loadSources } from '../../cli/load-sources';
 import { DATA_DIR } from '../helpers';
@@ -36,6 +36,30 @@ describe('suggestCriteria', () => {
     expect(skillsIn('We go live with Go and AWS, not aws-cli magic or Django.')).toEqual(['Go', 'AWS']);
     expect(skillsIn('Strong Sports Analytics and REST APIs.')).toEqual(['Sports Analytics', 'REST APIs']);
     expect(skillsIn('Real-time processing of video streaming')).toEqual(['Real-time processing', 'Video streaming']);
+  });
+
+  it('reads a list subject ("X and Y are a plus", "X, Y and Z are required") item by item, known names or not', () => {
+    const rows = suggestCriteria('Platform Engineer', [
+      'Prometheus and Go are a plus.',
+      'Grafana, Datadog and Kubernetes are required.',
+      'Linux and AWS are a must.',
+    ].join(' '));
+    expect(skills(rows, 'niceToHave')).toEqual(['Prometheus', 'Go']);
+    expect(skills(rows, 'required')).toEqual(['Grafana', 'Datadog', 'Kubernetes']);
+    expect(skills(rows, 'mustHave')).toEqual(['Linux', 'AWS']);
+    expect(rows.find((r) => r.skill === 'Prometheus')).toMatchObject({ origin: 'description', quote: 'Prometheus and Go are a plus.' });
+    // Known names keep the vocabulary's spelling; a lone unknown word or a soft skill is not a tool.
+    expect(skills(suggestCriteria('x', 'Python and computer vision are a must.'), 'mustHave')).toEqual(['Python', 'Computer Vision']);
+    for (const text of ['Teamwork is essential.', 'Strong communication skills are a plus.', 'Curiosity and teamwork are a must.']) {
+      expect(suggestCriteria('x', text)).toEqual([]);
+    }
+  });
+
+  it('an edited suggestion becomes the recruiter\'s row: no source label, no quote', () => {
+    const [row] = suggestCriteria('x', 'Kafka is a plus.');
+    expect(row).toMatchObject({ origin: 'description', quote: 'Kafka is a plus.' });
+    expect(editRow(row!, 'Kafka')).toBe(row);
+    expect(editRow(row!, 'Kafka Streams')).toEqual({ ...row, skill: 'Kafka Streams', quote: '', origin: 'recruiter' });
   });
 
   it('skips the opening "we\'re hiring" line, which names the role rather than its requirements', () => {
@@ -78,18 +102,30 @@ describe('confirmed criteria decide the new role (Fix 1 acceptance)', () => {
     return assessJob(buildDataset(next), jobId);
   };
   const reviewReasons = (r: ReturnType<typeof publish>) => r.candidates.filter((c) => c.recommendation === 'needs_review').map((c) => c.outcomeReasons.join(' / '));
+  /** A required-skills shortfall names the skills: the missing ones, or the likely ones to confirm. */
+  const namesTheGap = (reason: string) => {
+    for (const part of reason.split(' / ').filter((p) => p.includes('required skills on the profile'))) {
+      expect(part).toMatch(/; missing [A-Z]|; \d+ more likely \(.+ for .+\), please confirm/);
+    }
+  };
 
   it('the prefilled Computer Vision example, confirmed as-is: a small review queue, each reason a concrete gap', () => {
     const result = publish(EXAMPLE_POSITION.title, EXAMPLE_POSITION.description);
     expect(result.counts).toEqual({ shortlist: 1, needs_review: 9, not_recommended_for_role: 65 });
-    for (const reason of reviewReasons(result)) expect(reason).toMatch(/required skills on the profile \(needs \d\)|Missing must-have: /);
+    for (const reason of reviewReasons(result)) {
+      expect(reason).toMatch(/required skills on the profile \(needs \d\)|Missing must-have: /);
+      namesTheGap(reason);
+    }
     expect(result.candidates.flatMap((c) => c.dataQualityFlags).join(' ')).not.toContain('provisional');
   });
 
   it('an unrelated role (Site Reliability Engineer) gets its own split', () => {
     const result = publish(SRE_TITLE, SRE_DESCRIPTION);
     expect(result.counts).toEqual({ shortlist: 9, needs_review: 4, not_recommended_for_role: 62 });
-    for (const reason of reviewReasons(result)) expect(reason).toMatch(/required skills on the profile \(needs \d\)|Missing must-have: /);
+    for (const reason of reviewReasons(result)) {
+      expect(reason).toMatch(/required skills on the profile \(needs \d\)|Missing must-have: /);
+      namesTheGap(reason);
+    }
   });
 
   it('the SRE example as the browser test edits it gives the counts that test expects in HubSpot', () => {

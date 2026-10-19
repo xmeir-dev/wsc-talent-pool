@@ -134,7 +134,7 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
               <dt>Possible references</dt>
               <dd>{payload.customFields.possibleReferences}</dd>
               <dt>Assessment</dt>
-              <dd>{payload.customFields.assessment}</dd>
+              <dd>{result.job.title}</dd>
               <dt>Note</dt>
               <dd data-testid="handoff-note">{payload.note}</dd>
             </dl>

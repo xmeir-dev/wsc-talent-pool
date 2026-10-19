@@ -164,7 +164,7 @@ export function ImportDialog({ sources, onClose, onImport }: Props) {
                 onClose();
               }}
             >
-              Import {p.rows.length} contacts
+              Import {p.rows.length} {p.rows.length === 1 ? 'row' : 'rows'}
             </button>
           )}
         </div>
