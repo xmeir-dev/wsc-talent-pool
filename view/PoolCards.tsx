@@ -18,7 +18,7 @@ function PoolCard({ icon, label, count, line, rows, action, primary }: { icon: I
       <div className="pool-card-top">
         <div>
           <span className="muted pool-label">
-            <HugeiconsIcon icon={icon} size={16} strokeWidth={1.75} aria-hidden="true" />
+            <HugeiconsIcon icon={icon} size={32} strokeWidth={1.5} aria-hidden="true" />
             {label}
           </span>
           <p className="pool-count">{count}</p>
