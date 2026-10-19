@@ -6,6 +6,7 @@ import { buildDataset, DataValidationError, parseCsv, toCsv, type Dataset, type 
 import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
 import { CandidateDetail } from './CandidateDetail';
 import { AttendeeTable } from './CandidateTable';
+import { BulkActions } from './BulkActions';
 import { NewConference } from './NewConference';
 import { SyncStatus } from './SyncStatus';
 import { PoolCards } from './PoolCards';
@@ -79,6 +80,8 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
   const [conferences, setConferences] = useState<string[]>([]);
   const [jobIds, setJobIds] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
+  // Ticked rows for bulk Invite / Ask; kept across pages and filters.
+  const [picked, setPicked] = useState<string[]>([]);
   const [sort, setSort] = useState<SortState | null>(null);
   const [openKey, setOpenKeyState] = useState<string | null>(keyFromHash);
 
@@ -255,6 +258,11 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         jobs={{ selected: jobIds, onSelect: setJobIds }}
       />
       {filters}
+      <BulkActions
+        selected={pool.attendees.filter((p) => picked.includes(p.candidate.candidateKey))}
+        jobs={pool.jobs}
+        onClear={() => setPicked([])}
+      />
       <AttendeeTable
         attendees={paged.page}
         onOpen={openProfile}
@@ -262,6 +270,8 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         // With no header clicked: one job keeps that job's ranked order, otherwise shortlisted people come first.
         sort={sort ?? (job ? null : BY_RELEVANT_JOB)}
         onSort={setSort}
+        selected={picked}
+        onSelect={setPicked}
       />
       {shown > 0 && (
         <PaginationFooter

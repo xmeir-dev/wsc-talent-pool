@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowDown01Icon, ArrowRight01Icon, Cancel01Icon, HelpCircleIcon, Refresh01Icon } from '@hugeicons/core-free-icons';
-import { Badge, Button, Popover, Tooltip } from '@meir-labs/ui-kit';
+import { Button, Popover, Tooltip } from '@meir-labs/ui-kit';
 import comeetIcon from './assets/comeet.png';
+import { DemoBadge } from './DemoBadge';
 import googleFormsIcon from './assets/google-forms.png';
 import hubspotIcon from './assets/hubspot.png';
 
@@ -165,9 +166,7 @@ export function SyncStatus() {
         {/* Nothing here connects for real: the Demo sticker says so on screen, not only in the docs. */}
         <div className="sync-head">
           <span>Your accounts</span>
-          <Badge tone="warning" size="sm">
-            Demo
-          </Badge>
+          <DemoBadge />
         </div>
         <div className="sync-cards">
           {SOURCES.map((s) => {

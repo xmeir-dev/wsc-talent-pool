@@ -440,7 +440,20 @@
   align-items: center;
   justify-content: space-between;
   padding: 6px 8px 2px;
+}
+/* Same label as the table's column headers: small, all caps, grey. */
+.sync-head > span:first-child {
+  font-size: 11px;
   font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ml-text-muted);
+}
+.demo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 .sync-cards {
   display: grid;
@@ -630,4 +643,73 @@
   .sync-spin {
     animation: none;
   }
+}
+
+/* Bulk bar: appears above the table once rows are ticked. */
+.bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--ml-space-md);
+  padding: 8px 12px;
+  border: 1px solid var(--ml-border-subtle);
+  border-radius: 12px;
+  background: var(--ml-bg-surface);
+}
+.bulk-count {
+  margin-right: 4px;
+  font-weight: 600;
+}
+.bulk-status {
+  font-size: 13px;
+}
+.bulk-clear {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ml-text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.bulk-clear:hover,
+.bulk-clear:focus-visible {
+  color: var(--ml-text);
+  text-decoration: underline;
+}
+.ask.bulk-pop {
+  width: min(460px, calc(100vw - 32px));
+}
+.bulk-head-end {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.bulk-note {
+  margin: 0;
+  font-size: 12px;
+}
+.bulk-asks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.bulk-asks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bulk-ask-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.bulk-ask-who .muted {
+  font-size: 13px;
 }

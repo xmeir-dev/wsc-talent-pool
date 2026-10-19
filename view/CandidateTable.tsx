@@ -146,7 +146,18 @@ export function AttendeeTable({
   sort,
   onSort,
   footer,
-}: Shared & { attendees: Attendee[]; sort: SortState | null; onSort: (next: SortState | null) => void; footer?: ReactNode }) {
+  selected,
+  onSelect,
+}: Shared & {
+  attendees: Attendee[];
+  sort: SortState | null;
+  onSort: (next: SortState | null) => void;
+  footer?: ReactNode;
+  /** Ticked rows (candidate keys), kept across pages. */
+  selected: string[];
+  onSelect: (next: string[]) => void;
+}) {
+  const pageKeys = new Set(attendees.map((a) => a.candidate.candidateKey));
   const columns: Column<Attendee>[] = [
     {
       id: 'candidate',
@@ -182,6 +193,10 @@ export function AttendeeTable({
       onSortChange={onSort}
       manualSort
       getRowId={({ candidate }) => candidate.candidateKey}
+      selectable="multiple"
+      selectedIds={selected.filter((k) => pageKeys.has(k))}
+      // The table only knows this page; keep ticks made on other pages.
+      onSelectionChange={(ids) => onSelect([...selected.filter((k) => !pageKeys.has(k)), ...ids])}
       onRowClick={({ candidate }) => onOpen(candidate.candidateKey)}
       emptyState={emptyState}
       footer={footer}
