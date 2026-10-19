@@ -1447,13 +1447,16 @@ ul {
   display: contents;
 }
 
-/* Outreach status: the word, then the role (when none is selected) and Simulated, quietly. */
-.status-cell {
-  display: flex;
-  flex-direction: column;
+/* A job chip with its outreach status beside it, quietly. */
+.job-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
-.status-cell .muted {
-  font-size: 13px;
+.job-status {
+  font-size: 12px;
+  color: var(--ml-text-muted);
+  white-space: nowrap;
 }
 
 /* Under a WSC connection: whether they were already asked about this person. */

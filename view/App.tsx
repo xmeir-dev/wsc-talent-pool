@@ -297,7 +297,6 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         selected={picked}
         onSelect={setPicked}
         jobs={jobList}
-        statusJob={job}
       />
       {shown > 0 && (
         <PaginationFooter
