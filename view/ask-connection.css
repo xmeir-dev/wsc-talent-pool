@@ -467,6 +467,10 @@
   display: block;
   border-radius: 4px;
 }
+.sync-how:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 .sync-how {
   display: grid;
   place-items: center;

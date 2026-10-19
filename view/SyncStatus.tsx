@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowDown01Icon, HelpCircleIcon, Refresh01Icon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, Cancel01Icon, HelpCircleIcon, Refresh01Icon } from '@hugeicons/core-free-icons';
 import { Button, Popover, Tooltip } from '@meir-labs/ui-kit';
 import comeetIcon from './assets/comeet.png';
 import googleFormsIcon from './assets/google-forms.png';
@@ -163,17 +163,37 @@ export function SyncStatus() {
               <section key={s.key} className="sync-card" aria-label={s.name}>
                 <div className="sync-card-top">
                   <img src={s.icon} alt="" width={20} height={20} />
-                  <Tooltip content="How to connect">
-                    <button
-                      type="button"
-                      className="sync-how"
-                      aria-label={`How to connect ${s.name}`}
-                      aria-expanded={panel?.key === s.key && panel.kind === 'steps'}
-                      onClick={() => toggle(s.key, 'steps')}
-                    >
-                      <HugeiconsIcon icon={HelpCircleIcon} size={16} strokeWidth={1.75} />
-                    </button>
-                  </Tooltip>
+                  {/* Not connected: how to connect it. Connected: disconnect it. */}
+                  {at === undefined ? (
+                    <Tooltip content="How to connect">
+                      <button
+                        type="button"
+                        className="sync-how"
+                        aria-label={`How to connect ${s.name}`}
+                        aria-expanded={panel?.key === s.key && panel.kind === 'steps'}
+                        onClick={() => toggle(s.key, 'steps')}
+                      >
+                        <HugeiconsIcon icon={HelpCircleIcon} size={16} strokeWidth={1.75} />
+                      </button>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip content="Disconnect">
+                      <button
+                        type="button"
+                        className="sync-how"
+                        aria-label={`Disconnect ${s.name}`}
+                        disabled={syncing}
+                        onClick={() =>
+                          setLast((l) => {
+                            const { [s.key]: _gone, ...rest } = l;
+                            return rest;
+                          })
+                        }
+                      >
+                        <HugeiconsIcon icon={Cancel01Icon} size={16} strokeWidth={1.75} />
+                      </button>
+                    </Tooltip>
+                  )}
                 </div>
                 <span className="sync-name">{s.name}</span>
                 <span className="sync-when">
