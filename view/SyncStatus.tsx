@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowDown01Icon, ArrowRight01Icon, Cancel01Icon, HelpCircleIcon, Refresh01Icon } from '@hugeicons/core-free-icons';
-import { Button, Popover, Tooltip } from '@meir-labs/ui-kit';
+import { Badge, Button, Popover, Tooltip } from '@meir-labs/ui-kit';
 import comeetIcon from './assets/comeet.png';
 import googleFormsIcon from './assets/google-forms.png';
 import hubspotIcon from './assets/hubspot.png';
@@ -161,7 +161,14 @@ export function SyncStatus() {
         {syncing ? 'Syncing…' : connected ? `Synced ${relative(now - Math.max(...times))}` : 'Connect accounts'}
         <HugeiconsIcon icon={ArrowDown01Icon} size={14} strokeWidth={1.75} aria-hidden="true" />
       </Popover.Trigger>
-      <Popover.Content className="sync-pop" aria-label="Connected sources">
+      <Popover.Content className="sync-pop" aria-label="Your accounts">
+        {/* Nothing here connects for real: the Demo sticker says so on screen, not only in the docs. */}
+        <div className="sync-head">
+          <span>Your accounts</span>
+          <Badge tone="warning" size="sm">
+            Demo
+          </Badge>
+        </div>
         <div className="sync-cards">
           {SOURCES.map((s) => {
             const at = last[s.key];

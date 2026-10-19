@@ -435,6 +435,13 @@
   gap: 6px;
   padding: 6px;
 }
+.sync-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 2px;
+  font-weight: 600;
+}
 .sync-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
