@@ -5,7 +5,9 @@ import { createElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { loadSources } from '../../cli/load-sources';
 import { buildAssessmentStore } from '../../integration-demo/assessments';
-import { recruiterFor } from '../../integration-demo/comeet';
+import { buildHandoff, recruiterFor } from '../../integration-demo/comeet';
+import { addRole } from '../../integration-demo/sources';
+import { SEEDED } from '../../view/activity';
 import { TalentMatchCard } from '../../integration-demo/TalentMatchCard';
 import { buildDataset } from '../../pipeline';
 import { DATA_DIR } from '../helpers';
@@ -73,5 +75,33 @@ describe('Talent match card', () => {
     expect(evidence()).toEqual(['AWS', 'AWS']);
     rerender(createElement(TalentMatchCard, props('JOBA')));
     expect(evidence()).toEqual(['Python']);
+  });
+
+  it('shows a met must-have that is not a required skill under Matched evidence, and sends it as a tag', () => {
+    const { sources: next, jobId } = addRole(
+      { title: 'Site Reliability Engineer', department: 'Platform', seniority: 'Mid', keyDomains: '', requiredSkills: 'Kubernetes, Terraform, CI/CD', niceToHave: '', coreSkills: 'Kubernetes; Terraform', mustHaveSkills: 'AWS' },
+      loadSources(DATA_DIR),
+    );
+    const store = buildAssessmentStore(buildDataset(next));
+    const a = store.result(jobId).candidates.find((c) => c.candidate.fullName === 'Grace Wilson')!;
+    render(
+      createElement(TalentMatchCard, {
+        store,
+        entry: store.get(a.candidate.candidateKey, jobId)!,
+        jobId,
+        recruiter: 'Amit Sasson',
+        onJobChange: () => {},
+        comeetRecord: null,
+        onHandoff: () => {},
+        onOpenComeet: () => {},
+      }),
+    );
+    const terms = within(screen.getByText('Matched evidence').parentElement!).queryAllByRole('term').map((dt) => dt.textContent);
+    expect(terms[0]).toBe('AWS');
+    expect(terms.filter((t) => t === 'AWS')).toHaveLength(1);
+    const position = { uid: 'pos-sre', jobId, name: 'Site Reliability Engineer', recruiter: 'Amit Sasson' };
+    const payload = buildHandoff(a, store.result(jobId).job, store.version, position, SEEDED);
+    expect(payload.tags).toContain('AWS');
+    expect(payload.customFields.evidence).toMatch(/^Must-have: AWS/);
   });
 });

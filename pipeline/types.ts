@@ -186,7 +186,8 @@ export type MatchKind = 'named' | 'equivalent' | 'inferred' | 'none';
 
 export interface SkillMatch {
   skill: string;
-  kind: 'required' | 'nice_to_have';
+  /** 'must_have': a must-have the role does not also list as required (CandidateAssessment.mustHaveSkills). */
+  kind: 'required' | 'nice_to_have' | 'must_have';
   match: MatchKind;
   /** The profile skill that produced the match, as written on the profile. */
   evidence: string | null;
@@ -253,6 +254,8 @@ export interface CandidateAssessment {
   tieNote: string;
   tally: SkillTally;
   skills: SkillMatch[];
+  /** Must-have skills the role does not also list as required, matched against the profile; outside the tally. */
+  mustHaveSkills: SkillMatch[];
   missingEssentials: string[];
   outcomeReasons: string[];
   fitEvidence: string[];

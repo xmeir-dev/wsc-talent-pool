@@ -47,7 +47,7 @@ export interface ComeetCandidate {
   /** The HubSpot contact this record came from; absent on records created outside this handoff. */
   sourceContactId?: string;
   location: string;
-  /** Matched required skills, shown as candidate tags. */
+  /** Must-have and required skills named on the profile, shown as candidate tags. */
   tags: string[];
   addedOn: string;
   /** A prospect is sourced for the position and not yet in its hiring process (Comeet's Prospects tab). */
@@ -146,8 +146,8 @@ export function buildHandoff(a: CandidateAssessment, job: Job, version: string, 
     linkedinUrl: c.linkedinUrl,
     sourceContactId: c.candidateKey,
     location: c.profile?.location ?? '',
-    // Only skills named on the profile become tags; related or likely ones stay qualified in evidence and gaps.
-    tags: confirmed ? a.skills.filter((s) => s.kind === 'required' && s.match === 'named').map((s) => s.skill) : [],
+    // Only must-have and required skills named on the profile become tags; related or likely ones stay qualified in evidence and gaps.
+    tags: confirmed ? [...a.mustHaveSkills, ...a.skills].filter((s) => s.kind !== 'nice_to_have' && s.match === 'named').map((s) => s.skill) : [],
     status: 'Sourced',
     owner: position.recruiter || DEFAULT_RECRUITER,
     source: 'Conference talent pool (HubSpot)',

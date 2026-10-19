@@ -75,7 +75,7 @@ function skillState(s: SkillMatch): SkillState {
   return 'likely';
 }
 
-const KIND_WORDS = { must: 'Must-have', required: 'Required', nice_to_have: 'Nice to have' } as const;
+const KIND_WORDS = { must: 'Must-have', must_have: 'Must-have', required: 'Required', nice_to_have: 'Nice to have' } as const;
 
 /** One line for screen readers: the kind of skill, then whether they have it. */
 function skillLabel(s: SkillMatch, must: boolean): string {

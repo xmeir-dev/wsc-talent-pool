@@ -45,7 +45,7 @@ describe('skill evidence', () => {
     expect(mason.tally).toMatchObject({ required: 2, requiredLikely: 2, requiredTotal: 5, requiredNeeded: 3 });
     // Likely skills are confirmed in review, never counted for the shortlist.
     expect(mason.recommendation).toBe('needs_review');
-    expect(mason.outcomeReasons.join(' ')).toContain('2 of 5 required skills on the profile (needs 3); 2 more likely, please confirm');
+    expect(mason.outcomeReasons.join(' ')).toContain('2 of 5 required skills on the profile (needs 3); 2 more likely (TensorFlow for PyTorch, Highlight Detection for Object Detection), please confirm; missing AWS');
     expect(mason.skillGaps).toContain('Object Detection: likely (from Highlight Detection), please confirm');
   });
 

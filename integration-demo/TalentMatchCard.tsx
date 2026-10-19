@@ -42,7 +42,8 @@ function Block({ title, wide, children }: { title: string; wide?: boolean; child
 export function TalentMatchCard({ store, entry, jobId, recruiter, onJobChange, comeetRecord, onHandoff, onOpenComeet }: Props) {
   const { a } = entry;
   const p = a.candidate.profile;
-  const matched = a.skills.filter((s) => s.match !== 'none');
+  // Must-haves the role does not also list as required (e.g. AWS for an SRE) are evidence too; never listed twice.
+  const matched = [...a.mustHaveSkills, ...a.skills].filter((s) => s.match !== 'none');
   const conn = a.connections;
   const people = connectionPeople(a, store.dataset.employees);
   const outcome = OUTCOME_LABEL[a.recommendation];

@@ -45,6 +45,10 @@ Collecting supporting skills never makes up for a missing must-have.
 
 A shortlist reason reads like "Must-haves met · 4/5 listed skills · 7 years reported": the must-haves, the required skills on the profile out of the role's total, and the profile's total years, with "; experience needs confirmation" when intern or junior roles are included. The full evidence stays in `fit_evidence`, `skill_gaps` and `seniority_evidence` (the HubSpot card's Matched evidence and Not confirmed).
 
+A needs-review reason names the gap. A required-skills shortfall lists the skills: "2 of 4 required skills on the profile (needs 3); missing Terraform, CI/CD", with "1 more likely (Machine Learning for PyTorch), please confirm" when a related skill stands in for one (e.g. Bruno Ferreira for JOB001: "2 of 5 required skills on the profile (needs 3); 1 more likely (Machine Learning for PyTorch), please confirm; missing Object Detection, AWS"). A missing must-have reads "Missing must-have: Sports Analytics", or "(only a related skill, Sports Broadcasting, which is not enough)" when one is close.
+
+A must-have the role does not also list as required (a new role's must-have AWS with required Kubernetes, Terraform, CI/CD) is still checked on the profile and shown as evidence: `fit_evidence` starts "Must-have: AWS", the card lists it under Matched evidence and the handoff tags it. It never counts toward the required-skills bar.
+
 | Role | Must-haves for the shortlist | Core discipline (none → not recommended) |
 |---|---|---|
 | JOB001 Senior ML Engineer | Computer Vision, and PyTorch or related deep learning. A related skill is enough for either must-have, but still not toward the 60% bar. Priya Anand is #1 with Deep Learning for PyTorch because 4 other required skills are on her profile. | Any of: PyTorch, TensorFlow, Keras, Deep Learning, Machine Learning, Computer Vision, OpenCV, YOLO, Object Detection, Sports CV, Pose Estimation, Sports Tracking, Video Understanding, Video Analytics, Highlight Detection, Event Detection, Action Detection |
