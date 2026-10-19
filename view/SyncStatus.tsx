@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowDown01Icon, Cancel01Icon, HelpCircleIcon, Refresh01Icon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, ArrowRight01Icon, Cancel01Icon, HelpCircleIcon, Refresh01Icon } from '@hugeicons/core-free-icons';
 import { Button, Popover, Tooltip } from '@meir-labs/ui-kit';
 import comeetIcon from './assets/comeet.png';
 import googleFormsIcon from './assets/google-forms.png';
@@ -24,11 +24,12 @@ interface Field {
   optional?: boolean;
 }
 
-const SOURCES: { key: string; name: string; icon: string; steps: ReactNode[]; fields: Field[]; google?: boolean }[] = [
+const SOURCES: { key: string; name: string; icon: string; home: string; steps: ReactNode[]; fields: Field[]; google?: boolean }[] = [
   {
     key: 'hubspot',
     name: 'HubSpot',
     icon: hubspotIcon,
+    home: 'https://app.hubspot.com/',
     steps: [
       <>Sign in to HubSpot as a Super Admin (or a user with Developer tools access).</>,
       <>
@@ -49,6 +50,7 @@ const SOURCES: { key: string; name: string; icon: string; steps: ReactNode[]; fi
     key: 'comeet',
     name: 'Comeet',
     icon: comeetIcon,
+    home: 'https://app.comeet.co/app/',
     steps: [
       <>
         In Comeet, open {ext('https://app.comeet.co/app/company/settings/careers', 'Company settings → Careers website')} and copy the company{' '}
@@ -76,6 +78,7 @@ const SOURCES: { key: string; name: string; icon: string; steps: ReactNode[]; fi
     key: 'forms',
     name: 'Google Forms',
     icon: googleFormsIcon,
+    home: 'https://drive.google.com/',
     steps: [
       <>
         In Google Drive, create a shared folder called "Event sign-ups" (
@@ -113,6 +116,8 @@ export function SyncStatus() {
   const [panel, setPanel] = useState<{ key: string; kind: 'steps' | 'form' } | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [googleSignedIn, setGoogleSignedIn] = useState(false);
+  // The Event sign-ups folder entered on Connect, so the Google Forms name opens it.
+  const [folder, setFolder] = useState('');
   const [syncing, setSyncing] = useState(false);
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -129,6 +134,7 @@ export function SyncStatus() {
       setNow(t);
       setConnecting(null);
       setPanel(null);
+      if (key === 'forms' && /^https?:\/\//.test(values.folder?.trim() ?? '')) setFolder(values.folder!.trim());
       setValues({});
     }, 1100);
   };
@@ -195,7 +201,11 @@ export function SyncStatus() {
                     </Tooltip>
                   )}
                 </div>
-                <span className="sync-name">{s.name}</span>
+                {/* The name opens the tool itself; a chevron slides in on hover. */}
+                <a className="sync-name" href={s.key === 'forms' && folder ? folder : s.home} target="_blank" rel="noreferrer">
+                  {s.name}
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={14} strokeWidth={2} aria-hidden="true" />
+                </a>
                 <span className="sync-when">
                   {at === undefined ? (
                     'Not connected'
