@@ -23,7 +23,7 @@ What follows from that:
 Separate from the person ID:
 
 - `sourceContactIds`: the `hubspot_id` values on their rows, as supplied. They may repeat or be blank.
-- `Attendance.attendanceId`: one attendance row, `A-` + 16 hex (hash of person ID + the row). Event editions build on this, not on `hubspot_id`.
+- `Attendance.attendanceId`: one person at one event edition, `A-` + 16 hex (hash of person ID + edition key). Several rows for the same person and edition are one attendance; another edition of the same conference is another attendance. Edition keys come from a supplied `event_id`, else the conference name and date ([importing and events](importing-and-events.md#event-editions)), never from `hubspot_id`.
 
 `Candidate.identity` says how sure we are:
 
@@ -42,7 +42,7 @@ For other modules: use `candidateKey` as the person key, build maps with `indexB
 
 An attendee list added with **Add conference** (recruiter view) or **Import** (integration demo) lives in memory until the page reloads; the supplied files are the pool. Saved history is not lost when an import goes: it stays under the person ID, which comes from their anchor, so:
 
-- importing the same person again (same email or LinkedIn URL) gives the same ID and their history comes back, with no duplicate person;
+- importing the same person again (same email or LinkedIn URL) gives the same ID and their history comes back, with no duplicate person. For the same event edition it adds no second attendance either: a retried list changes nothing ([importing and events](importing-and-events.md#repeated-rows-and-retries));
 - a different person, even with the same name, gets a different ID and inherits nothing.
 
 The one way an ID can be reused is a source-ID-only person whose contact ID was assigned by an app and later given to someone else. The store remembers the name each ID was first saved for; if a source-ID person shows up under that ID with a different name, their actions are blocked and the profile asks whether it is the same person.

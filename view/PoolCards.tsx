@@ -9,7 +9,7 @@ import comeetIcon from './assets/comeet.png';
 const comeetPosition = (jobId: string) => `https://app.comeet.co/app/positions/${jobId}`;
 
 interface Row {
-  /** The filter value: a conference name or a job ID. */
+  /** The filter value: an event edition key or a job ID. */
   id: string;
   name: string;
   /** Quiet text right after the name. */
@@ -98,6 +98,7 @@ export function PoolCards({
   newConference,
 }: {
   pool: Pool;
+  /** Attendees per event edition key. */
   attendeesPer: Map<string, number>;
   conferences: Filter;
   jobs: Filter;
@@ -112,7 +113,13 @@ export function PoolCards({
         icon={Calendar03Icon}
         label="Conferences"
         count={pool.conferences.length}
-        rows={pool.conferences.map((c) => ({ id: c.name, name: c.name, sub: shortDate(c.date), value: `${attendeesPer.get(c.name)} attendees` }))}
+        rows={pool.conferences.map((c) => ({
+          id: c.key,
+          name: c.name,
+          // The date tells two runs of one conference apart; an undated edition says so.
+          sub: c.date ? shortDate(c.date) : 'date unknown',
+          value: `${attendeesPer.get(c.key)} attendees`,
+        }))}
         action={newConference}
         {...conferences}
       />

@@ -2,7 +2,7 @@
  * The list page's model: every attendee once, with the jobs they are worth a look for.
  * Every decision still comes from the pipeline (assessJob); this file only groups and filters it.
  */
-import { assessJob, compareSkills, indexByPersonId, skillKey, splitName, toCsv, toOutputRows } from '../pipeline';
+import { assessJob, compareSkills, indexByPersonId, skillKey, splitName, toOutputRows, toXlsx, XLSX_MIME } from '../pipeline';
 import type { Candidate, CandidateAssessment, Dataset, Job, JobAssessment, OutputRow } from '../pipeline';
 import { currentRole } from './format';
 import { placeOf } from './place';
@@ -24,9 +24,14 @@ export interface Attendee {
   relevantFor: { job: Job; outcome: Relevant; a: CandidateAssessment }[];
 }
 
+/** One event edition (pipeline/events.ts): the filter value is its key, never the bare name. */
 export interface Conference {
+  key: string;
   name: string;
+  /** First day; '' when the edition has no date. */
   date: string;
+  /** The name alone, or with its year/date when another edition shares the name. */
+  label: string;
 }
 
 export interface Pool {
@@ -70,17 +75,15 @@ export function buildPool(dataset: Dataset): Pool {
         x.candidate.candidateKey.localeCompare(y.candidate.candidateKey),
     );
 
-  const seen = new Map<string, Conference>();
-  for (const c of dataset.candidates)
-    for (const at of c.attendances) if (!seen.has(at.conferenceName)) seen.set(at.conferenceName, { name: at.conferenceName, date: at.conferenceDate });
-  const conferences = [...seen.values()].sort((x, y) => x.date.localeCompare(y.date) || x.name.localeCompare(y.name));
+  // Every edition, already in date order (undated last).
+  const conferences = dataset.editions.map((e) => ({ key: e.key, name: e.name, date: e.startDate, label: e.label }));
 
   return { jobs: dataset.jobs, results, items, attendees, conferences };
 }
 
-/** True when the person attended any of the chosen conferences; none chosen means every conference. */
+/** True when the person attended any of the chosen event editions (keys); none chosen means every conference. */
 export const attended = (c: Candidate, conferences: readonly string[]): boolean =>
-  conferences.length === 0 || c.attendances.some((at) => conferences.includes(at.conferenceName));
+  conferences.length === 0 || c.attendances.some((at) => conferences.includes(at.editionKey));
 
 /** True when the person is based in any of the chosen countries (ISO codes); none chosen means anywhere. */
 export const basedIn = (c: Candidate, countries: readonly string[]): boolean =>
@@ -163,12 +166,11 @@ function sortBy(list: Attendee[], by: SortKey, jobs: Job[]): Attendee[] {
     .map(({ p }) => p);
 }
 
-/** How many attendees went to each conference, and how many are shortlist or needs review for each job. */
+/** How many attendees went to each event edition (by key), and how many are shortlist or needs review for each job. */
 export function filterCounts(pool: Pool): { conferences: Map<string, number>; jobs: Map<string, number> } {
-  const conferences = new Map(pool.conferences.map((c) => [c.name, 0]));
+  const conferences = new Map(pool.conferences.map((c) => [c.key, 0]));
   for (const p of pool.attendees)
-    for (const name of new Set(p.candidate.attendances.map((at) => at.conferenceName)))
-      conferences.set(name, (conferences.get(name) ?? 0) + 1);
+    for (const key of new Set(p.candidate.attendances.map((at) => at.editionKey))) conferences.set(key, (conferences.get(key) ?? 0) + 1);
   const jobs = new Map(pool.jobs.map((j) => [j.jobId, jobItems(pool, j.jobId, []).length]));
   return { conferences, jobs };
 }
@@ -212,27 +214,45 @@ export const ATTENDEE_COLUMNS = [
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+export type AttendeeRow = Record<(typeof ATTENDEE_COLUMNS)[number], string>;
+
 /**
- * The attendee list as shown (filtered rows, same order). A person's several conferences are joined with "; ".
- * The file name carries the filter: attendees_<conference slugs>_<job ids>.csv.
+ * The attendee list as shown (filtered rows, same order). A person's several events are joined with "; ";
+ * conference_name is each event edition's label, so two runs of one conference stay apart.
+ * The file name carries the filter: attendees_<edition slugs>_<job ids>_<countries>.
  */
-export function attendeesCsv(
+export function attendeesTable(
   attendees: Attendee[],
-  conferences: readonly string[] = [],
+  conferenceLabels: readonly string[] = [],
   jobIds: readonly string[] = [],
   countries: readonly string[] = [],
-): { fileName: string; text: string } {
+): { baseName: string; rows: AttendeeRow[] } {
   const rows = attendees.map(({ candidate: c, any, relevantFor }) => ({
     full_name: c.fullName,
     ...splitName(c.fullName),
     email: c.email,
     company: String(any.row.current_company ?? ''),
     title: String(any.row.current_title ?? ''),
-    conference_name: c.attendances.map((at) => at.conferenceName).join('; '),
+    conference_name: c.attendances.map((at) => at.editionLabel).join('; '),
     conference_date: c.attendances.map((at) => at.conferenceDate).join('; '),
     linkedin_url: c.linkedinUrl,
     relevant_for: relevantFor.map((r) => `${r.job.jobId} ${OUTCOME_WORDS[r.outcome]}`).join('; '),
   }));
-  const parts = [...conferences.map(slug), ...jobIds.map((id) => id.toLowerCase()), ...countries.map((c) => c.toLowerCase())];
-  return { fileName: ['attendees', ...parts].join('_') + '.csv', text: toCsv(ATTENDEE_COLUMNS, rows) };
+  const parts = [...conferenceLabels.map(slug), ...jobIds.map((id) => id.toLowerCase()), ...countries.map((c) => c.toLowerCase())];
+  return { baseName: ['attendees', ...parts].join('_'), rows };
+}
+
+/** The attendee list as shown, as an Excel workbook: every cell is text, exactly as in the pool (xlsx.ts). */
+export function attendeesXlsx(
+  attendees: Attendee[],
+  conferenceLabels: readonly string[] = [],
+  jobIds: readonly string[] = [],
+  countries: readonly string[] = [],
+): { fileName: string; data: Uint8Array; type: string } {
+  const { baseName, rows } = attendeesTable(attendees, conferenceLabels, jobIds, countries);
+  return {
+    fileName: `${baseName}.xlsx`,
+    data: toXlsx('Attendees', ATTENDEE_COLUMNS.map((name) => ({ name, type: 'text' as const })), rows),
+    type: XLSX_MIME,
+  };
 }

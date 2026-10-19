@@ -45,7 +45,7 @@ export interface PersonIdentity {
 
 /** Published IDs of the supplied people (C-HS001…) and every newly derived one (P-<16 hex>). */
 export const PERSON_ID_PATTERN = /^(C-[A-Za-z0-9][A-Za-z0-9-]*|P-[0-9a-f]{16})$/;
-/** One attendance row (a person at an event): A-<16 hex>. Stage-2 event editions build on this, not on hubspot_id. */
+/** One attendance (a person at one event edition, events.ts): A-<16 hex>. Never built from hubspot_id. */
 export const ATTENDANCE_ID_PATTERN = /^A-[0-9a-f]{16}$/;
 
 /** 64-bit FNV-1a as 16 hex characters. Deterministic and synchronous, so the CLI and browsers agree. */
@@ -84,9 +84,12 @@ export function personIdFor(anchor: string, registered: ReadonlyMap<string, stri
   return registered.get(anchor) ?? `P-${hash64(anchor)}`;
 }
 
-/** The ID of one attendance row of one person (the row's full content, so exact duplicates were already dropped). */
-export function attendanceIdFor(personId: string, rowSignature: string): string {
-  return `A-${hash64(`${personId}|${rowSignature}`)}`;
+/**
+ * The ID of one attendance of one person. The dataset passes `edition:<edition key>` (events.ts), so one person at
+ * one edition has one attendance ID however many rows recorded it, and another edition gets another ID.
+ */
+export function attendanceIdFor(personId: string, attendanceSignature: string): string {
+  return `A-${hash64(`${personId}|${attendanceSignature}`)}`;
 }
 
 /** Throws before a map is built if two things share an ID. Never keeps "the last one". */

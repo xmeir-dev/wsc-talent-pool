@@ -121,7 +121,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
               <dt>Lifecycle stage</dt>
               <dd>Lead</dd>
               <dt>Lead source</dt>
-              <dd>{firstEvent ? `Conference: ${firstEvent.conferenceName}` : '--'}</dd>
+              <dd>{firstEvent ? `Conference: ${firstEvent.editionLabel}` : '--'}</dd>
               <dt>Comeet status ({entry.result.job.title})</dt>
               <dd data-testid="hs-comeet-status">{status}</dd>
               <dt>Last contacted</dt>
@@ -196,7 +196,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
                   <li key={item.key}>
                     <div className="hs-activity-head">
                       <span>
-                        <Icon icon={ArrowRight01Icon} size={14} /> <strong>Event attendance</strong> · {item.e.attendance.conferenceName}
+                        <Icon icon={ArrowRight01Icon} size={14} /> <strong>Event attendance</strong> · {item.e.attendance.editionLabel}
                       </span>
                       <span className="muted">{item.date}</span>
                     </div>

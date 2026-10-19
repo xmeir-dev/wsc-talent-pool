@@ -67,7 +67,7 @@ None of this feeds the ranking. Each item is made up because the supplied files 
 2. **A shared folder** (Google Drive or SharePoint, "Conference lists"). A new file starts the same import. Outside organizers usually cannot write to it, so someone at WSC copies the file in.
 3. **The event platform's own HubSpot integration,** where the organizer uses one and agrees to share, usually for sponsors. Attendees arrive with no file.
 
-**Fallbacks:** HubSpot's Import button for one-off files, and WSC's sign-up form at the booth for events that will not share a list. A file missing required columns imports nothing and the sender is told what is missing, as the demo's import does.
+**Fallbacks:** HubSpot's Import button for one-off files, and WSC's sign-up form at the booth for events that will not share a list. A file missing required columns, or with broken CSV structure, imports nothing and the sender is told what is wrong and where, as the demo's import does ([importing and events](importing-and-events.md)).
 
 ## People already in Comeet
 

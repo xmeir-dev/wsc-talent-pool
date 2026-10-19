@@ -1,5 +1,6 @@
 /** Shared types for the candidate-ranking pipeline. */
 
+import type { EventEdition } from './events';
 import type { PersonIdentity } from './identity';
 
 // ---------- Source records (as supplied in data/) ----------
@@ -16,6 +17,8 @@ export interface AttendeeRecord {
   source: string;
   notes: string;
   linkedin_url: string;
+  /** Optional: the organiser's ID for this event edition. When present it decides the edition (events.ts). */
+  event_id?: string;
 }
 
 export interface ProfileRecord {
@@ -112,8 +115,17 @@ export interface Profile {
 }
 
 export interface Attendance {
-  /** This attendance row's own ID (A-<16 hex>, see identity.ts). Not the person's ID, not the source contact ID. */
+  /**
+   * One person at one event edition: A-<16 hex> of person ID + edition key (identity.ts, events.ts).
+   * Several rows for the same person and edition are one attendance. Not the person's ID, not the source contact ID.
+   */
   attendanceId: string;
+  /** The event edition (EventEdition.key): which run of the conference this was. */
+  editionKey: string;
+  /** The edition as it reads on screen ("SportsTech Innovation Summit (2026)"; the name alone when unambiguous). */
+  editionLabel: string;
+  /** The supplied event ID, or ''. */
+  eventId: string;
   /** The source contact ID on this row, as supplied; may repeat or be blank. */
   hubspotId: string;
   conferenceName: string;
@@ -147,6 +159,8 @@ export interface Dataset {
   jobs: Job[];
   employees: Map<string, Employee>;
   candidates: Candidate[];
+  /** Every event edition in the attendee file, by first date (undated last). */
+  editions: EventEdition[];
   /** File-level problems (e.g. a duplicate employee ID). Row-level problems sit on the candidate. */
   warnings: string[];
 }

@@ -2,8 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Download04Icon, Briefcase01Icon, Calendar03Icon, Location01Icon, MailSend01Icon } from '@hugeicons/core-free-icons';
 import { Button, Callout, Dropdown, EmptyState, PaginationFooter, usePagination, type SortState } from '@meir-labs/ui-kit';
-import { buildDataset, DataValidationError, parseCsv, toCsv, type Dataset, type SourceTexts } from '../pipeline';
-import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
+import { buildDataset, DataValidationError, type Dataset, type SourceTexts } from '../pipeline';
+import { attendeesXlsx, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
 import { CandidateDetail } from './CandidateDetail';
 import { AttendeeTable } from './CandidateTable';
 import { BulkActions } from './BulkActions';
@@ -15,7 +15,8 @@ import { PageFooter } from './PageFooter';
 import { PoolCards } from './PoolCards';
 import { bundledSources } from './data';
 import offices from '../data/wsc_offices.json';
-import { downloadFile, exportCsv } from './download';
+import { downloadFile, exportCsv, exportXlsx } from './download';
+import { importAttendeeList } from './importList';
 import { FilterMenu, type FilterOption } from './FilterMenu';
 import { conferenceShort, jobShort } from './format';
 
@@ -38,12 +39,6 @@ function load(sources: SourceTexts): Loaded {
   }
 }
 
-/** A source file with more rows added, in the original columns. */
-function withRows(base: string, added: string): string {
-  const a = parseCsv(base);
-  return toCsv(a.header, [...a.records, ...parseCsv(added).records]);
-}
-
 export function App({ sources: initial = bundledSources }: { sources?: SourceTexts }) {
   // An added conference lives in memory only; a reload goes back to the supplied files.
   const [sources, setSources] = useState(initial);
@@ -62,24 +57,21 @@ export function App({ sources: initial = bundledSources }: { sources?: SourceTex
       </main>
     );
   }
-  const addAttendees = (text: string, profiles?: string): string[] | null => {
-    const next = {
-      ...sources,
-      attendees: withRows(sources.attendees, text),
-      ...(profiles && { profiles: withRows(sources.profiles, profiles) }),
-    };
-    const tried = load(next);
-    if (!tried.ok) return tried.problems;
-    setSources(next);
-    return null;
+  // The whole list is checked and the merged pool built before anything changes; a problem leaves the pool as it was.
+  const addAttendees: AddAttendees = (text, profiles) => {
+    const result = importAttendeeList(sources, text, profiles);
+    if (result.ok && result.added > 0) setSources(result.sources);
+    return result;
   };
   return <Workspace dataset={loaded.dataset} onAddAttendees={addAttendees} />;
 }
 
-function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttendees: (text: string, profiles?: string) => string[] | null }) {
+type AddAttendees = (text: string, profiles?: string) => ReturnType<typeof importAttendeeList>;
+
+function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttendees: AddAttendees }) {
   const pool = useMemo(() => buildPool(dataset), [dataset]);
   // Filters live here, so they survive a trip to a profile and back.
-  // Empty means no filter. Values are conference names and job IDs, in list order.
+  // Empty means no filter. Values are event edition keys and job IDs, in list order.
   const [conferences, setConferences] = useState<string[]>([]);
   const [jobIds, setJobIds] = useState<string[]>([]);
   const [countries, setCountries] = useState<string[]>([]);
@@ -123,8 +115,9 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
   const { conferenceOptions, jobOptions, countryOptions } = useMemo(() => {
     const counts = filterCounts(pool);
     const conferenceOptions: FilterOption[] = pool.conferences.map((c) => {
-      const short = conferenceShort(c.name);
-      return { value: c.name, label: short, short, count: counts.conferences.get(c.name)!, title: short === c.name ? undefined : c.name };
+      // The edition's qualifier ("(2024)") stays on the short name, so two runs of one conference read apart.
+      const short = conferenceShort(c.name) + c.label.slice(c.name.length);
+      return { value: c.key, label: short, short, count: counts.conferences.get(c.key)!, title: short === c.label ? undefined : c.label };
     });
     const jobOptions: FilterOption[] = pool.jobs.map((j) => ({
       value: j.jobId,
@@ -219,13 +212,15 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
     );
   }
 
-  // The people shown, every filter applied. With one job there is a second, named choice: that job's full CLI file.
-  const exportShown = () => downloadFile(attendeesCsv(attendees, conferences, jobIds, countries));
+  // The people shown, every filter applied, as an Excel file. With one job there are two more named choices:
+  // that job's full assessment as Excel, and the exact CRM import CSV (the CLI's file, values unaltered).
+  const labelOf = (key: string) => pool.conferences.find((c) => c.key === key)?.label ?? key;
+  const exportShown = () => downloadFile(attendeesXlsx(attendees, conferences.map(labelOf), jobIds, countries));
   const exportButton = (
-    <Button variant="secondary" className="export" onClick={job ? undefined : exportShown} aria-label="Download CSV">
+    <Button variant="secondary" className="export" onClick={job ? undefined : exportShown} aria-label="Download">
       <HugeiconsIcon icon={Download04Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
       <span className="export-label" aria-hidden="true">
-        Download CSV
+        Download
       </span>
     </Button>
   );
@@ -258,10 +253,17 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
           align="end"
           trigger={exportButton}
           items={[
-            { value: 'shown', label: `Attendees shown (${shown})` },
-            { value: 'job', label: `Full ${job} assessment (${pool.results.get(job)!.candidates.length})` },
+            { value: 'shown', label: `Attendees shown (${shown}), Excel` },
+            { value: 'job', label: `Full ${job} assessment (${pool.results.get(job)!.candidates.length}), Excel` },
+            { value: 'crm', label: `CRM import CSV, full ${job} assessment (exact values)` },
           ]}
-          onSelect={(v) => (v === 'job' ? downloadFile(exportCsv(pool.results.get(job)!)) : exportShown())}
+          onSelect={(v) =>
+            v === 'crm'
+              ? downloadFile(exportCsv(pool.results.get(job)!))
+              : v === 'job'
+                ? downloadFile(exportXlsx(pool.results.get(job)!))
+                : exportShown()
+          }
         />
       ) : (
         exportButton
@@ -281,12 +283,11 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         </div>
         <SyncStatus />
         <NewConference
-          existing={pool.conferences.map((c) => c.name)}
-          onAdd={(text, names, profiles) => {
-            const problems = onAddAttendees(text, profiles);
-            // Show who came: filter the table to the new event.
-            if (!problems) setConferences(names);
-            return problems;
+          onAdd={(text, profiles) => {
+            const result = onAddAttendees(text, profiles);
+            // Show who came: filter the table to the list's event editions.
+            if (result.ok) setConferences(result.editions);
+            return result;
           }}
         />
       </header>

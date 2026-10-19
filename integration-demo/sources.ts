@@ -4,37 +4,22 @@
  * are assessed by exactly the same rules as the supplied data.
  */
 
-import { buildDataset, DataValidationError, parseCsv, SUPPORTED_SENIORITIES, toCsv, type Dataset, type SourceTexts } from '../pipeline';
+import {
+  appendRecords,
+  ATTENDEE_SOURCE_COLUMNS,
+  buildDataset,
+  CsvFormatError,
+  DataValidationError,
+  isIsoDate,
+  parseCsv,
+  planAttendeeImport,
+  SUPPORTED_SENIORITIES,
+  toCsv,
+  type Dataset,
+  type SourceTexts,
+} from '../pipeline';
 import { NAME_CONFLICT_FLAG } from '../pipeline/dataset';
 import { normalize, normalizeEmail, normalizeLinkedinUrl } from '../pipeline/text';
-
-const ATTENDEE_COLUMNS = [
-  'hubspot_id',
-  'full_name',
-  'email',
-  'company',
-  'title',
-  'conference_name',
-  'conference_domain',
-  'conference_date',
-  'source',
-  'notes',
-  'linkedin_url',
-] as const;
-
-const PROFILE_COLUMNS = [
-  'linkedin_url',
-  'full_name',
-  'current_company',
-  'current_title',
-  'location',
-  'years_experience',
-  'top_skills',
-  'industry',
-  'past_companies',
-  'past_titles',
-  'wsc_mutual_connections',
-] as const;
 
 const JOB_COLUMNS = ['job_id', 'title', 'department', 'seniority', 'key_domains', 'required_skills', 'nice_to_have'] as const;
 
@@ -50,6 +35,7 @@ export const IMPORT_COLUMNS = [
   'source',
   'notes',
   'linkedin_url',
+  'event_id',
   'location',
   'years_experience',
   'top_skills',
@@ -73,10 +59,16 @@ export type ImportPreview =
        * earlier row for the same person). Counted from the real grouping, so rows - merged = created.
        */
       merged: number;
+      /**
+       * Rows skipped because that person is already recorded at that event edition (in the pool, or earlier in
+       * the file). Importing the same file twice adds nothing the second time.
+       */
+      alreadyRecorded: number;
       /** Contacts the import adds to the pool. */
       created: number;
       /** One line per row whose match is uncertain: what happens to it and why. */
       uncertain: string[];
+      /** Event editions in the file, as labelled in the pool ("SportsTech Innovation Summit (2026)"). */
       conferences: string[];
       ignoredColumns: string[];
     }
@@ -108,12 +100,14 @@ function outcome(rows: ImportRow[], sources: SourceTexts, after: Dataset) {
   const keys = existingKeys(sources);
   const ids = newContactIds(rows, keys.maxId);
   const rowById = new Map(ids.map((id, i) => [id, rows[i]!]));
+  const existed = new Set(buildDataset(sources).candidates.map((c) => c.candidateKey));
   let created = 0;
   const uncertain: string[] = [];
   for (const c of after.candidates) {
     const mine = c.sourceContactIds.filter((id) => rowById.has(id)).map((id) => rowById.get(id)!);
     if (mine.length === 0) continue;
-    const isNew = mine.length === c.sourceContactIds.length;
+    // New = not in the pool before, by durable person ID (an earlier row may have had no contact ID at all).
+    const isNew = !existed.has(c.candidateKey);
     if (isNew) created++;
     const names = [...new Set(mine.map((r) => r.full_name))].join(' / ');
     if (c.dataQualityFlags.some((f) => f.startsWith(NAME_CONFLICT_FLAG))) {
@@ -125,34 +119,55 @@ function outcome(rows: ImportRow[], sources: SourceTexts, after: Dataset) {
   return { created, merged: rows.length - created, uncertain };
 }
 
-/** Validates a spreadsheet before anything changes. Problems block the import; nothing is half-applied. */
+/**
+ * Validates a spreadsheet before anything changes: the CSV structure (strictly, with line and column), the
+ * columns, every row, and the pool the import would produce. Problems block the import; nothing is half-applied.
+ */
 export function previewImport(text: string, sources: SourceTexts): ImportPreview {
-  const { header, records } = parseCsv(text);
+  let parsed;
+  try {
+    parsed = parseCsv(text);
+  } catch (err) {
+    if (err instanceof CsvFormatError) return { ok: false, problems: err.problems.map((p) => `${p[0]!.toUpperCase()}${p.slice(1)}.`) };
+    throw err;
+  }
+  const { header, records, lines } = parsed;
   const problems: string[] = [];
   for (const col of REQUIRED) if (!header.includes(col)) problems.push(`Missing column "${col}".`);
   if (!header.includes('email') && !header.includes('linkedin_url')) problems.push('Needs an "email" or "linkedin_url" column.');
   if (problems.length === 0 && records.length === 0) problems.push('The file has no rows.');
+  const uncertain: string[] = [];
   records.forEach((r, i) => {
-    const line = i + 2;
+    const line = lines[i];
     if (problems.length > 0 && !header.includes('full_name')) return;
-    if (!r.full_name?.trim()) problems.push(`Row ${line}: no name.`);
-    if (!r.conference_name?.trim()) problems.push(`Row ${line}: no conference.`);
-    if (!r.email?.trim() && !r.linkedin_url?.trim()) problems.push(`Row ${line}: needs an email or LinkedIn URL.`);
+    if (!r.full_name?.trim()) problems.push(`Line ${line}: no name.`);
+    if (!r.conference_name?.trim()) problems.push(`Line ${line}: no conference.`);
+    if (!r.email?.trim() && !r.linkedin_url?.trim()) problems.push(`Line ${line}: needs an email or LinkedIn URL.`);
+    const date = r.conference_date?.trim() ?? '';
+    if (date && !isIsoDate(date)) problems.push(`Line ${line}: conference_date "${date}" is not a date (use YYYY-MM-DD).`);
+    else if (!date && r.conference_name?.trim() && !r.event_id?.trim())
+      uncertain.push(`Line ${line}: no conference date, so it is kept as a separate "date unknown" edition of ${r.conference_name.trim()}.`);
   });
   if (problems.length > 0) return { ok: false, problems };
 
-  const rows = records.map((r) => Object.fromEntries(IMPORT_COLUMNS.map((c) => [c, (r[c] ?? '').trim()])) as ImportRow);
+  const all = records.map((r) => Object.fromEntries(IMPORT_COLUMNS.map((c) => [c, (r[c] ?? '').trim()])) as ImportRow);
+  // Same person at the same event edition is already recorded: skip it, so a retried file changes nothing.
+  const plan = planAttendeeImport(sources.attendees, all);
+  const rows = plan.add.map((i) => all[i]!);
   let after: Dataset;
   try {
     after = buildDataset(applyImport(rows, sources));
   } catch (err) {
     return { ok: false, problems: err instanceof DataValidationError ? err.problems : [String(err)] };
   }
+  const result = outcome(rows, sources, after);
   return {
     ok: true,
     rows,
-    ...outcome(rows, sources, after),
-    conferences: [...new Set(rows.map((r) => r.conference_name!))],
+    ...result,
+    uncertain: [...uncertain, ...result.uncertain],
+    alreadyRecorded: plan.alreadyRecorded.length,
+    conferences: [...new Set(plan.editionKeys)].map((k) => plan.editions.get(k) ?? k),
     ignoredColumns: header.filter((h) => !(IMPORT_COLUMNS as readonly string[]).includes(h)),
   };
 }
@@ -173,6 +188,8 @@ export function applyImport(rows: ImportRow[], sources: SourceTexts): SourceText
     source: r.source || 'Manual import',
     notes: r.notes ?? '',
     linkedin_url: r.linkedin_url ?? '',
+    // Only when supplied, so the source table gains the column only when an import uses it.
+    ...(r.event_id && { event_id: r.event_id }),
   }));
   const seen = new Set(keys.profiles);
   const profiles = rows
@@ -197,8 +214,8 @@ export function applyImport(rows: ImportRow[], sources: SourceTexts): SourceText
     }));
   return {
     ...sources,
-    attendees: appendRows(sources.attendees, ATTENDEE_COLUMNS, attendees),
-    profiles: appendRows(sources.profiles, PROFILE_COLUMNS, profiles),
+    attendees: attendees.length ? appendRecords(sources.attendees, attendees, ATTENDEE_SOURCE_COLUMNS) : sources.attendees,
+    profiles: profiles.length ? appendRecords(sources.profiles, profiles) : sources.profiles,
   };
 }
 

@@ -3,12 +3,13 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadSources } from '../cli/load-sources';
-import { assessmentToCsv, buildDataset } from '../pipeline';
+import { assessmentToCsv, buildDataset, XLSX_MIME } from '../pipeline';
 import { FIXTURE_DIR } from '../tests/helpers';
 import { App } from './App';
 import { buildPool, filterAttendees, sortAttendees } from './attendees';
 import { bundledSources } from './data';
 import { downloadFile } from './download';
+import { readXlsx } from '../tests/xlsx-read';
 
 vi.mock('./download', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./download')>()),
@@ -46,6 +47,7 @@ async function pick(user: User, name: 'Conference' | 'Job', ...chips: RegExp[]) 
 }
 
 const pool = buildPool(buildDataset(bundledSources));
+const edition = (name: string) => pool.conferences.find((c) => c.name === name)!.key;
 
 describe('recruiter view: list', () => {
   it('a row in the Conferences or Open jobs card toggles it in the table filter, several at once', async () => {
@@ -78,7 +80,7 @@ describe('recruiter view: list', () => {
     expect(trigger('Job').textContent).toBe('JobAll');
     expect(screen.queryByRole('tab')).toBeNull();
     expect(screen.queryByRole('combobox', { name: 'Role' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Download CSV' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Download' })).toBeTruthy();
   });
 
   it('Location puts WSC office countries first, most attendees first; the rest open behind "N more countries"', async () => {
@@ -149,7 +151,7 @@ describe('recruiter view: list', () => {
     expect(value('Conference')).toBe('Data & AI Summit');
 
     await toggle(user, 'Conference', /^SportsTech/);
-    const both = filterAttendees(pool, ['SportsTech Innovation Summit', 'Data & AI Summit Europe'], []).length;
+    const both = filterAttendees(pool, [edition('SportsTech Innovation Summit'), edition('Data & AI Summit Europe')], []).length;
     expect(both).toBeGreaterThan(40);
     expect(heading()).toBe(`${both} of 75 attendees`);
     expect(rows()).toHaveLength(both);
@@ -226,26 +228,27 @@ describe('recruiter view: list', () => {
     expect(trigger('Job')).toBeTruthy();
   });
 
-  it('exports the job CSV for one job (as a named choice), else the attendees shown', async () => {
+  it('exports the job as Excel or the exact CRM CSV (named choices), else the attendees shown as Excel', async () => {
     const user = userEvent.setup();
     render(<App />);
     const lastExport = async (choice?: RegExp) => {
-      await user.click(screen.getByRole('button', { name: 'Download CSV' }));
+      await user.click(screen.getByRole('button', { name: 'Download' }));
       if (choice) await user.click(screen.getByRole('menuitem', { name: choice }));
       return vi.mocked(downloadFile).mock.lastCall![0];
     };
     await pick(user, 'Job', /^Senior ML Engineer/);
     await pick(user, 'Conference', /^Data & AI Summit/);
-    // One job: the full CLI file is an explicit menu choice.
-    const one = await lastExport(/^Full JOB001 assessment/);
-    expect(one.fileName).toBe('candidates_JOB001.csv');
+    // One job: the full CLI file is an explicit, labelled CRM choice, byte for byte.
+    const crm = await lastExport(/^CRM import CSV, full JOB001/);
+    expect(crm.fileName).toBe('candidates_JOB001.csv');
     // The whole job, as the CLI writes it: the conference filter does not trim it.
-    expect(one.text).toBe(assessmentToCsv(pool.results.get('JOB001')!));
+    expect(crm.data).toBe(assessmentToCsv(pool.results.get('JOB001')!));
 
     await pick(user, 'Job', /^Data Engineer/);
     const several = await lastExport();
-    expect(several.fileName).toBe('attendees_data-ai-summit-europe_job001_job004.csv');
-    expect(several.text.trim().split('\n')).toHaveLength(Number(heading()!.split(' ')[0]) + 1);
+    expect(several.fileName).toBe('attendees_data-ai-summit-europe_job001_job004.xlsx');
+    expect(several.type).toBe(XLSX_MIME);
+    expect(readXlsx(several.data as Uint8Array).rows).toHaveLength(Number(heading()!.split(' ')[0]) + 1);
   });
 });
 

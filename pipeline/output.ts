@@ -3,6 +3,7 @@
  */
 
 import { toCsv } from './csv';
+import { toXlsx, type XlsxColumn } from './xlsx';
 import { formatYears } from './history';
 import { joinOr } from './text';
 import type { CandidateAssessment, EventAssessment, JobAssessment } from './types';
@@ -72,6 +73,8 @@ function formatEvent(e: EventAssessment): string {
     `${a.conferenceDate} ${a.conferenceName} [${a.conferenceDomain}]: ${e.relevance.replace('_', ' ')} (${e.explanation})`,
     `ref ${a.hubspotId}${a.source ? `, ${a.source}` : ''}`,
   ];
+  // A supplied event ID decides the edition (events.ts); carry it so the CRM row names the same edition.
+  if (a.eventId) parts.push(`event ${a.eventId}`);
   if (a.notes) parts.push(`note: "${a.notes}"`);
   return parts.join('; ');
 }
@@ -144,4 +147,30 @@ export function assessmentToCsv(result: JobAssessment): string {
 
 export function outputFileName(jobId: string): string {
   return `candidates_${jobId}.csv`;
+}
+
+/** Columns holding counts, ranks and years: numeric cells in the Excel download. Every other column is text. */
+export const NUMERIC_OUTPUT_COLUMNS: readonly OutputColumn[] = [
+  'shortlist_rank',
+  'required_skills_on_profile',
+  'required_skills_likely',
+  'required_skills_total',
+  'required_skills_needed',
+  'nice_to_have_on_profile',
+  'nice_to_have_total',
+  'years_experience',
+  'connection_count',
+];
+
+/**
+ * The same rows as assessmentToCsv, as an Excel workbook for people to open: every text value is a text cell
+ * (never a formula), counts and ranks are numbers. The CSV stays the exact interchange file for CRM import.
+ */
+export function assessmentToXlsx(result: JobAssessment): Uint8Array {
+  const columns: XlsxColumn[] = OUTPUT_COLUMNS.map((name) => ({ name, type: NUMERIC_OUTPUT_COLUMNS.includes(name) ? 'number' : 'text' }));
+  return toXlsx(result.job.jobId, columns, toOutputRows(result));
+}
+
+export function outputXlsxFileName(jobId: string): string {
+  return `candidates_${jobId}.xlsx`;
 }

@@ -6,15 +6,16 @@ import { ROOT } from '../tests/helpers';
 import { bundledSources } from './data';
 import { exportCsv } from './download';
 
-// The browser bundles data/ as raw text; its export must be the committed CLI output, byte for byte.
+// The browser bundles data/ as raw text; its CRM import CSV must be the committed CLI output, byte for byte.
 describe('browser export', () => {
   const dataset = buildDataset(bundledSources);
   for (const job of dataset.jobs) {
     it(`matches output/candidates_${job.jobId}.csv`, () => {
-      const { fileName, text } = exportCsv(assessJob(dataset, job.jobId));
+      const { fileName, data, type } = exportCsv(assessJob(dataset, job.jobId));
       expect(fileName).toBe(`candidates_${job.jobId}.csv`);
+      expect(type).toBe('text/csv;charset=utf-8');
       const committed = readFileSync(join(ROOT, 'output', fileName));
-      expect(Buffer.from(text, 'utf8').equals(committed)).toBe(true);
+      expect(Buffer.from(data as string, 'utf8').equals(committed)).toBe(true);
     });
   }
 });

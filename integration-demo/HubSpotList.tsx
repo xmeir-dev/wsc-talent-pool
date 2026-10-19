@@ -20,7 +20,7 @@ interface Props {
   view: string;
   onView: (view: string) => void;
   onOpen: (candidateKey: string, jobId: string) => void;
-  onImport: (rows: ImportRow[], fileName: string, merged: number) => void;
+  onImport: (rows: ImportRow[], fileName: string, merged: number, alreadyRecorded: number) => void;
 }
 
 const PAGE = 25;
@@ -137,8 +137,8 @@ export function HubSpotList({ store, sources, comeet, view, onView, onOpen, onIm
         <ImportDialog
           sources={sources}
           onClose={() => setImporting(false)}
-          onImport={(rows, fileName, merged) => {
-            onImport(rows, fileName, merged);
+          onImport={(rows, fileName, merged, alreadyRecorded) => {
+            onImport(rows, fileName, merged, alreadyRecorded);
             onView('all');
           }}
         />
@@ -205,7 +205,7 @@ function AllContacts({ store, onOpen }: { store: AssessmentStore; onOpen: Props[
                   <td>{c.email || '--'}</td>
                   <td>{last?.source || '--'}</td>
                   <td>
-                    {last?.conferenceName}
+                    {last?.editionLabel}
                     {c.attendances.length > 1 && <span className="muted"> +{c.attendances.length - 1}</span>}
                   </td>
                   <td>{c.profile?.currentTitle || last?.listedTitle || '--'}</td>

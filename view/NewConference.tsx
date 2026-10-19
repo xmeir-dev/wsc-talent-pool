@@ -2,23 +2,9 @@ import { useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { CalendarAdd01Icon, Cancel01Icon, CircleArrowUp02Icon, ClipboardPasteIcon, FileUploadIcon } from '@hugeicons/core-free-icons';
 import { Button, Popover, Tooltip } from '@meir-labs/ui-kit';
-import { parseCsv } from '../pipeline';
+import type { ListImport } from './importList';
 import sample from '../data/samples/wsc_product_meetup.csv?raw';
 import sampleProfiles from '../data/samples/wsc_product_meetup_profiles.csv?raw';
-
-const NEEDED = ['full_name', 'email', 'conference_name', 'conference_date'];
-
-/** Checks an attendee list (the sign-up form's export, same columns as conference_attendees.csv); returns its conference names or a problem. */
-function check(text: string, existing: string[]): string[] | string {
-  const { header, records } = parseCsv(text);
-  const missing = NEEDED.filter((c) => !header.includes(c));
-  if (missing.length) return `This list is missing ${missing.join(', ')}. Use the sign-up form's export.`;
-  if (!records.length) return 'This list has no attendees.';
-  const names = [...new Set(records.map((r) => r.conference_name!.trim()).filter(Boolean))];
-  const already = names.filter((n) => existing.includes(n));
-  if (already.length) return `${already.join(', ')} is already in the pool.`;
-  return names;
-}
 
 /** A Google Sheets link becomes its CSV export (the sheet must be viewable by anyone with the link); other links are fetched as they are. */
 function csvUrl(link: string): string {
@@ -30,13 +16,13 @@ function csvUrl(link: string): string {
 
 /** "Add conference": drop, choose or link one event's attendee list, and it joins the pool at once. */
 export function NewConference({
-  existing,
   onAdd,
 }: {
-  existing: string[];
-  /** Adds the list; returns problems if the merged data no longer reads. */
-  /** `profiles` stands in for the LinkedIn lookup production runs on new attendees (the sample brings its own). */
-  onAdd: (text: string, names: string[], profiles?: string) => string[] | null;
+  /**
+   * Checks the whole list and adds what is new (importList.ts). A problem (broken CSV, missing column, bad date)
+   * adds nothing. `profiles` stands in for the LinkedIn lookup production runs on new attendees (the sample brings its own).
+   */
+  onAdd: (text: string, profiles?: string) => ListImport;
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,11 +39,14 @@ export function NewConference({
     setShowAuto(false);
   };
   const add = (text: string, profiles?: string) => {
-    const names = check(text, existing);
-    if (typeof names === 'string') return setError(names);
-    const problems = onAdd(text, names, profiles);
-    if (problems) setError(problems.join(' '));
-    else close();
+    const result = onAdd(text, profiles);
+    if (!result.ok) {
+      const more = result.problems.length - 4;
+      return setError(`Nothing was added. ${result.problems.slice(0, 4).join(' ')}${more > 0 ? ` …and ${more} more.` : ''}`);
+    }
+    // Adding the same list again is harmless: say so instead of closing as if something changed.
+    if (result.added === 0) return setError('Everyone on this list is already recorded for this event. Nothing changed.');
+    close();
   };
   const fromLink = async (url: string) => {
     if (!/^https?:\/\//.test(url.trim())) return setError('Paste a full link, starting with https://');

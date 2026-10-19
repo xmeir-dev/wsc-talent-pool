@@ -30,11 +30,11 @@ function roleLines(store: AssessmentStore, jobIds: string[]) {
 
 /** The overnight run: every contact in the pool scored for every open role. */
 function overnightNotice(store: AssessmentStore): Notice {
-  const events = new Set(store.dataset.candidates.flatMap((c) => c.attendances.map((a) => a.conferenceName)));
+  // Events are counted by edition: two runs of one conference are two events.
   return {
     id: 'overnight',
     title: 'Talent match ran overnight',
-    body: `${store.dataset.candidates.length} conference contacts from ${events.size} events scored for ${store.dataset.jobs.length} open roles.`,
+    body: `${store.dataset.candidates.length} conference contacts from ${store.dataset.editions.length} events scored for ${store.dataset.jobs.length} open roles.`,
     lines: roleLines(
       store,
       store.dataset.jobs.map((j) => j.jobId),
@@ -85,14 +85,14 @@ export function App({ sources: initialSources = bundledSources, delayMs }: Props
     setHost('comeet');
   };
 
-  const importRows = (rows: ImportRow[], fileName: string, merged: number) => {
+  const importRows = (rows: ImportRow[], fileName: string, merged: number, alreadyRecorded: number) => {
     const next = applyImport(rows, sources);
     const nextStore = buildAssessmentStore(buildDataset(next));
     setSources(next);
     notify({
       id: `import-${Date.now()}`,
       title: `Import finished: ${fileName}`,
-      body: `${rows.length - merged} new contacts, ${merged} added as an event to an existing contact. Pool re-scored for ${nextStore.dataset.jobs.length} open roles.`,
+      body: `${rows.length - merged} new contacts, ${merged} added as an event to an existing contact${alreadyRecorded ? `, ${alreadyRecorded} already recorded (skipped)` : ''}. Pool re-scored for ${nextStore.dataset.jobs.length} open roles.`,
       lines: roleLines(
         nextStore,
         nextStore.dataset.jobs.map((j) => j.jobId),

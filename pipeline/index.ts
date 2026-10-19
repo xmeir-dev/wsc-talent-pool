@@ -44,8 +44,11 @@ export { assessCandidate, matchSkill, minYearsFor, policyFor, requiredNeeded, un
 export { assessEvent } from './conference';
 export { findPossibleReferences, sameEmployer } from './history';
 export { compareSkills, rankAssessments, skillKey, skillSummary } from './rank';
-export { assessmentToCsv, outputFileName, OUTPUT_COLUMNS, splitName, toOutputRows, type OutputColumn, type OutputRow } from './output';
-export { parseCsv, toCsv } from './csv';
+export { assessmentToCsv, assessmentToXlsx, NUMERIC_OUTPUT_COLUMNS, outputFileName, outputXlsxFileName, OUTPUT_COLUMNS, splitName, toOutputRows, type OutputColumn, type OutputRow } from './output';
+export { appendRecords, CsvFormatError, parseCsv, toCsv, type CsvRecord } from './csv';
+export { assignEditions, EDITION_GAP_DAYS, isIsoDate, type EventEdition } from './events';
+export { anchorOf, ATTENDEE_SOURCE_COLUMNS, planAttendeeImport } from './dataset';
+export { cellText, toXlsx, XLSX_MIME, type XlsxCell, type XlsxColumn } from './xlsx';
 export * as rules from './rules';
 export { ASSESSMENT_VERSION, SUPPORTED_SENIORITIES } from './rules';
 export type * from './types';

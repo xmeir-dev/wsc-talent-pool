@@ -1,12 +1,27 @@
-import { assessmentToCsv, outputFileName, type JobAssessment } from '../pipeline';
+import { assessmentToCsv, assessmentToXlsx, outputFileName, outputXlsxFileName, XLSX_MIME, type JobAssessment } from '../pipeline';
 
-/** The exact text the CLI writes to output/candidates_<job_id>.csv. */
-export function exportCsv(result: JobAssessment): { fileName: string; text: string } {
-  return { fileName: outputFileName(result.job.jobId), text: assessmentToCsv(result) };
+export interface DownloadFile {
+  fileName: string;
+  /** Text is written as UTF-8. */
+  data: string | Uint8Array;
+  type: string;
 }
 
-export function downloadFile({ fileName, text }: { fileName: string; text: string }): void {
-  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+/**
+ * The CRM import file: exactly the text the CLI writes to output/candidates_<job_id>.csv. Values are unaltered
+ * (no prefixes), so a formula-like name stays as typed; it is meant for HubSpot import, not for opening in a spreadsheet.
+ */
+export function exportCsv(result: JobAssessment): DownloadFile {
+  return { fileName: outputFileName(result.job.jobId), data: assessmentToCsv(result), type: 'text/csv;charset=utf-8' };
+}
+
+/** The same assessment for people to open: an Excel workbook with text cells and numeric counts/ranks (pipeline/xlsx.ts). */
+export function exportXlsx(result: JobAssessment): DownloadFile {
+  return { fileName: outputXlsxFileName(result.job.jobId), data: assessmentToXlsx(result), type: XLSX_MIME };
+}
+
+export function downloadFile({ fileName, data, type }: DownloadFile): void {
+  const url = URL.createObjectURL(new Blob([data as BlobPart], { type }));
   const a = document.createElement('a');
   a.href = url;
   a.download = fileName;

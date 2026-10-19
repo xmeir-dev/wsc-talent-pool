@@ -5,14 +5,17 @@
  * - Attendee rows with the same valid LinkedIn URL are one person (repeat attendee).
  * - Without a valid URL, the same email is one person. Names alone never merge anyone.
  * - Exact duplicate rows are dropped and flagged; conflicting details are flagged, not resolved.
+ * - Attendee rows belong to event editions (events.ts); one person at one edition is one attendance, however
+ *   many rows recorded it. Files are read strictly (csv.ts): a broken file stops with its line and column.
  * - Records combined by one URL that give different names are an unresolved identity: the profile
  *   is shown but held for review. Different emails alone do not block (work vs personal is common).
  * - Each person gets a durable ID from the identifier they were grouped by (see identity.ts), never
  *   from a name, the row order or which source ID sorts first. Duplicate IDs are an error.
  */
 
-import { parseCsv, type CsvRecord } from './csv';
+import { CsvFormatError, parseCsv, type CsvRecord } from './csv';
 import { DataValidationError } from './errors';
+import { assignEditions, isIsoDate } from './events';
 import { parseHistory } from './history';
 import { anchorKey, assertUnique, attendanceIdFor, hash64, personIdFor, type AnchorKind } from './identity';
 import { isValidLinkedinUrl, normalize, normalizeEmail, normalizeLinkedinUrl, splitList, uniqueSkills } from './text';
@@ -45,23 +48,46 @@ const OPTIONAL_COLUMNS = {
   jobs: ['department', 'key_domains'],
 } as const;
 
+/** Every attendee column the pipeline reads. `event_id` is optional and not warned about when absent. */
+export const ATTENDEE_SOURCE_COLUMNS = [...REQUIRED_COLUMNS.attendees, ...OPTIONAL_COLUMNS.attendees, 'event_id'] as const;
+
 type FileName = keyof typeof REQUIRED_COLUMNS;
 
-function readFile(name: FileName, text: string, problems: string[], warnings: string[]): CsvRecord[] {
-  const { header, records } = parseCsv(text);
+/** Reads one source file strictly: a structural CSV problem is reported with its line and column, never guessed around. */
+function readFile(name: FileName, text: string, problems: string[], warnings: string[]): { records: CsvRecord[]; lines: number[] } {
+  let parsed;
+  try {
+    parsed = parseCsv(text);
+  } catch (err) {
+    if (!(err instanceof CsvFormatError)) throw err;
+    problems.push(...err.problems.map((p) => `${name}: ${p}`));
+    return { records: [], lines: [] };
+  }
+  const { header, records, lines } = parsed;
   if (header.length === 0) {
     problems.push(`${name}: file is empty`);
-    return [];
+    return { records: [], lines: [] };
   }
   const missing = REQUIRED_COLUMNS[name].filter((c) => !header.includes(c));
   if (missing.length > 0) problems.push(`${name}: missing column(s) ${missing.join(', ')}`);
   const missingOptional = OPTIONAL_COLUMNS[name].filter((c) => !header.includes(c));
   if (missingOptional.length > 0) warnings.push(`${name}: optional column(s) absent: ${missingOptional.join(', ')}`);
-  return records.map((r) => {
-    const trimmed: CsvRecord = {};
-    for (const [k, v] of Object.entries(r)) trimmed[k] = v.trim();
-    return trimmed;
-  });
+  return { records: records.map(trimRecord), lines };
+}
+
+function trimRecord(r: CsvRecord): CsvRecord {
+  const trimmed: CsvRecord = {};
+  for (const [k, v] of Object.entries(r)) trimmed[k] = v.trim();
+  return trimmed;
+}
+
+/** Attendee dates must be YYYY-MM-DD or blank (blank = an undated edition, see events.ts). */
+function checkDates(rows: CsvRecord[], lines: number[], problems: string[]): void {
+  const bad = rows.flatMap((r, i) => (r.conference_date && !isIsoDate(r.conference_date) ? [i] : []));
+  for (const i of bad.slice(0, 10)) {
+    problems.push(`attendees: line ${lines[i]}, conference_date: "${rows[i]!.conference_date}" is not a date; use YYYY-MM-DD, or leave it blank if unknown`);
+  }
+  if (bad.length > 10) problems.push(`attendees: …and ${bad.length - 10} more rows with a conference_date that is not a date`);
 }
 
 function rowSignature(r: CsvRecord): string {
@@ -138,10 +164,12 @@ function distinct(values: string[], key: (v: string) => string = normalize): str
 export function buildDataset(sources: SourceTexts): Dataset {
   const problems: string[] = [];
   const warnings: string[] = [];
-  const attendeeRows = readFile('attendees', sources.attendees, problems, warnings) as unknown as AttendeeRecord[];
-  const profileRows = readFile('profiles', sources.profiles, problems, warnings) as unknown as ProfileRecord[];
-  const employeeRows = readFile('employees', sources.employees, problems, warnings);
-  const jobRows = readFile('jobs', sources.jobs, problems, warnings);
+  const attendeeFile = readFile('attendees', sources.attendees, problems, warnings);
+  checkDates(attendeeFile.records, attendeeFile.lines, problems);
+  const attendeeRows = attendeeFile.records as unknown as AttendeeRecord[];
+  const profileRows = readFile('profiles', sources.profiles, problems, warnings).records as unknown as ProfileRecord[];
+  const employeeRows = readFile('employees', sources.employees, problems, warnings).records;
+  const jobRows = readFile('jobs', sources.jobs, problems, warnings).records;
   if (problems.length > 0) throw new DataValidationError(problems);
 
   // Jobs
@@ -183,21 +211,18 @@ export function buildDataset(sources: SourceTexts): Dataset {
 
   // Attendees → groups (one per person)
   const { unique: attendees, dropped: attendeeDupes } = dedupeExact(attendeeRows as unknown as CsvRecord[]);
+  // Event editions, decided over every row at once (events.ts): which run of which conference each row is.
+  const { keys: editionKeys, editions } = assignEditions(attendees as unknown as AttendeeRecord[]);
+  const editionOf = new Map(attendees.map((r, i) => [r, editionKeys[i]!]));
+  const editionByKey = new Map(editions.map((e) => [e.key, e]));
+  for (const e of editions) {
+    if (!e.startDate) warnings.push(`attendees: ${e.label} has no date; kept as its own edition, not combined with any dated one`);
+  }
   // Grouped by identity anchor: valid LinkedIn URL, else email, else source contact ID, else the row itself.
   const groups = new Map<string, { kind: AnchorKind; rows: AttendeeRecord[]; flags: string[] }>();
   for (const raw of attendees) {
     const r = raw as unknown as AttendeeRecord;
-    const url = r.linkedin_url ? normalizeLinkedinUrl(r.linkedin_url) : '';
-    const email = r.email ? normalizeEmail(r.email) : '';
-    const [kind, value]: [AnchorKind, string] =
-      url && isValidLinkedinUrl(url)
-        ? ['linkedin', url]
-        : email
-          ? ['email', email]
-          : r.hubspot_id
-            ? ['source_id', r.hubspot_id]
-            : ['row', hash64(rowSignature(raw))];
-    const key = anchorKey(kind, value);
+    const { kind, key } = anchorOf(r);
     const g = groups.get(key) ?? { kind, rows: [], flags: [] };
     g.rows.push(r);
     groups.set(key, g);
@@ -226,7 +251,20 @@ export function buildDataset(sources: SourceTexts): Dataset {
     if (emails.length > 1) dataQualityFlags.push(`attendee records give different emails (left blank): ${emails.join(' / ')}`);
     if (emails.length === 0) dataQualityFlags.push('no email on attendee record');
     if (urls.length > 1) dataQualityFlags.push(`attendee records give different LinkedIn URLs: ${urls.join(' / ')}`);
-    if (rows.length > 1) dataQualityFlags.push(`attended ${rows.length} events; records combined by ${urls.length === 1 && isValidLinkedinUrl(urls[0]!) ? 'LinkedIn URL' : 'email'}`);
+    // One attendance per person and edition: several rows for the same edition (a second sign-up, a re-imported
+    // list) are one attendance, not two events.
+    const byEdition = new Map<string, AttendeeRecord[]>();
+    for (const r of rows) {
+      const key = editionOf.get(r as unknown as CsvRecord)!;
+      byEdition.set(key, [...(byEdition.get(key) ?? []), r]);
+    }
+    for (const [key, same] of byEdition) {
+      if (same.length > 1) {
+        const ids = same.map((r) => r.hubspot_id || '(no id)').join(', ');
+        dataQualityFlags.push(`${same.length} records for ${editionByKey.get(key)!.label} (${ids}); combined into one attendance`);
+      }
+    }
+    if (byEdition.size > 1) dataQualityFlags.push(`attended ${byEdition.size} events; records combined by ${urls.length === 1 && isValidLinkedinUrl(urls[0]!) ? 'LinkedIn URL' : 'email'}`);
 
     const rawUrl = urls[0] ?? '';
     const url = rawUrl ? normalizeLinkedinUrl(rawUrl) : '';
@@ -275,19 +313,25 @@ export function buildDataset(sources: SourceTexts): Dataset {
       fullName: names[0] ?? profile?.fullName ?? '',
       email: emails.length === 1 ? emails[0]! : '',
       linkedinUrl: url,
-      attendances: rows.map(
-        (r): Attendance => ({
-          attendanceId: attendanceIdFor(personId, rowSignature(r as unknown as CsvRecord)),
+      attendances: [...byEdition].map(([key, same]): Attendance => {
+        const r = same[0]!;
+        const edition = editionByKey.get(key)!;
+        return {
+          attendanceId: attendanceIdFor(personId, `edition:${key}`),
+          editionKey: key,
+          editionLabel: edition.label,
+          eventId: edition.eventId,
           hubspotId: r.hubspot_id,
           conferenceName: r.conference_name,
           conferenceDomain: r.conference_domain,
           conferenceDate: r.conference_date,
           source: r.source ?? '',
-          notes: r.notes ?? '',
+          // Notes from every record of this attendance, each once.
+          notes: [...new Set(same.map((x) => x.notes ?? '').filter(Boolean))].join(' / '),
           listedTitle: r.title ?? '',
           listedCompany: r.company ?? '',
-        }),
-      ),
+        };
+      }),
       profileStatus,
       profile,
       dataQualityFlags,
@@ -348,5 +392,53 @@ export function buildDataset(sources: SourceTexts): Dataset {
   }
 
   candidates.sort((a, b) => a.candidateKey.localeCompare(b.candidateKey));
-  return { jobs, employees, candidates, warnings };
+  return { jobs, employees, candidates, editions, warnings };
+}
+
+/** The identity anchor of one attendee row (identity.ts): valid LinkedIn URL, else email, else source contact ID, else the row. */
+export function anchorOf(r: AttendeeRecord): { kind: AnchorKind; key: string } {
+  const url = r.linkedin_url ? normalizeLinkedinUrl(r.linkedin_url) : '';
+  const email = r.email ? normalizeEmail(r.email) : '';
+  const [kind, value]: [AnchorKind, string] =
+    url && isValidLinkedinUrl(url)
+      ? ['linkedin', url]
+      : email
+        ? ['email', email]
+        : r.hubspot_id
+          ? ['source_id', r.hubspot_id]
+          : ['row', hash64(rowSignature(r as unknown as CsvRecord))];
+  return { kind, key: anchorKey(kind, value) };
+}
+
+/**
+ * Which new attendee rows would add something. A row whose person (by identity anchor) already has an attendance at
+ * the same event edition, in the pool or earlier in the same file, adds nothing: re-importing a list is harmless.
+ * `added` rows must already be trimmed. Editions are decided over existing + new rows together, as the build will.
+ */
+export function planAttendeeImport(
+  existingAttendees: string,
+  added: readonly CsvRecord[],
+): { add: number[]; alreadyRecorded: number[]; editionKeys: string[]; editions: Map<string, string> } {
+  const existing = parseCsv(existingAttendees).records.map(trimRecord);
+  const all = [...existing, ...added] as unknown as AttendeeRecord[];
+  const { keys, editions } = assignEditions(all);
+  const seen = new Set<string>();
+  const attendanceKey = (i: number) => `${personIdFor(anchorOf(all[i]!).key)}|${keys[i]}`;
+  existing.forEach((_, i) => seen.add(attendanceKey(i)));
+  const add: number[] = [];
+  const alreadyRecorded: number[] = [];
+  added.forEach((_, j) => {
+    const k = attendanceKey(existing.length + j);
+    if (seen.has(k)) alreadyRecorded.push(j);
+    else {
+      seen.add(k);
+      add.push(j);
+    }
+  });
+  return {
+    add,
+    alreadyRecorded,
+    editionKeys: keys.slice(existing.length),
+    editions: new Map(editions.map((e) => [e.key, e.label])),
+  };
 }

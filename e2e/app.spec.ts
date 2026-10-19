@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
+import { readXlsx } from '../tests/xlsx-read';
 
 const ROOT = join(import.meta.dirname, '..');
 
@@ -115,7 +116,7 @@ test('clicking a column header sorts the attendee list', async ({ page }) => {
 
 test('Download sits on the filter line, right-aligned', async ({ page }) => {
   await page.goto('/');
-  const exportBox = (await page.getByRole('button', { name: 'Download CSV' }).boundingBox())!;
+  const exportBox = (await page.getByRole('button', { name: 'Download' }).boundingBox())!;
   const jobBox = (await trigger(page, 'Job').boundingBox())!;
   const tableBox = (await page.locator('.ml-dt-root').boundingBox())!;
   expect(Math.abs(exportBox.y + exportBox.height / 2 - (jobBox.y + jobBox.height / 2))).toBeLessThan(2);
@@ -169,11 +170,11 @@ test('a profile shows every job they may fit, whatever the list filter', async (
   expect(errors).toEqual([]);
 });
 
-test('export: a job offers the same bytes the CLI writes; no job downloads the filtered attendees', async ({ page }) => {
+test('export: no job downloads the filtered attendees as Excel; a job adds its Excel assessment and the exact CRM CSV', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   const exportNow = async (choice?: RegExp) => {
-    const button = page.getByRole('button', { name: 'Download CSV' });
+    const button = page.getByRole('button', { name: 'Download' });
     if (choice) await button.click();
     const target = choice ? page.getByRole('menuitem', { name: choice }) : button;
     const [download] = await Promise.all([page.waitForEvent('download'), target.click()]);
@@ -182,12 +183,11 @@ test('export: a job offers the same bytes the CLI writes; no job downloads the f
 
   await pick(page, 'Conference', /^Data & AI Summit/);
   const attendees = await exportNow();
-  expect(attendees.suggestedFilename()).toBe('attendees_data-ai-summit-europe.csv');
-  const text = readFileSync(await attendees.path(), 'utf8');
-  expect(text.split('\n')[0]).toBe(
-    'full_name,firstname,lastname,email,company,title,conference_name,conference_date,linkedin_url,relevant_for',
-  );
-  expect(text.trim().split('\n')).toHaveLength(13);
+  expect(attendees.suggestedFilename()).toBe('attendees_data-ai-summit-europe.xlsx');
+  const sheet = readXlsx(readFileSync(await attendees.path()));
+  expect(sheet.rows[0]).toEqual(['full_name', 'firstname', 'lastname', 'email', 'company', 'title', 'conference_name', 'conference_date', 'linkedin_url', 'relevant_for']);
+  expect(sheet.rows).toHaveLength(13);
+  expect(sheet.cells.every((c) => c.type === 'inlineStr' && !c.formula)).toBe(true);
   await pick(page, 'Conference', /^Data & AI Summit/);
 
   for (const [jobId, chips] of [
@@ -195,16 +195,22 @@ test('export: a job offers the same bytes the CLI writes; no job downloads the f
     ['JOB003', [/^Senior ML Engineer/, /^Senior Product Manager/]],
   ] as const) {
     await pick(page, 'Job', ...chips);
-    const download = await exportNow(new RegExp(`^Full ${jobId} assessment`));
-    expect(download.suggestedFilename()).toBe(`candidates_${jobId}.csv`);
-    const file = await download.path();
-    expect(readFileSync(file).equals(readFileSync(join(ROOT, 'output', `candidates_${jobId}.csv`)))).toBe(true);
+    const crm = await exportNow(new RegExp(`^CRM import CSV, full ${jobId}`));
+    expect(crm.suggestedFilename()).toBe(`candidates_${jobId}.csv`);
+    expect(readFileSync(await crm.path()).equals(readFileSync(join(ROOT, 'output', `candidates_${jobId}.csv`)))).toBe(true);
+    const excel = await exportNow(new RegExp(`^Full ${jobId} assessment`));
+    expect(excel.suggestedFilename()).toBe(`candidates_${jobId}.xlsx`);
+    const assessment = readXlsx(readFileSync(await excel.path()));
+    // Same people as the CRM file, ranks as numbers.
+    expect(assessment.rows).toHaveLength(76);
+    const rank = assessment.rows[0]!.indexOf('shortlist_rank');
+    if (jobId === 'JOB001') expect(assessment.rows[1]![rank]).toBe(1);
   }
 
   // Several jobs: the attendees shown, named after the filter.
   await pick(page, 'Job', /^Data Engineer/);
   const several = await exportNow();
-  expect(several.suggestedFilename()).toBe('attendees_job003_job004.csv');
+  expect(several.suggestedFilename()).toBe('attendees_job003_job004.xlsx');
   expect(errors).toEqual([]);
 });
 
@@ -250,10 +256,14 @@ test('QA #003/#009: a chosen status stays visible, and one job offers shown peop
   await expect(title(page)).toHaveText('0 of 75 attendees');
   await expect(trigger(page, 'Status').locator('.filter-value')).toHaveText('Declined');
 
-  await page.getByRole('button', { name: 'Download CSV' }).click();
-  await expect(page.getByRole('menuitem')).toHaveText(['Attendees shown (0)', 'Full JOB001 assessment (75)']);
+  await page.getByRole('button', { name: 'Download' }).click();
+  await expect(page.getByRole('menuitem')).toHaveText([
+    'Attendees shown (0), Excel',
+    'Full JOB001 assessment (75), Excel',
+    'CRM import CSV, full JOB001 assessment (exact values)',
+  ]);
   const [shown] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /^Attendees shown/ }).click()]);
-  expect(readFileSync(await shown.path(), 'utf8').trim().split('\n')).toHaveLength(1);
+  expect(readXlsx(readFileSync(await shown.path())).rows).toHaveLength(1);
 
   await trigger(page, 'Status').click();
   await menu(page, 'Status').getByRole('button', { name: 'Clear' }).click();

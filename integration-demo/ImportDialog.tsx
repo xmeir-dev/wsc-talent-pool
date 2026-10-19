@@ -8,7 +8,7 @@ import { useDialog } from './useDialog';
 interface Props {
   sources: SourceTexts;
   onClose: () => void;
-  onImport: (rows: ImportRow[], fileName: string, merged: number) => void;
+  onImport: (rows: ImportRow[], fileName: string, merged: number, alreadyRecorded: number) => void;
 }
 
 const SAMPLE = 'sample-conference-import.csv';
@@ -69,8 +69,8 @@ export function ImportDialog({ sources, onClose, onImport }: Props) {
                 />
               </label>
               <p className="muted">
-                Columns: {'full_name, email, company, title, conference_name, conference_date, linkedin_url'}, plus optional
-                profile details (location, years_experience, top_skills, past_titles).{' '}
+                Columns: {'full_name, email, company, title, conference_name, conference_date (YYYY-MM-DD), linkedin_url'}, plus
+                optional event_id and profile details (location, years_experience, top_skills, past_titles).{' '}
                 <a className="hs-underline" href={`./${SAMPLE}`} download>
                   Download template
                 </a>
@@ -87,6 +87,7 @@ export function ImportDialog({ sources, onClose, onImport }: Props) {
           ) : p && !p.ok ? (
             <div role="alert">
               <p className="error-text">{file.name} can't be imported. Nothing was changed.</p>
+              {p.problems.length > 8 && <p className="muted">Showing 8 of {p.problems.length} problems.</p>}
               <ul className="import-problems">
                 {p.problems.slice(0, 8).map((x) => (
                   <li key={x}>{x}</li>
@@ -96,12 +97,17 @@ export function ImportDialog({ sources, onClose, onImport }: Props) {
           ) : p && p.ok ? (
             <>
               <p>
-                <strong>{file.name}</strong>: {p.rows.length} rows from {p.conferences.join(', ')}.
+                <strong>{file.name}</strong>: {p.rows.length + p.alreadyRecorded} rows from {p.conferences.join(', ')}.
               </p>
-              <p className="muted">
-                {p.created} new contacts · {p.merged} added as an event to an existing contact (no duplicate). All open roles
-                are re-scored after import.
-              </p>
+              {p.rows.length === 0 ? (
+                <p data-testid="import-nothing-new">Everyone in this file is already recorded for this event. Nothing to import.</p>
+              ) : (
+                <p className="muted">
+                  {p.created} new contacts · {p.merged} added as an event to an existing contact (no duplicate)
+                  {p.alreadyRecorded > 0 && ` · ${p.alreadyRecorded} already recorded for this event, skipped`}. All open roles are
+                  re-scored after import.
+                </p>
+              )}
               {p.uncertain.length > 0 && (
                 <ul className="import-problems warn">
                   {p.uncertain.map((x) => (
@@ -146,12 +152,12 @@ export function ImportDialog({ sources, onClose, onImport }: Props) {
               Cancel
             </button>
           )}
-          {p?.ok && (
+          {p?.ok && p.rows.length > 0 && (
             <button
               type="button"
               className="hs-btn hs-btn-primary"
               onClick={() => {
-                onImport(p.rows, file!.name, p.merged);
+                onImport(p.rows, file!.name, p.merged, p.alreadyRecorded);
                 onClose();
               }}
             >
