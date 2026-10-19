@@ -8,6 +8,9 @@ import { buildDataset, DataValidationError, parseCsv, toCsv, type Dataset, type 
 import { assertUnique, indexByPersonId, PERSON_ID_PATTERN, ATTENDANCE_ID_PATTERN } from '../pipeline/identity';
 import { applyImport, previewImport } from '../integration-demo/sources';
 import { buildPool } from '../view/attendees';
+import { decide } from '../view/actionStore';
+import { knownPeople } from '../view/activity';
+import { isValidLinkedinUrl, normalizeLinkedinUrl } from '../pipeline/text';
 import { DATA_DIR, FIXTURE_DIR, realDataset } from './helpers';
 
 type Row = Record<string, string>;
@@ -170,5 +173,111 @@ describe('published IDs and validation', () => {
   it('is deterministic: the same files give the same IDs in every build', () => {
     const s = withRows(base(), [person('X', 'Alice'), person('X', 'Bob')]);
     expect(buildDataset(s).candidates.map((c) => c.candidateKey)).toEqual(buildDataset(s).candidates.map((c) => c.candidateKey));
+  });
+});
+
+describe('rows sharing only a source ID (verifier break 2)', () => {
+  const bare = (id: string, name: string): Row => ({ hubspot_id: id, full_name: name, email: '', linkedin_url: '', conference_name: 'Identity Summit', conference_date: '2026-03-01' });
+  const sources = withRows(base(), [bare('X', 'Alice'), bare('X', 'Bob'), bare('X-2', 'Carol')]);
+
+  it('X Alice, X Bob and X-2 Carol with no email or LinkedIn stay three people, never merged', () => {
+    for (const s of [sources, reversed(sources)]) {
+      const d = buildDataset(s);
+      const [alice, bob, carol] = ['Alice', 'Bob', 'Carol'].map((n) => byName(d, n));
+      expect(new Set([alice!.candidateKey, bob!.candidateKey, carol!.candidateKey]).size).toBe(3);
+      expect(alice!.identity.status).toBe('possible_duplicate');
+      expect(alice!.identity.relatedPersonIds).toEqual([bob!.candidateKey]);
+      expect(carol!.identity.status).toBe('resolved');
+    }
+    expect(['Alice', 'Bob', 'Carol'].map((n) => byName(buildDataset(reversed(sources)), n).candidateKey)).toEqual(
+      ['Alice', 'Bob', 'Carol'].map((n) => byName(buildDataset(sources), n).candidateKey),
+    );
+  });
+
+  it('the same source ID and the same name is one repeat attendee', () => {
+    const d = buildDataset(withRows(base(), [bare('X', 'Alice'), { ...bare('X', 'alice '), conference_name: 'Next Summit' }]));
+    expect(d.candidates.filter((c) => /alice/i.test(c.fullName))).toHaveLength(1);
+  });
+});
+
+describe('a person keeps their ID when a LinkedIn URL or email is added or dropped (verifier break 1)', () => {
+  const real = loadSources(DATA_DIR);
+  const gil = (extra: Row = {}): Row => ({ hubspot_id: '', full_name: 'Gil Upgrade', email: 'gil@x.test', linkedin_url: '', conference_name: 'Review Event', conference_date: '2026-10-19', ...extra });
+  const find = (d: Dataset) => byName(d, 'Gil Upgrade');
+
+  it('first known by email, later imported with the same email and a LinkedIn URL: same ID once history knows them', () => {
+    const first = find(buildDataset(withRows(real, [gil()])));
+    expect(first.identity.identifiers).toEqual(['email:gil@x.test']);
+    const known = new Map(first.identity.identifiers.map((id) => [id, first.candidateKey]));
+    const later = find(buildDataset(withRows(real, [gil({ linkedin_url: 'https://uk.linkedin.com/in/gil-upgrade' })]), { knownPeople: known }));
+    expect(later.candidateKey).toBe(first.candidateKey);
+    expect(later.identity.identifiers).toEqual(['email:gil@x.test', 'linkedin:linkedin.com/in/gil-upgrade']);
+    expect(later.identity.status).toBe('resolved');
+  });
+
+  it('the invite saved under the first ID blocks a second invite after the LinkedIn URL is added', () => {
+    const job = { jobId: 'JOB001', title: 'Senior ML Engineer' };
+    let n = 0;
+    const id = () => `g-${++n}`;
+    const first = find(buildDataset(withRows(real, [gil()])));
+    const d1 = decide({ entries: [], people: new Map(), held: [], seq: 0 }, [{ kind: 'invite', person: first, job, otherJobs: [job], channel: 'comeet', state: 'sent' }], Date.now(), id);
+    expect(d1.results[0]!.ok).toBe(true);
+    const people = new Map(d1.people.map((p) => [p.personId, p]));
+    const saved = { entries: d1.entries, people, held: [], seq: d1.seq };
+    const known = knownPeople(people);
+    const later = find(buildDataset(withRows(real, [gil({ linkedin_url: 'linkedin.com/in/gil-upgrade' })]), { knownPeople: known }));
+    const d2 = decide(saved, [{ kind: 'invite', person: later, job, otherJobs: [job], channel: 'comeet', state: 'sent' }], Date.now(), id);
+    expect(d2.results[0]).toMatchObject({ ok: false, reason: expect.stringMatching(/^Already contacted for Senior ML Engineer/) });
+    // Even built without the saved identifiers (e.g. before the store loaded), the store refuses: the email is on record under the first ID.
+    const unlinked = find(buildDataset(withRows(real, [gil({ linkedin_url: 'linkedin.com/in/gil-upgrade' })])));
+    expect(unlinked.candidateKey).not.toBe(first.candidateKey);
+    expect(decide(saved, [{ kind: 'invite', person: unlinked, job, otherJobs: [job], channel: 'comeet', state: 'sent' }], Date.now(), id).results[0]).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/under another record/),
+    });
+  });
+
+  it('a supplied person re-imported with only their email is still that one person', () => {
+    const d = buildDataset(withRows(real, [{ hubspot_id: '', full_name: 'Priya Anand', email: 'Priya.Anand@VidStream.com ', conference_name: 'Review Event', conference_date: '2026-10-19' }]));
+    const priyas = d.candidates.filter((c) => c.fullName === 'Priya Anand');
+    expect(priyas.map((c) => c.candidateKey)).toEqual(['C-HS002']);
+    expect(priyas[0]!.attendances).toHaveLength(2);
+  });
+
+  it('identifiers pointing at two different known people are a conflict, never a merge', () => {
+    const known = new Map([
+      ['email:gil@x.test', 'P-00000000000000a1'],
+      ['linkedin:linkedin.com/in/someone-else', 'P-00000000000000b2'],
+    ]);
+    const c = find(buildDataset(withRows(real, [gil({ linkedin_url: 'linkedin.com/in/someone-else' })]), { knownPeople: known }));
+    expect(c.identity.status).toBe('conflict');
+    expect(c.identity.reasons.join(' ')).toMatch(/different people already on record/);
+    expect(['P-00000000000000a1', 'P-00000000000000b2']).not.toContain(c.candidateKey);
+  });
+
+  it('an email on two LinkedIn profiles does not join either: the email-only record is a conflict', () => {
+    const rows = [
+      gil({ full_name: 'Dana One', email: 'shared@x.test', linkedin_url: 'linkedin.com/in/dana-one' }),
+      gil({ full_name: 'Dana Two', email: 'shared@x.test', linkedin_url: 'linkedin.com/in/dana-two' }),
+      gil({ full_name: 'Dana One', email: 'shared@x.test' }),
+    ];
+    const d = buildDataset(withRows(real, rows));
+    const danas = d.candidates.filter((c) => c.fullName.startsWith('Dana'));
+    expect(danas).toHaveLength(3);
+    expect(danas.find((c) => !c.linkedinUrl)!.identity.status).toBe('conflict');
+  });
+});
+
+describe('LinkedIn URLs in any spelling are one profile (verifier break 3)', () => {
+  it.each(['https://uk.linkedin.com/in/priya-anand-cv', 'm.linkedin.com/in/priya-anand-cv/', 'https://www.LinkedIn.com/in/Priya-Anand-CV?trk=x', 'http://de.linkedin.com/in/priya-anand-cv#top'])(
+    '%s → linkedin.com/in/priya-anand-cv',
+    (url) => {
+      expect(normalizeLinkedinUrl(url)).toBe('linkedin.com/in/priya-anand-cv');
+      expect(isValidLinkedinUrl(url)).toBe(true);
+    },
+  );
+  it('a lookalike domain is not LinkedIn', () => {
+    expect(isValidLinkedinUrl('https://linkedin.com.evil.test/in/priya-anand-cv')).toBe(false);
+    expect(isValidLinkedinUrl('https://notlinkedin.com/in/priya-anand-cv')).toBe(false);
   });
 });

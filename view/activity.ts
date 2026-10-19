@@ -263,6 +263,25 @@ export interface StoredPerson {
   fullName: string;
   /** ISO time of the first saved action. */
   since: string;
+  /**
+   * Their strong identifiers (`linkedin:<url>`, `email:<email>`) as seen when acting. The next dataset build
+   * keeps this person ID for anyone with one of them, even after a LinkedIn URL or email is added or dropped.
+   */
+  identifiers?: string[];
+}
+
+/** identifier → person ID for everyone with saved history (each identifier belongs to the first person saved with it). */
+export function knownPeople(people: ReadonlyMap<string, StoredPerson>): Map<string, string> {
+  const known = new Map<string, string>();
+  for (const p of [...people.values()].sort((x, y) => x.since.localeCompare(y.since) || x.personId.localeCompare(y.personId)))
+    for (const id of p.identifiers ?? []) if (!known.has(id)) known.set(id, p.personId);
+  return known;
+}
+
+/** Saved history for one of this person's identifiers that sits under another person ID (e.g. read before the store loaded). */
+export function storedUnderOtherId(state: Pick<HistoryState, 'people'>, person: PersonRef): StoredPerson | undefined {
+  const mine = new Set(person.identity.identifiers);
+  return [...state.people.values()].find((p) => p.personId !== person.candidateKey && (p.identifiers ?? []).some((id) => mine.has(id)));
 }
 
 /**
@@ -300,7 +319,6 @@ export function heldFor(state: Pick<HistoryState, 'held'>, person: PersonRef): H
 export function storedAsSomeoneElse(state: Pick<HistoryState, 'people'>, person: PersonRef): StoredPerson | undefined {
   const stored = state.people.get(person.candidateKey);
   if (!stored) return undefined;
-  if (stored.anchor !== person.identity.anchor) return stored;
   return person.identity.kind === 'source_id' && normalize(stored.fullName) !== normalize(person.fullName) ? stored : undefined;
 }
 
@@ -308,6 +326,8 @@ export function storedAsSomeoneElse(state: Pick<HistoryState, 'people'>, person:
 export function actionGate(state: Pick<HistoryState, 'people' | 'held'>, person: PersonRef): string | undefined {
   const identity = identityBlock(person.identity);
   if (identity) return identity;
+  const elsewhere = storedUnderOtherId(state, person);
+  if (elsewhere) return `Saved history for this person is under another record (${elsewhere.fullName}). Reload the page to bring it together.`;
   const other = storedAsSomeoneElse(state, person);
   if (other) return `Saved history under this contact was recorded for ${other.fullName}. Review it on the profile first.`;
   if (heldFor(state, person).length > 0) return 'Saved history from an earlier version may belong to this person. Review it on the profile first.';

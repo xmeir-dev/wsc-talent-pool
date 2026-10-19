@@ -248,36 +248,32 @@ test('F9: the handoff carries the recorded history; a decline is shown, not hidd
   expect(errors).toEqual([]);
 });
 
-test("F3: an email-only import of Ryan cannot be handed off past his active process", async ({ page }) => {
-  const errors = watchErrors(page);
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Close notifications' }).click();
-  await page.getByRole('button', { name: 'Import' }).click();
-  const dialog = page.getByRole('dialog', { name: 'Import contacts' });
-  await dialog.locator('input[type=file]').setInputFiles({
-    name: 'ryan.csv',
-    mimeType: 'text/csv',
-    buffer: Buffer.from('full_name,email,conference_name,conference_date\nRyan Patel,ryan.patel@dazn.com,Synthetic review event,2026-10-19\n'),
-  });
-  await expect(dialog).toContainText('possible duplicate');
-  await dialog.getByRole('button', { name: /^Import 1 contact/ }).click();
-  // Newest first: the imported record leads the contact list.
-  await page.getByRole('tab', { name: 'All contacts' }).click();
-  await page.getByRole('table', { name: 'All contacts' }).getByRole('button', { name: 'Ryan Patel' }).first().click();
-  await expect(page.getByRole('region', { name: 'About this contact' })).toContainText('HS076');
-  await card(page).getByRole('combobox', { name: 'Role' }).selectOption('JOB001');
-  await expect(card(page).getByTestId('tm-blocked')).toContainText('Possible duplicate');
-  await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toHaveCount(0);
+for (const [label, file] of [
+  ['his email only', 'full_name,email,conference_name,conference_date\nRyan Patel,ryan.patel@dazn.com,Synthetic review event,2026-10-19\n'],
+  ['a uk.linkedin.com spelling of his URL', 'full_name,linkedin_url,conference_name,conference_date\nRyan Patel,https://uk.linkedin.com/in/ryan-patel-dazn,Synthetic review event,2026-10-19\n'],
+] as const) {
+  test(`F3: Ryan re-imported with ${label} is still Ryan, so he cannot be handed off past his active process`, async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Close notifications' }).click();
+    await page.getByRole('button', { name: 'Import' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Import contacts' });
+    await dialog.locator('input[type=file]').setInputFiles({ name: 'ryan.csv', mimeType: 'text/csv', buffer: Buffer.from(file) });
+    await expect(dialog).toContainText('1 added as an event to an existing contact');
+    await dialog.getByRole('button', { name: /^Import 1 contact/ }).click();
+    await expect(notices(page)).toContainText('0 new contacts, 1 added as an event to an existing contact.');
+    await page.getByRole('button', { name: 'Close notifications' }).click();
+    await expect(page.getByText('75 records')).toBeVisible();
 
-  // The original Ryan stays held too, from his Data Engineer view.
-  await page.getByRole('button', { name: 'Contacts' }).click();
-  await page.getByRole('tab', { name: 'Data Engineer', exact: true }).click();
-  await page.getByRole('table', { name: 'Data Engineer — shortlist' }).getByRole('button', { name: 'Ryan Patel' }).click();
-  await card(page).getByRole('combobox', { name: 'Role' }).selectOption('JOB001');
-  await expect(card(page).getByTestId('tm-blocked')).toBeVisible();
-  await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toHaveCount(0);
-  expect(errors).toEqual([]);
-});
+    await page.getByRole('tab', { name: 'Data Engineer', exact: true }).click();
+    await page.getByRole('table', { name: 'Data Engineer — shortlist' }).getByRole('button', { name: 'Ryan Patel' }).click();
+    await expect(page.getByRole('region', { name: 'Recent activities' })).toContainText('Synthetic review event');
+    await card(page).getByRole('combobox', { name: 'Role' }).selectOption('JOB001');
+    await expect(card(page).getByTestId('tm-blocked')).toContainText('Already in process for Data Engineer');
+    await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+}
 
 test('Reset demo clears handoffs', async ({ page }) => {
   const errors = watchErrors(page);

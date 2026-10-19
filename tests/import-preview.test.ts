@@ -20,12 +20,11 @@ function run(...lines: string[]) {
 }
 
 describe('preview agrees with the pool after import', () => {
-  it('an existing email without a LinkedIn URL is a new, flagged contact, not a match', () => {
+  it('an existing email without a LinkedIn URL is the same person: an added event, not a new contact', () => {
     const { p, added } = run('Tia Tied,tia@leaguevision.test,LeagueVision,ML Engineer,QA Meetup,2026-10-17,,');
-    expect(added).toBe(1);
-    expect({ created: p.created, merged: p.merged }).toEqual({ created: 1, merged: 0 });
-    expect(p.uncertain).toHaveLength(1);
-    expect(p.uncertain[0]).toMatch(/Tia Tied/);
+    expect(added).toBe(0);
+    expect({ created: p.created, merged: p.merged }).toEqual({ created: 0, merged: 1 });
+    expect(p.uncertain).toEqual([]);
   });
 
   it('two rows for one new person preview as one new contact', () => {

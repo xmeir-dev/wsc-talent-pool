@@ -10,7 +10,7 @@ import { BulkActions } from './BulkActions';
 import { NewConference } from './NewConference';
 import { SyncStatus } from './SyncStatus';
 import { STATUS_LABEL, statusIn, type RoleStatus } from './activity';
-import { useActivity } from './actionStore';
+import { useActivity, useKnownPeople } from './actionStore';
 import { PageFooter } from './PageFooter';
 import { PoolCards } from './PoolCards';
 import { bundledSources } from './data';
@@ -29,9 +29,9 @@ function keyFromHash(): string | null {
 
 type Loaded = { ok: true; dataset: Dataset } | { ok: false; problems: string[] };
 
-function load(sources: SourceTexts): Loaded {
+function load(sources: SourceTexts, knownPeople?: ReadonlyMap<string, string>): Loaded {
   try {
-    return { ok: true, dataset: buildDataset(sources) };
+    return { ok: true, dataset: buildDataset(sources, { knownPeople }) };
   } catch (err) {
     if (err instanceof DataValidationError) return { ok: false, problems: err.problems };
     return { ok: false, problems: [err instanceof Error ? err.message : String(err)] };
@@ -47,7 +47,9 @@ function withRows(base: string, added: string): string {
 export function App({ sources: initial = bundledSources }: { sources?: SourceTexts }) {
   // An added conference lives in memory only; a reload goes back to the supplied files.
   const [sources, setSources] = useState(initial);
-  const loaded = useMemo(() => load(sources), [sources]);
+  // People with saved history keep the ID it is under, even if a later import adds or drops a LinkedIn URL or email.
+  const known = useKnownPeople();
+  const loaded = useMemo(() => load(sources, known), [sources, known]);
   if (!loaded.ok) {
     return (
       <main className="content">
@@ -68,7 +70,7 @@ export function App({ sources: initial = bundledSources }: { sources?: SourceTex
       attendees: withRows(sources.attendees, text),
       ...(profiles && { profiles: withRows(sources.profiles, profiles) }),
     };
-    const tried = load(next);
+    const tried = load(next, known);
     if (!tried.ok) return tried.problems;
     setSources(next);
     return null;

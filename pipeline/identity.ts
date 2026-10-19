@@ -2,9 +2,11 @@
  * Person identity: the one contract every part of the app uses to say "this person".
  *
  * A person ID (Candidate.candidateKey, exported as candidate_key) is durable:
- * - It comes from the person's identity anchor, the identifier their attendee rows were grouped by:
- *   a valid LinkedIn URL, else an email, else a source (HubSpot) contact ID. Rows with none of these
- *   get a row anchor (a hash of the whole row) and are "unanchored": shown, but no action may be saved for them.
+ * - Rows are one person when they share a strong identifier (LinkedIn URL or email; see resolvePeople).
+ *   The ID is the known ID of that person if any of their identifiers is already on record (the supplied
+ *   people, or history this browser saved), otherwise a hash of their anchor: a LinkedIn URL, else an email,
+ *   else source contact ID + name. Rows with none of these get a row anchor (a hash of the whole row) and
+ *   are "unanchored": shown, but no action may be saved for them.
  * - It never comes from a name alone, from row order, or from which source row happens to sort first.
  *   So another attendance, reordered input or added profile evidence never changes it.
  * - People in the supplied data keep their published IDs (C-HS001…) through data/person_ids.json
@@ -36,6 +38,8 @@ export interface PersonIdentity {
   /** `${kind}:${normalized value}`, e.g. "linkedin:linkedin.com/in/jane-doe". Unique per person in a dataset. */
   anchor: string;
   kind: AnchorKind;
+  /** Every strong identifier on the person's rows (`linkedin:<url>`, `email:<email>`), sorted. Saved with their history. */
+  identifiers: string[];
   status: IdentityStatus;
   /** Other people sharing an email, LinkedIn URL or source contact ID with this one. */
   relatedPersonIds: string[];
@@ -127,4 +131,127 @@ export function mayOwnLegacyKey(person: { fullName: string; sourceContactIds: re
     ? person.sourceContactIds.map((id) => `C-${id}`)
     : [`C-${normalize(person.fullName).replace(/\W+/g, '-')}`];
   return bases.some((b) => key === b || (key.startsWith(`${b}-`) && /^\d+$/.test(key.slice(b.length + 1))));
+}
+
+/** What resolvePeople needs from an attendee row. */
+export interface IdentityRow {
+  linkedinUrl: string;
+  email: string;
+  sourceId: string;
+  name: string;
+  /** The whole row, for rows with nothing else to go on. */
+  signature: string;
+}
+
+export interface PersonGroup<T> {
+  rows: T[];
+  personId: string;
+  anchor: string;
+  kind: AnchorKind;
+  /** Every strong identifier on the person's rows: `linkedin:<url>` and `email:<email>`, sorted. */
+  identifiers: string[];
+  /** Identity problems found while grouping (e.g. one email on two LinkedIn profiles). */
+  reasons: string[];
+}
+
+/**
+ * Who is who. Rows are one person when they share a strong identifier, never by a name:
+ * - the same LinkedIn URL (canonical form, any linkedin.com subdomain);
+ * - an email-only row joins the one LinkedIn person with that email; if several LinkedIn people share it,
+ *   it stays apart and is a conflict (never merged into either);
+ * - rows with neither join only rows with the same source ID and the same name, so different names sharing a
+ *   source ID stay different people.
+ * Then the person ID: if the person's identifiers that are unique to them in this data point at one known
+ * person (data/person_ids.json, or history this browser saved), that ID is kept, even if the person has since
+ * gained or lost a LinkedIn URL or email; two known people at once is a conflict. Otherwise P-<hash> of the
+ * first LinkedIn URL, else the email, else source ID + name, else the row. Same input, same IDs.
+ */
+export function resolvePeople<T>(rows: readonly T[], keyOf: (r: T) => IdentityRow, known: ReadonlyMap<string, string> = REGISTERED_IDS): PersonGroup<T>[] {
+  const keys = rows.map(keyOf);
+  const parent = rows.map((_, i) => i);
+  const find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i]!)));
+  const union = (a: number, b: number) => {
+    const [x, y] = [find(a), find(b)];
+    if (x !== y) parent[Math.max(x, y)] = Math.min(x, y);
+  };
+  const firstBy = new Map<string, number>();
+  const join = (key: string, i: number) => {
+    const j = firstBy.get(key);
+    if (j === undefined) firstBy.set(key, i);
+    else union(i, j);
+  };
+  const emailUrls = new Map<string, Set<string>>();
+  keys.forEach((k, i) => {
+    if (!k.linkedinUrl) return;
+    join(`linkedin:${k.linkedinUrl}`, i);
+    if (k.email) emailUrls.set(k.email, (emailUrls.get(k.email) ?? new Set()).add(k.linkedinUrl));
+  });
+  const groupReasons = new Map<number, string[]>();
+  keys.forEach((k, i) => {
+    if (k.linkedinUrl) return;
+    if (k.email) {
+      const urls = emailUrls.get(k.email);
+      if (urls?.size === 1) join(`linkedin:${[...urls][0]}`, i);
+      else {
+        join(`email:${k.email}`, i);
+        if (urls && urls.size > 1) groupReasons.set(i, [`email ${k.email} is on ${urls.size} different LinkedIn profiles`]);
+      }
+    } else if (k.sourceId) join(`source_id:${k.sourceId}|${normalize(k.name)}`, i);
+    else join(`row:${hash64(k.signature)}`, i);
+  });
+
+  type Group = { members: number[]; identifiers: string[]; reasons: string[] };
+  const collect = () => {
+    const byRoot = new Map<number, Group>();
+    keys.forEach((k, i) => {
+      const g = byRoot.get(find(i)) ?? { members: [], identifiers: [], reasons: [] };
+      g.members.push(i);
+      if (k.linkedinUrl) g.identifiers.push(`linkedin:${k.linkedinUrl}`);
+      if (k.email) g.identifiers.push(`email:${k.email}`);
+      g.reasons.push(...(groupReasons.get(i) ?? []));
+      byRoot.set(find(i), g);
+    });
+    for (const g of byRoot.values()) {
+      g.identifiers = [...new Set(g.identifiers)].sort();
+      g.reasons = [...new Set(g.reasons)];
+    }
+    return byRoot;
+  };
+
+  // Link to known people through identifiers only this group has.
+  let groups = collect();
+  const uses = new Map<string, number>();
+  for (const g of groups.values()) for (const id of g.identifiers) uses.set(id, (uses.get(id) ?? 0) + 1);
+  const knownIds = (g: Group) => [...new Set(g.identifiers.filter((id) => uses.get(id) === 1 && known.has(id)).map((id) => known.get(id)!))];
+  const byKnown = new Map<string, number>();
+  for (const [root, g] of groups) {
+    const ids = knownIds(g);
+    if (ids.length !== 1) continue;
+    const other = byKnown.get(ids[0]!);
+    if (other === undefined) byKnown.set(ids[0]!, root);
+    else union(root, other); // Saved history already says these records are one person.
+  }
+  groups = collect();
+
+  return [...groups.values()].map((g) => {
+    const k = (i: number) => keys[i]!;
+    const ids = knownIds(g);
+    const reasons = [...g.reasons];
+    let anchor: string;
+    let personId: string;
+    if (ids.length === 1) {
+      personId = ids[0]!;
+      anchor = g.identifiers.find((id) => known.get(id) === personId)!;
+    } else {
+      if (ids.length > 1) reasons.push(`its LinkedIn URL and email belong to different people already on record (${ids.sort().join(', ')})`);
+      const first = k(g.members[0]!);
+      anchor =
+        g.identifiers.find((id) => id.startsWith('linkedin:')) ??
+        g.identifiers.find((id) => id.startsWith('email:')) ??
+        (first.sourceId ? `source_id:${first.sourceId}|${normalize(first.name)}` : `row:${hash64(first.signature)}`);
+      personId = `P-${hash64(anchor)}`;
+    }
+    const kind = (anchor.slice(0, anchor.indexOf(':')) as AnchorKind);
+    return { rows: g.members.map((i) => rows[i]!), personId, anchor, kind, identifiers: g.identifiers, reasons };
+  });
 }

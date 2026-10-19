@@ -56,7 +56,8 @@ export function containsTerm(text: string, term: string): boolean {
 export function normalizeLinkedinUrl(url: string): string {
   return normalize(url)
     .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
+    // Any subdomain is the same profile: www., uk., m., mobile. … linkedin.com/in/<slug>.
+    .replace(/^(?:[a-z0-9-]+\.)+(?=linkedin\.com\/)/, '')
     .replace(/[?#].*$/, '')
     .replace(/\/+$/, '');
 }

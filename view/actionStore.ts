@@ -25,6 +25,7 @@ import {
   comeetFor,
   dedupKeyFor,
   isEntry,
+  knownPeople,
   SEEDED,
   type Channel,
   type Entry,
@@ -130,10 +131,18 @@ export function decide(
     if (dedupKey && taken.has(dedupKey)) return { ok: false, reason: r.kind === 'do_not_contact' ? 'Already recorded.' : 'Already recorded in another tab.' };
     if (dedupKey) taken.add(dedupKey);
     entries.push({ ...entry, seq: ++seq, ...(dedupKey && { dedupKey }) });
-    if (!people.has(p.candidateKey)) {
-      const stored = { personId: p.candidateKey, anchor: p.identity.anchor, fullName: p.fullName, since: at };
+    // Remember who this is, and every identifier they now have that no one else with history owns.
+    const before = people.get(p.candidateKey);
+    const owned = knownPeople(people);
+    const added = p.identity.identifiers.filter((id) => !(before?.identifiers ?? []).includes(id) && (owned.get(id) ?? p.candidateKey) === p.candidateKey);
+    if (!before || added.length > 0) {
+      const stored: StoredPerson = before
+        ? { ...before, identifiers: [...(before.identifiers ?? []), ...added].sort() }
+        : { personId: p.candidateKey, anchor: p.identity.anchor, fullName: p.fullName, since: at, identifiers: [...added].sort() };
       people.set(p.candidateKey, stored);
-      newPeople.push(stored);
+      const i = newPeople.findIndex((x) => x.personId === stored.personId);
+      if (i >= 0) newPeople[i] = stored;
+      else newPeople.push(stored);
     }
     return { ok: true, entry };
   });
@@ -438,7 +447,13 @@ export async function reviewHeld(heldId: string, person: PersonRef, belongs: boo
 export async function reviewStoredPerson(person: PersonRef, same: boolean): Promise<void> {
   const b = await getBackend();
   await b.write((saved) => {
-    const fingerprint: StoredPerson = { personId: person.candidateKey, anchor: person.identity.anchor, fullName: person.fullName, since: new Date().toISOString() };
+    const fingerprint: StoredPerson = {
+      ...saved.people.get(person.candidateKey),
+      personId: person.candidateKey,
+      anchor: person.identity.anchor,
+      fullName: person.fullName,
+      since: new Date().toISOString(),
+    };
     if (same) return { result: undefined, put: { people: [fingerprint] } };
     // Re-keyed in place: the entries leave this person's history (and stop counting for anyone) but stay in the store.
     const formerly = saved.people.get(person.candidateKey)?.fullName ?? 'someone else';
@@ -474,3 +489,15 @@ export function useActivityState(): ActivityState {
 
 /** Entries in force for display (seeded plus this browser's). */
 export const useActivity = (): readonly Entry[] => useActivityState().entries;
+
+/**
+ * identifier → person ID from saved history, for buildDataset({ knownPeople }), so a person keeps the ID their
+ * history is under. The same Map object is returned until the identifiers change, so the pool is not rebuilt per action.
+ */
+let knownCache: { signature: string; map: Map<string, string> } = { signature: '', map: new Map() };
+export function useKnownPeople(): ReadonlyMap<string, string> {
+  const map = knownPeople(useActivityState().people);
+  const signature = JSON.stringify([...map]);
+  if (signature !== knownCache.signature) knownCache = { signature, map };
+  return knownCache.map;
+}

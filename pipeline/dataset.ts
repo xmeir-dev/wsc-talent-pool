@@ -2,19 +2,19 @@
  * Validate the four source files and combine them into one record per person.
  *
  * Identity rules:
- * - Attendee rows with the same valid LinkedIn URL are one person (repeat attendee).
- * - Without a valid URL, the same email is one person. Names alone never merge anyone.
+ * - Attendee rows with the same LinkedIn URL (any spelling) are one person (repeat attendee); a row with no
+ *   URL joins the one LinkedIn person with its email. Names alone never merge anyone (identity.ts: resolvePeople).
  * - Exact duplicate rows are dropped and flagged; conflicting details are flagged, not resolved.
  * - Records combined by one URL that give different names are an unresolved identity: the profile
  *   is shown but held for review. Different emails alone do not block (work vs personal is common).
- * - Each person gets a durable ID from the identifier they were grouped by (see identity.ts), never
+ * - Each person gets a durable ID from their identifiers (see identity.ts), never
  *   from a name, the row order or which source ID sorts first. Duplicate IDs are an error.
  */
 
 import { parseCsv, type CsvRecord } from './csv';
 import { DataValidationError } from './errors';
 import { parseHistory } from './history';
-import { anchorKey, assertUnique, attendanceIdFor, hash64, personIdFor, type AnchorKind } from './identity';
+import { assertUnique, attendanceIdFor, REGISTERED_IDS, resolvePeople } from './identity';
 import { isValidLinkedinUrl, normalize, normalizeEmail, normalizeLinkedinUrl, splitList, uniqueSkills } from './text';
 import type {
   Attendance,
@@ -135,7 +135,12 @@ function distinct(values: string[], key: (v: string) => string = normalize): str
 }
 
 /** Parse, validate and combine the four files. Throws DataValidationError on unusable input. */
-export function buildDataset(sources: SourceTexts): Dataset {
+export interface BuildOptions {
+  /** Identifier (`linkedin:<url>`, `email:<email>`) → person ID of people with saved history, so they keep their ID. */
+  knownPeople?: ReadonlyMap<string, string>;
+}
+
+export function buildDataset(sources: SourceTexts, options: BuildOptions = {}): Dataset {
   const problems: string[] = [];
   const warnings: string[] = [];
   const attendeeRows = readFile('attendees', sources.attendees, problems, warnings) as unknown as AttendeeRecord[];
@@ -183,25 +188,22 @@ export function buildDataset(sources: SourceTexts): Dataset {
 
   // Attendees → groups (one per person)
   const { unique: attendees, dropped: attendeeDupes } = dedupeExact(attendeeRows as unknown as CsvRecord[]);
-  // Grouped by identity anchor: valid LinkedIn URL, else email, else source contact ID, else the row itself.
-  const groups = new Map<string, { kind: AnchorKind; rows: AttendeeRecord[]; flags: string[] }>();
-  for (const raw of attendees) {
-    const r = raw as unknown as AttendeeRecord;
-    const url = r.linkedin_url ? normalizeLinkedinUrl(r.linkedin_url) : '';
-    const email = r.email ? normalizeEmail(r.email) : '';
-    const [kind, value]: [AnchorKind, string] =
-      url && isValidLinkedinUrl(url)
-        ? ['linkedin', url]
-        : email
-          ? ['email', email]
-          : r.hubspot_id
-            ? ['source_id', r.hubspot_id]
-            : ['row', hash64(rowSignature(raw))];
-    const key = anchorKey(kind, value);
-    const g = groups.get(key) ?? { kind, rows: [], flags: [] };
-    g.rows.push(r);
-    groups.set(key, g);
-  }
+  // One person per group of rows sharing a strong identifier (identity.ts: resolvePeople). Names never merge.
+  const people = resolvePeople(
+    attendees as unknown as AttendeeRecord[],
+    (r) => {
+      const url = r.linkedin_url ? normalizeLinkedinUrl(r.linkedin_url) : '';
+      return {
+        linkedinUrl: url && isValidLinkedinUrl(url) ? url : '',
+        email: r.email ? normalizeEmail(r.email) : '',
+        sourceId: r.hubspot_id,
+        name: r.full_name,
+        signature: rowSignature(r as unknown as CsvRecord),
+      };
+    },
+    options.knownPeople ? new Map([...options.knownPeople, ...REGISTERED_IDS]) : REGISTERED_IDS,
+  );
+  const groups = new Map(people.map((g) => [g.anchor, { ...g, flags: [] as string[] }]));
   for (const d of attendeeDupes) {
     for (const g of groups.values()) {
       if (g.rows.some((r) => r.hubspot_id === d.hubspot_id)) {
@@ -214,7 +216,7 @@ export function buildDataset(sources: SourceTexts): Dataset {
   const candidates: Candidate[] = [];
   const conflicts = new Map<Candidate, string[]>();
   const rowEmails = new Map<Candidate, string[]>();
-  for (const [anchor, { kind, rows, flags }] of groups) {
+  for (const { anchor, kind, rows, flags, personId, identifiers, reasons: groupReasons } of groups.values()) {
     rows.sort((a, b) => a.conference_date.localeCompare(b.conference_date) || a.hubspot_id.localeCompare(b.hubspot_id));
     const ids = [...new Set(rows.map((r) => r.hubspot_id).filter(Boolean))].sort();
     const names = distinct(rows.map((r) => r.full_name));
@@ -263,14 +265,13 @@ export function buildDataset(sources: SourceTexts): Dataset {
       }
     }
 
-    const personId = personIdFor(anchor);
-    const reasons: string[] = [];
+    const reasons: string[] = [...groupReasons];
     if (names.length > 1) reasons.push(`records give different names: ${names.join(' / ')}`);
     if (urls.length > 1) reasons.push('records give different LinkedIn URLs');
     if (profileStatus === 'conflict' && names.length <= 1) reasons.push('the LinkedIn profile does not match the attendee');
     const candidate: Candidate = {
       candidateKey: personId,
-      identity: { anchor, kind, status: 'resolved', relatedPersonIds: [], reasons: [] },
+      identity: { anchor, kind, identifiers, status: 'resolved', relatedPersonIds: [], reasons: [] },
       sourceContactIds: ids,
       fullName: names[0] ?? profile?.fullName ?? '',
       email: emails.length === 1 ? emails[0]! : '',

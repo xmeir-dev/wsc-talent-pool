@@ -4,6 +4,7 @@
  * (create candidate with a position, "Sourced" status, custom fields and a note).
  */
 
+import { normalizeLinkedinUrl } from '../pipeline/text';
 import { splitName, type Candidate, type CandidateAssessment, type Job } from '../pipeline';
 import { checkHandoff, comeetFor, handoffNote, SEEDED, type Check, type Entry, type HistoryState } from '../view/activity';
 import { OUTCOME_LABEL, referenceLine } from '../view/format';
@@ -152,7 +153,8 @@ function splitNames(fullName: string): { firstName: string; lastName: string } {
 }
 
 const normEmail = (v: string) => v.trim().toLowerCase();
-const normUrl = (v: string) => v.trim().toLowerCase().replace(/\/+$/, '');
+/** The pipeline's own canonical LinkedIn form (any subdomain, scheme, query or trailing slash is the same profile). */
+const normUrl = (v: string) => normalizeLinkedinUrl(v);
 
 export interface SimulationOptions {
   /** Read on every call, so the demo's outage switch takes effect immediately. */
@@ -316,7 +318,7 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400, people, hist
 function unknownPerson(candidateKey: string): Candidate {
   return {
     candidateKey,
-    identity: { anchor: `source_id:${candidateKey}`, kind: 'source_id', status: 'resolved', relatedPersonIds: [], reasons: [] },
+    identity: { anchor: `source_id:${candidateKey}`, kind: 'source_id', identifiers: [], status: 'resolved', relatedPersonIds: [], reasons: [] },
     sourceContactIds: [],
     fullName: '',
     email: '',
