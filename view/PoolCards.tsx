@@ -68,19 +68,18 @@ function PoolCard({
             // Keep the filter in list order, like the filter menus.
             const toggle = () => onSelect(rows.map((x) => x.id).filter((id) => (id === r.id ? !on : selected.includes(id))));
             return (
-              <li key={r.id} className={r.link ? 'has-link' : undefined}>
+              <li key={r.id} className="pool-item">
+                {/* The button stretches over the whole row, so a click anywhere toggles; the link sits above it. */}
                 <button type="button" className="pool-row" aria-pressed={on} onClick={toggle}>
-                  <span>
-                    {r.name}
-                    {r.sub && <span className="muted pool-sub">{r.sub}</span>}
-                  </span>
-                  <span className="muted">{r.value}</span>
+                  {r.name}
+                  {r.sub && <span className="muted pool-sub">{r.sub}</span>}
                 </button>
                 {r.link && (
                   <a className="pool-link" href={r.link.href} target="_blank" rel="noreferrer" aria-label={r.link.label} title={r.link.label}>
                     <img src={r.link.icon} alt="" width={16} height={16} />
                   </a>
                 )}
+                <span className="muted pool-value">{r.value}</span>
               </li>
             );
           })}
