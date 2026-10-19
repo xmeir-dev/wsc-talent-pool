@@ -1,6 +1,6 @@
 /**
- * Input formatting must not change a hiring decision: unknown seniority (F6), repeated job skills (F7)
- * and a job skill's own name (F8). Synthetic records only.
+ * Input formatting must not change a hiring decision: unknown seniority, repeated job skills
+ * and a job skill's own name. Synthetic records only.
  */
 import { describe, expect, it } from 'vitest';
 import { loadSources } from '../cli/load-sources';
@@ -60,7 +60,7 @@ const STRONG: Person[] = [
   { name: 'Vera Veteran', years: '12', skills: 'Python;SQL;Spark;Airflow;Kafka' },
 ];
 
-describe('F6: unknown seniority never removes the years check', () => {
+describe('unknown seniority never removes the years check', () => {
   for (const seniority of ['Staff', 'Senior-level', 'Senoir', '', '   ']) {
     it(`"${seniority}" keeps qualified people in review, with the reason shown`, () => {
       const r = assessJob(buildDataset(sources({ seniority, required: 'Python;SQL;Spark;Airflow;Kafka' }, STRONG)), 'JOB900');
@@ -102,7 +102,7 @@ describe('F6: unknown seniority never removes the years check', () => {
   });
 });
 
-describe('F7: a repeated job skill is one requirement', () => {
+describe('a repeated job skill is one requirement', () => {
   const person: Person = { name: 'Pia Pair', years: '8', skills: 'Python;SQL' };
 
   it('Python + SQL stays 2 of 5 and needs review however Python is repeated', () => {
@@ -147,7 +147,7 @@ describe('F7: a repeated job skill is one requirement', () => {
   });
 });
 
-describe("F8: every job skill matches its own name", () => {
+describe("every job skill matches its own name", () => {
   it('every configured and supplied skill, including OTT platforms, Broadcast tech and Sports domain knowledge', () => {
     const skills = new Set([...Object.keys(rules.SKILL_EVIDENCE), ...realDataset().jobs.flatMap((j) => [...j.requiredSkills, ...j.niceToHave])]);
     for (const skill of skills) {

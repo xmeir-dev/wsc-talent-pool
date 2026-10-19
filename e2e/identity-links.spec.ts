@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * F1 (review round 2): an email → LinkedIn link learned by an import is saved when the import is accepted, not
+ * An email → LinkedIn link learned by an import is saved when the import is accepted, not
  * only when an action succeeds. So after two reloads, the same LinkedIn URL with a new email is still the person
  * with the earlier invitation, and a second invitation is refused. Real browser, real reloads, IndexedDB.
  */

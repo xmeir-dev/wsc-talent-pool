@@ -1,5 +1,5 @@
 /**
- * F14 test data: harmless formula-like names and companies, run through the app's real import and export code.
+ * Spreadsheet-safety test data: harmless formula-like names and companies, run through the app's real import and export code.
  * Nothing here is a harmful payload, a link or an external data request: `=1+2` would only ever show 3.
  */
 import { assessJob, assessmentToCsv, type JobAssessment } from '../pipeline';

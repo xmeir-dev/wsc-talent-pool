@@ -1,4 +1,4 @@
-/** CTO review: shared Comeet history and blocking rules, confirmed-only tags, conflicting identities. */
+/** Shared Comeet history and blocking rules, confirmed-only tags, conflicting identities. */
 import { describe, expect, it } from 'vitest';
 import { buildAssessmentStore } from '../integration-demo/assessments';
 import { buildHandoff, createSimulatedComeet, type ComeetService } from '../integration-demo/comeet';

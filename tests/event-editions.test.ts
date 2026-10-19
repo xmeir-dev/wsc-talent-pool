@@ -1,5 +1,5 @@
 /**
- * F11: a conference name can have several editions. Person, edition and attendance (person + edition) are separate
+ * A conference name can have several editions. Person, edition and attendance (person + edition) are separate
  * identities: another edition imports, a later batch adds only new attendance, a retried file changes nothing.
  * Synthetic data only.
  */
@@ -140,7 +140,7 @@ describe('acceptance: SportsTech Innovation Summit 2024 and 2026-11-14, then a l
     expect(third.ok && { added: third.added, alreadyRecorded: third.alreadyRecorded }).toEqual({ added: 0, alreadyRecorded: 1 });
   });
 
-  it('verifier repro: Cara 11-14, Cara 11-17, Dev 11-20 in one file give the same editions in the preview, the pool and the CLI', () => {
+  it('Cara 11-14, Cara 11-17, Dev 11-20 in one file give the same editions in the preview, the pool and the CLI', () => {
     const file = list(row('Cara New', '2026-11-14'), row('Cara New', '2026-11-17'), row('Dev Later', '2026-11-20'));
     const s = base();
     const r = importAttendeeList(s, file);

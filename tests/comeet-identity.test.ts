@@ -1,4 +1,4 @@
-/** QA #004: people without an email must never share one simulated Comeet record. */
+/** People without an email must never share one simulated Comeet record. */
 import { describe, expect, it } from 'vitest';
 import { buildAssessmentStore } from '../integration-demo/assessments';
 import { buildHandoff, createSimulatedComeet, type ComeetService } from '../integration-demo/comeet';

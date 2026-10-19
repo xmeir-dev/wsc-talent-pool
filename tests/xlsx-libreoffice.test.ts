@@ -1,5 +1,5 @@
 /**
- * F14 (real spreadsheet reader): the Excel downloads, made by the app's real export code, are opened and saved by
+ * Real spreadsheet reader: the Excel downloads, made by the app's real export code, are opened and saved by
  * LibreOffice Calc (headless), then the saved file is opened again and converted to CSV. Every formula-like name and
  * company must still be the literal text (no formula, no computed 3), and counts/ranks must still be numbers.
  *

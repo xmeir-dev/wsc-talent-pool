@@ -1,5 +1,5 @@
 /**
- * F3 and F9: the Comeet handoff resolves who a person is across every position before looking at the
+ * The Comeet handoff resolves who a person is across every position before looking at the
  * destination, refuses unresolved identities in the service (not only the button), re-checks on confirm,
  * and carries the recorded contact history instead of claiming "not contacted".
  */

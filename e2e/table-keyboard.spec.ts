@@ -23,7 +23,7 @@ const priya = (page: Page) => page.getByRole('row', { name: /Priya Anand/ });
 const profile = (page: Page) => page.getByRole('heading', { level: 1, name: 'Priya Anand' });
 const selection = (page: Page) => page.getByRole('region', { name: 'Selected attendees', exact: true });
 
-test('F12: Space on a row checkbox selects without opening the profile; Space again deselects', async ({ page }) => {
+test('Space on a row checkbox selects without opening the profile; Space again deselects', async ({ page }) => {
   const errors = watchErrors(page);
   await seniorMl(page);
   const box = priya(page).getByRole('checkbox');
@@ -50,7 +50,7 @@ test('F12: Space on a row checkbox selects without opening the profile; Space ag
   expect(errors).toEqual([]);
 });
 
-test('F12: Enter on a button inside a row does that button’s job', async ({ page }) => {
+test('Enter on a button inside a row does that button’s job', async ({ page }) => {
   const errors = watchErrors(page);
   await seniorMl(page);
   await priya(page).getByRole('button', { name: /^Invite Priya Anand/ }).focus();

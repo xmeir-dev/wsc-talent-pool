@@ -1,7 +1,7 @@
 /**
- * F7: a spelling variant ("Golang" for Go) is the same requirement in any order, and scores exactly like the skill;
+ * A spelling variant ("Golang" for Go) is the same requirement in any order, and scores exactly like the skill;
  * a narrower name ("SageMaker" under AWS) is its own requirement, alone or next to its skill, in either order.
- * F6 and free-text skills: names that happen to be JavaScript object properties ("constructor", "__proto__") are
+ * Seniority and free-text skills: names that happen to be JavaScript object properties ("constructor", "__proto__") are
  * ordinary unknown text, never configured policy, and never crash.
  */
 import { describe, expect, it } from 'vitest';
@@ -88,7 +88,7 @@ const RELEASE_8D66D29: [string, number, number, number][] = [
   ['terraform', 9, 0, 66],
 ];
 
-describe('F7: spelling variants are one skill in any order; narrower names never broaden', () => {
+describe('spelling variants are one skill in any order; narrower names never broaden', () => {
   it('every configured skill and on-profile name required alone scores as release 8d66d29 did', () => {
     const named = Object.entries(rules.SKILL_EVIDENCE).flatMap(([key, rule]) => [key, ...rule.named]);
     const expected = new Set(RELEASE_8D66D29.map(([n]) => n));
@@ -101,7 +101,7 @@ describe('F7: spelling variants are one skill in any order; narrower names never
     }
   });
 
-  it('the narrow tools the verifier named keep their release counts (SageMaker 1, OpenCV 1, HLS 3)', () => {
+  it('narrow tools keep their release counts (SageMaker 1, OpenCV 1, HLS 3)', () => {
     expect(roleResult('SageMaker').counts.shortlist).toBe(1);
     expect(roleResult('OpenCV').counts.shortlist).toBe(1);
     expect(roleResult('HLS').counts.shortlist).toBe(3);
@@ -195,7 +195,7 @@ describe('F7: spelling variants are one skill in any order; narrower names never
     expect(matchSkill(['SageMaker'], 'AWS').match).toBe('named');
     expect(matchSkill(['Computer Vision'], 'OpenCV').match).toBe('none');
     expect(matchSkill(['Pose Estimation'], 'Computer Vision').match).toBe('equivalent');
-    // F8: a configured skill still matches its own name first.
+    // A configured skill still matches its own name first.
     expect(matchSkill(['OTT Platforms'], 'OTT platforms').match).toBe('named');
   });
 
@@ -246,7 +246,7 @@ function oneJob(
   );
 }
 
-describe('F6: object property names are not a seniority', () => {
+describe('object property names are not a seniority', () => {
   it('Mid is a known level and shortlists the strong person (control)', () => {
     expect(oneJob({}).candidates[0]!.recommendation).toBe('shortlist');
   });

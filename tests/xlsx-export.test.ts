@@ -1,5 +1,5 @@
 /**
- * F14 (model): the person-facing download is a typed Excel file; the CRM/CLI CSV keeps every value exactly.
+ * The person-facing download is a typed Excel file; the CRM/CLI CSV keeps every value exactly.
  * The real-spreadsheet check (open, save, reopen in LibreOffice) is tests/xlsx-libreoffice.test.ts.
  */
 import { describe, expect, it } from 'vitest';

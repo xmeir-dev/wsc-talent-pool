@@ -1,5 +1,5 @@
 /**
- * F4: a broken CSV is rejected with its line and column instead of silently swallowing or shifting people.
+ * A broken CSV is rejected with its line and column instead of silently swallowing or shifting people.
  * Valid CSV (quoted commas, line breaks and quotes, BOM, CRLF/LF/CR) still reads exactly. Synthetic data only.
  */
 import { spawnSync } from 'node:child_process';

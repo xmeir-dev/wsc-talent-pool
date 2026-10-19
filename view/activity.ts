@@ -204,7 +204,7 @@ export function referenceSummary(entries: readonly Entry[], candidateKey: string
   return asked.filter(counts).at(-1) ?? asked.at(-1);
 }
 
-/** Seeded examples (simulated) so reviewers see the rules without clicking around. */
+/** Seeded examples (simulated) so readers see the rules without clicking around. */
 export const SEEDED: readonly Entry[] = [
   // Declined one role, open for another.
   { id: 'seed-1', kind: 'invite', candidateKey: 'C-HS029', jobId: 'JOB002', jobTitle: 'Backend Engineer', channel: 'comeet', state: 'sent', simulated: true, by: 'Gal Ofer', at: '2026-10-05T09:00:00Z' },

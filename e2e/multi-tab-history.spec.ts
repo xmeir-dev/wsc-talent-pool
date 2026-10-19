@@ -1,7 +1,7 @@
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 /**
- * F1/F2: saved history follows the durable person ID across reloads and imports, and two tabs of the
+ * Saved history follows the durable person ID across reloads and imports, and two tabs of the
  * recruiter app share one transaction-safe history (IndexedDB). Real browser, real tabs:
  * both pages live in one browser context, so they share the origin's storage exactly as two tabs do.
  */

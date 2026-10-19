@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** The HubSpot card shows policy and data warnings, and "Unknown" for missing years (F6). */
+/** The HubSpot card shows policy and data warnings, and "Unknown" for missing years. */
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Upgrading saved history from the v1 localStorage list (F1/F2). jsdom has no IndexedDB, so this runs the
+ * Upgrading saved history from the v1 localStorage list. jsdom has no IndexedDB, so this runs the
  * store's in-memory backend, which shares the migration and decision code with the IndexedDB one.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

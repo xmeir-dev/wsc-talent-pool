@@ -1,5 +1,5 @@
 /**
- * QA 2026-10-19 #005: the import preview must report what the import actually does to the pool.
+ * The import preview must report what the import actually does to the pool.
  * Synthetic fixtures only.
  */
 import { describe, expect, it } from 'vitest';

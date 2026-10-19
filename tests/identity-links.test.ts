@@ -1,5 +1,5 @@
 /**
- * F1 (review round 2): an identifier link (email or LinkedIn URL → person ID) accepted by an import is saved at
+ * An identifier link (email or LinkedIn URL → person ID) accepted by an import is saved at
  * once, whether or not any action follows, so a later import after a reload still finds the person and their
  * history. Also: a source-ID-only person who later arrives with an email keeps their ID, and links that
  * contradict each other hold the person instead of minting a fresh, history-less ID.

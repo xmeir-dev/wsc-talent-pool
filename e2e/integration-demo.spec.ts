@@ -193,7 +193,7 @@ async function publishRole(page: Page, title: string, requiredSkills: string) {
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
 }
 
-test('F7: Go, Golang and Golang, Go are the same requirement, so the order never changes the shortlist', async ({ page }) => {
+test('Go, Golang and Golang, Go are the same requirement, so the order never changes the shortlist', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   await publishRole(page, 'Go first', 'Go, Golang');
@@ -211,7 +211,7 @@ test('F7: Go, Golang and Golang, Go are the same requirement, so the order never
   expect(errors).toEqual([]);
 });
 
-test('F7: a SageMaker, AWS role keeps both requirements, so Adaora (AWS, no SageMaker) is in review at 1 / 2', async ({ page }) => {
+test('a SageMaker, AWS role keeps both requirements, so Adaora (AWS, no SageMaker) is in review at 1 / 2', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   await publishRole(page, 'SageMaker AWS', 'SageMaker, AWS');
@@ -274,7 +274,7 @@ test('the shared Comeet history blocks an active process, not an uncontacted lea
   expect(errors).toEqual([]);
 });
 
-test('F9: the handoff carries the recorded history; a decline is shown, not hidden and not blocking', async ({ page }) => {
+test('the handoff carries the recorded history; a decline is shown, not hidden and not blocking', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Close notifications' }).click();
@@ -307,7 +307,7 @@ for (const [label, file] of [
   ['a uk.linkedin.com spelling of his URL', 'full_name,linkedin_url,conference_name,conference_date\nRyan Patel,https://uk.linkedin.com/in/ryan-patel-dazn,Synthetic review event,2026-10-19\n'],
   ['a /en profile-page URL', 'full_name,linkedin_url,conference_name,conference_date\nRyan Patel,https://www.linkedin.com/in/ryan-patel-dazn/en,Synthetic review event,2026-10-19\n'],
 ] as const) {
-  test(`F3: Ryan re-imported with ${label} is still Ryan, so he cannot be handed off past his active process`, async ({ page }) => {
+  test(`Ryan re-imported with ${label} is still Ryan, so he cannot be handed off past his active process`, async ({ page }) => {
     const errors = watchErrors(page);
     await page.goto('/');
     await page.getByRole('button', { name: 'Close notifications' }).click();

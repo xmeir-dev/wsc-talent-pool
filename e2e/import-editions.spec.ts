@@ -1,5 +1,5 @@
 /**
- * F4, F11, F14 in the recruiter view (real browser): a broken list changes nothing and says where; another edition
+ * Importing and exporting in the recruiter view (real browser): a broken list changes nothing and says where; another edition
  * of a conference imports and is its own filter choice; retrying a list is harmless; the Excel download keeps
  * formula-like names as text. Synthetic data only.
  */
@@ -24,7 +24,7 @@ async function addList(page: Page, name: string, buffer: Buffer) {
   await popover(page).locator('input[type=file]').setInputFiles({ name, mimeType: 'text/csv', buffer });
 }
 
-test('F4: a list with an unclosed quote adds no one and says where; the corrected list adds both', async ({ page }) => {
+test('a list with an unclosed quote adds no one and says where; the corrected list adds both', async ({ page }) => {
   await page.goto('/');
   await expect(title(page)).toHaveText('All 75 attendees');
   const ada = (notes: string) => `Ada Broken,ada@example.test,Synth,Engineer,Parse Summit,Sports Technology,2026-05-01,${notes},linkedin.com/in/ada-broken`;
@@ -41,7 +41,7 @@ test('F4: a list with an unclosed quote adds no one and says where; the correcte
   await expect(page.getByRole('row', { name: /Bob Valid/ })).toBeVisible();
 });
 
-test('F11: SportsTech 2026 imports next to 2024, both editions filter apart, a later batch adds only new attendance, a retry is harmless', async ({ page }) => {
+test('SportsTech 2026 imports next to 2024, both editions filter apart, a later batch adds only new attendance, a retry is harmless', async ({ page }) => {
   await page.goto('/');
   const cara = `Cara New,cara@example.test,Synth,Engineer,${SUMMIT},Sports Technology & Analytics,2026-11-14,,linkedin.com/in/cara-new`;
   // Priya (a 2024 attendee, same LinkedIn URL) at the 2026 run: one person, a second attendance.
@@ -73,7 +73,7 @@ test('F11: SportsTech 2026 imports next to 2024, both editions filter apart, a l
   await expect(page.getByRole('row', { name: /Cara New/ })).toHaveCount(1);
 });
 
-test('F14: a formula-like name downloads as text in the Excel file', async ({ page }) => {
+test('a formula-like name downloads as text in the Excel file', async ({ page }) => {
   await page.goto('/');
   await addList(page, 'formula.csv', csv('=1+2,formula@example.test,"@SUM(1,2)",Engineer,Formula Meetup,Sports Technology,2026-10-19,,'));
   await expect(title(page)).toHaveText('1 of 76 attendees');
@@ -84,7 +84,7 @@ test('F14: a formula-like name downloads as text in the Excel file', async ({ pa
   expect(sheet.cells.every((c) => c.type === 'inlineStr' && !c.formula)).toBe(true);
 });
 
-test('F11 (verifier repro): one file with Cara on the 14th and 17th and Dev on the 20th is one edition, and both stay in view', async ({ page }) => {
+test('one file with Cara on the 14th and 17th and Dev on the 20th is one edition, and both stay in view', async ({ page }) => {
   await page.goto('/');
   const at = (name: string, date: string) =>
     `${name},${name.toLowerCase().replace(' ', '.')}@example.test,Synth,Engineer,${SUMMIT},Sports Technology & Analytics,${date},,linkedin.com/in/${name.toLowerCase().replace(' ', '-')}`;
@@ -95,7 +95,7 @@ test('F11 (verifier repro): one file with Cara on the 14th and 17th and Dev on t
   await expect(conferenceMenu(page).getByRole('button', { name: /^SportsTech/ })).toHaveText(['SportsTech (2024) 40', 'SportsTech (2026) 2']);
 });
 
-test('F11: retrying a list whose row has no email, LinkedIn URL or ID changes nothing', async ({ page }) => {
+test('retrying a list whose row has no email, LinkedIn URL or ID changes nothing', async ({ page }) => {
   await page.goto('/');
   const file = Buffer.from(`${HEADER}\nNo Ids,,Synth,Eng,NoId Meetup,Sports,2026-05-01,,\n`);
   await addList(page, 'noid.csv', file);

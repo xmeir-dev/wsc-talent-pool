@@ -248,7 +248,7 @@ test.describe('narrow screen', () => {
   });
 });
 
-test('QA #003/#009: a chosen status stays visible, and one job offers shown people or the full CLI file', async ({ page }) => {
+test('a chosen status stays visible, and one job offers shown people or the full CLI file', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   await pick(page, 'Status', /^Declined/);

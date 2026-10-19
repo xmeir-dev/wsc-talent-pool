@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Regressions for QA 2026-10-19 #003 (download scope) and #009 (hidden status filter).
+// Download scope and the status filter's visibility in the recruiter view.
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -43,7 +43,7 @@ const lastFile = () => vi.mocked(downloadFile).mock.lastCall![0];
 /** People in a downloaded Excel file: its rows below the header. */
 const xlsxRows = (data: string | Uint8Array) => readXlsx(data as Uint8Array).rows.length - 1;
 
-describe('#009 status filter stays visible', () => {
+describe('status filter stays visible', () => {
   it('keeps a chosen status on the trigger and in the menu when the role has no one in it; Clear resets the label', async () => {
     const user = userEvent.setup();
     render(<App />);
@@ -63,7 +63,7 @@ describe('#009 status filter stays visible', () => {
   });
 });
 
-describe('#003 download scope', () => {
+describe('download scope', () => {
   it('with no job chosen, downloads exactly the people shown (every filter, status included)', async () => {
     const user = userEvent.setup();
     render(<App />);

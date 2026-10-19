@@ -1,5 +1,5 @@
 /**
- * QA 2026-10-19 #002: records combined by one LinkedIn URL but naming different people must never
+ * Records combined by one LinkedIn URL but naming different people must never
  * borrow that profile for an automatic shortlist. Synthetic fixtures only.
  */
 import { describe, expect, it } from 'vitest';

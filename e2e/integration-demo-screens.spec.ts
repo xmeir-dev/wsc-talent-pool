@@ -17,7 +17,7 @@ const table = (page: Page, title: string, group: 'shortlist' | 'needs review') =
 const names = (page: Page, title: string, g: 'shortlist' | 'needs review') =>
   table(page, title, g).locator('tbody tr .hs-link').allInnerTexts();
 
-test('F5: the notification opens a role’s needs-review queue; every person in it opens and Back keeps the group', async ({ page }) => {
+test('the notification opens a role’s needs-review queue; every person in it opens and Back keeps the group', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   await notices(page).getByRole('button', { name: `${PM}: 5 needs review` }).click();
@@ -44,7 +44,7 @@ test('F5: the notification opens a role’s needs-review queue; every person in 
   expect(errors).toEqual([]);
 });
 
-test('F5: JOB001’s six shortlisted and six needs-review people are each reachable from its role view', async ({ page }) => {
+test('JOB001’s six shortlisted and six needs-review people are each reachable from its role view', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Close notifications' }).click();
@@ -71,7 +71,7 @@ test('F5: JOB001’s six shortlisted and six needs-review people are each reacha
   expect(errors).toEqual([]);
 });
 
-test('F5: group counts follow an import and a new role', async ({ page }) => {
+test('group counts follow an import and a new role', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Close notifications' }).click();
@@ -97,7 +97,7 @@ test('F5: group counts follow an import and a new role', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('F10: event evidence is relevance to the event topic, separate from the job recommendation', async ({ page }) => {
+test('event evidence is relevance to the event topic, separate from the job recommendation', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Close notifications' }).click();
@@ -119,7 +119,7 @@ test('F10: event evidence is relevance to the event topic, separate from the job
   expect(errors).toEqual([]);
 });
 
-test('F13: New position keeps focus inside, blocks the background, closes on Escape and returns focus', async ({ page }) => {
+test('New position keeps focus inside, blocks the background, closes on Escape and returns focus', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Comeet', exact: true }).click();
@@ -167,7 +167,7 @@ test('F13: New position keeps focus inside, blocks the background, closes on Esc
   expect(errors).toEqual([]);
 });
 
-test('F13: the sibling dialogs (Import, Add to Comeet) use the same containment and focus return', async ({ page }) => {
+test('the sibling dialogs (Import, Add to Comeet) use the same containment and focus return', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Close notifications' }).click();

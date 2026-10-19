@@ -1,5 +1,5 @@
 /**
- * F1: durable person IDs. A person keeps their ID whatever else is added or reordered; two people never
+ * Durable person IDs. A person keeps their ID whatever else is added or reordered; two people never
  * share one; a clash stops the build instead of joining one person to another's assessment.
  */
 import { describe, expect, it } from 'vitest';
@@ -176,7 +176,7 @@ describe('published IDs and validation', () => {
   });
 });
 
-describe('rows sharing only a source ID (verifier break 2)', () => {
+describe('rows sharing only a source ID', () => {
   const bare = (id: string, name: string): Row => ({ hubspot_id: id, full_name: name, email: '', linkedin_url: '', conference_name: 'Identity Summit', conference_date: '2026-03-01' });
   const sources = withRows(base(), [bare('X', 'Alice'), bare('X', 'Bob'), bare('X-2', 'Carol')]);
 
@@ -200,7 +200,7 @@ describe('rows sharing only a source ID (verifier break 2)', () => {
   });
 });
 
-describe('a person keeps their ID when a LinkedIn URL or email is added or dropped (verifier break 1)', () => {
+describe('a person keeps their ID when a LinkedIn URL or email is added or dropped', () => {
   const real = loadSources(DATA_DIR);
   const gil = (extra: Row = {}): Row => ({ hubspot_id: '', full_name: 'Gil Upgrade', email: 'gil@x.test', linkedin_url: '', conference_name: 'Review Event', conference_date: '2026-10-19', ...extra });
   const find = (d: Dataset) => byName(d, 'Gil Upgrade');
@@ -288,7 +288,7 @@ describe('an identifier on record for another person never makes two records sha
   });
 });
 
-describe('LinkedIn URLs in any spelling are one profile (verifier break 3)', () => {
+describe('LinkedIn URLs in any spelling are one profile', () => {
   it.each([
     'https://uk.linkedin.com/in/priya-anand-cv',
     'm.linkedin.com/in/priya-anand-cv/',

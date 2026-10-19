@@ -1,5 +1,5 @@
 /**
- * F4 and F11 in the integration demo's HubSpot import (real browser): a broken file changes nothing and says where;
+ * The integration demo's HubSpot import (real browser): a broken file changes nothing and says where;
  * a second edition of a conference imports and reads apart from the first; the same file again imports nothing.
  * Synthetic data only.
  */
@@ -22,7 +22,7 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByText('75 records')).toBeVisible();
 });
 
-test('F4: an unclosed quote is reported with its line and column and imports no one; the fixed file imports both', async ({ page }) => {
+test('an unclosed quote is reported with its line and column and imports no one; the fixed file imports both', async ({ page }) => {
   const ada = (notes: string) => `Ada Broken,ada@example.test,Synth,Engineer,Parse Summit,2026-05-01,${notes},linkedin.com/in/ada-broken`;
   const bob = 'Bob Valid,bob@example.test,Synth,Engineer,Parse Summit,2026-05-01,,linkedin.com/in/bob-valid';
   await choose(page, 'broken.csv', csv(ada('"Met at the booth'), bob));
@@ -37,7 +37,7 @@ test('F4: an unclosed quote is reported with its line and column and imports no 
   await expect(page.getByText('77 records')).toBeVisible();
 });
 
-test('F11: the 2026 summit imports beside 2024, reads apart in the contact list, and a retried file imports nothing', async ({ page }) => {
+test('the 2026 summit imports beside 2024, reads apart in the contact list, and a retried file imports nothing', async ({ page }) => {
   const cara = `Cara New,cara@example.test,Synth,Engineer,${SUMMIT},2026-11-14,,linkedin.com/in/cara-new`;
   const priya = `Priya Anand,priya.anand@vidstream.com,VidStream,Senior Computer Vision Engineer,${SUMMIT},2026-11-14,,linkedin.com/in/priya-anand-cv`;
   const file = csv(cara, priya);
