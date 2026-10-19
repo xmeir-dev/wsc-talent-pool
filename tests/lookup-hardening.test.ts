@@ -1,6 +1,6 @@
 /**
  * F7: a spelling variant ("Golang" for Go) is the same requirement in any order, and scores exactly like the skill;
- * a narrower name ("SageMaker" under AWS) required alone scores as it always did.
+ * a narrower name ("SageMaker" under AWS) is its own requirement, alone or next to its skill, in either order.
  * F6 and free-text skills: names that happen to be JavaScript object properties ("constructor", "__proto__") are
  * ordinary unknown text, never configured policy, and never crash.
  */
@@ -136,26 +136,54 @@ describe('F7: spelling variants are one skill in any order; narrower names never
     }
   });
 
-  it('a narrower name next to its skill folds into the skill, in either order (as in release, skill first)', () => {
-    const cv = decisions(roleResult('Python, Computer Vision'));
-    expect(decisions(roleResult('Python, Computer Vision, OpenCV'))).toEqual(cv);
-    expect(decisions(roleResult('Python, OpenCV, Computer Vision'))).toEqual(cv);
-    expect(roleResult('OpenCV, Computer Vision').job.requiredSkills).toEqual(['Computer Vision']);
-    expect(decisions(roleResult('SageMaker, AWS'))).toEqual(decisions(roleResult('AWS')));
-    // Two narrower names without their skill are two requirements, each matching its own name.
-    expect(decisions(roleResult('OpenCV, Sports CV'))).toEqual(decisions(roleResult('Sports CV, OpenCV')));
-    expect(roleResult('Sports CV, OpenCV').job.requiredSkills).toHaveLength(2);
+  // A broad skill and a narrower tool listed under it are two requirements, in either order: knowing the tool can
+  // support the skill, but knowing the skill does not establish the tool.
+  const DISTINCT: [string, string][] = [
+    ['AWS', 'SageMaker'],
+    ['Computer Vision', 'OpenCV'],
+    ['Video Streaming', 'HLS'],
+    ['Sports Analytics', 'Football Analytics'],
+  ];
+
+  it('Adaora Okafor (AWS, no SageMaker) is 1 of 2 and in review for SageMaker + AWS, in both orders', () => {
+    for (const req of ['SageMaker, AWS', 'AWS, SageMaker']) {
+      const r = roleResult(req);
+      expect(r.job.requiredSkills, req).toHaveLength(2);
+      const adaora = r.candidates.find((a) => a.candidate.fullName === 'Adaora Okafor')!;
+      expect(adaora.tally, req).toMatchObject({ required: 1, requiredTotal: 2, requiredNeeded: 2 });
+      expect(adaora.recommendation, req).toBe('needs_review');
+      expect(adaora.skills.find((s) => s.skill === 'SageMaker')!.match, req).toBe('none');
+    }
+    expect(names(roleResult('AWS, SageMaker'), 'shortlist')).toEqual(names(roleResult('SageMaker'), 'shortlist'));
   });
 
-  it('Football Analytics with Sports Analytics decides as release did, in either order', () => {
-    // Release 8d66d29, Sports Analytics first: one requirement, 7 shortlisted.
-    const sa = decisions(roleResult('Sports Analytics'));
-    expect(sa.counts).toEqual({ shortlist: 7, needs_review: 0, not_recommended_for_role: 68 });
-    expect(decisions(roleResult('Sports Analytics, Football Analytics'))).toEqual(sa);
-    expect(decisions(roleResult('Football Analytics, Sports Analytics'))).toEqual(sa);
-    // Alone it is itself; with Sports domain knowledge (not the skill it folds into) both stay, as in release.
+  for (const [broad, narrow] of DISTINCT) {
+    it(`${broad} + ${narrow} stay two requirements in either order; nobody without ${narrow} is shortlisted`, () => {
+      const a = roleResult(`${broad}, ${narrow}`);
+      const b = roleResult(`${narrow}, ${broad}`);
+      expect(a.job.requiredSkills).toEqual([broad, narrow]);
+      expect(b.job.requiredSkills).toEqual([narrow, broad]);
+      expect(decisions(b)).toEqual(decisions(a));
+      const lacking = a.candidates.filter(
+        (x) => x.skills.find((s) => s.skill === broad)!.match === 'named' && x.skills.find((s) => s.skill === narrow)!.match === 'none',
+      );
+      expect(lacking.length, `someone has ${broad} but not ${narrow}`).toBeGreaterThan(0);
+      for (const x of lacking) {
+        expect(x.tally, x.candidate.fullName).toMatchObject({ required: 1, requiredTotal: 2 });
+        expect(x.recommendation, x.candidate.fullName).not.toBe('shortlist');
+      }
+      // As nice-to-haves too: two separate entries, counted separately, in either order.
+      const nice = roleResult('Python', `${narrow}, ${broad}`);
+      expect(nice.job.niceToHave).toEqual([narrow, broad]);
+      expect(decisions(nice)).toEqual(decisions(roleResult('Python', `${broad}, ${narrow}`)));
+      expect(nice.candidates.every((x) => x.tally.niceToHaveTotal === 2)).toBe(true);
+    });
+  }
+
+  it('two narrower names without their skill are two requirements in either order', () => {
+    expect(decisions(roleResult('OpenCV, Sports CV'))).toEqual(decisions(roleResult('Sports CV, OpenCV')));
+    expect(roleResult('Sports CV, OpenCV').job.requiredSkills).toHaveLength(2);
     expect(matchSkill(['Performance Analytics'], 'Football Analytics').match).toBe('none');
-    expect(roleResult('Sports domain knowledge, Football Analytics').job.requiredSkills).toHaveLength(2);
   });
 
   it('a synonym matches the skill; a narrower name matches only itself; related evidence keeps its level', () => {
