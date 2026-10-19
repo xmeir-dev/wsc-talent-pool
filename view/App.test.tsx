@@ -111,7 +111,9 @@ describe('recruiter view: list', () => {
     render(<App />);
     await showAll(userEvent.setup());
     const adaora = screen.getByRole('row', { name: /Adaora Okafor/ });
-    expect(adaora.querySelector('.jobs')?.textContent).toBe('Senior ML Engineer: Needs review');
+    // The chip's own text; the hover-only Invite pill beside it is a separate button.
+    expect(adaora.querySelector('.jobs .fit')?.textContent).toBe('Senior ML Engineer: Needs review');
+    expect(adaora.querySelector('.jobs .invite-pill')?.getAttribute('aria-label')).toBe('Invite Adaora Okafor to Senior ML Engineer');
     // One pill per job, tinted by the verdict: no per-check icons.
     expect(adaora.querySelector('.jobs .fit')!.classList.contains('is-review')).toBe(true);
     expect(adaora.querySelectorAll('.fit-check')).toHaveLength(0);

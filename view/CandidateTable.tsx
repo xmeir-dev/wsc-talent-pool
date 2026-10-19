@@ -1,7 +1,8 @@
 import { isValidElement, type MouseEvent, type ReactElement, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import { Briefcase04Icon, Calendar03Icon, Cancel01Icon, CheckmarkBadge01Icon, HelpCircleIcon, Tick02Icon, UserIcon } from '@hugeicons/core-free-icons';
-import { statusLine, useActivity } from './activity';
+import { checkInvite, comeetFor, statusLine, useActivity, type Entry } from './activity';
+import { InviteToJob } from './InviteToJob';
 import { DataTable, Hint, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee } from './attendees';
@@ -101,7 +102,18 @@ function Conferences({ attendances }: { attendances: Attendee['candidate']['atte
 }
 
 /** One pill per job, shortlist first: the title, tinted green (shortlisted) or amber (maybe relevant), with the reason on hover. */
-function RelevantFor({ list, statusOf }: { list: Attendee['relevantFor']; statusOf: (job: { jobId: string; title: string }) => ReturnType<typeof statusLine> }) {
+function RelevantFor({
+  list,
+  candidate,
+  entries,
+}: {
+  list: Attendee['relevantFor'];
+  candidate: Attendee['candidate'];
+  entries: readonly Entry[];
+}) {
+  const key = candidate.candidateKey;
+  const roles = list.map((r) => ({ jobId: r.job.jobId, title: r.job.title }));
+  const fits = list.map((r) => ({ job: r.job, outcome: r.outcome }));
   if (list.length === 0) return empty;
   const ordered = [...list].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1));
   return (
@@ -124,7 +136,10 @@ function RelevantFor({ list, statusOf }: { list: Attendee['relevantFor']; status
           </span>
         );
         // With an outreach status, the chip becomes a small card: the job on top, the status in a band below.
-        const status = statusOf({ jobId: job.jobId, title: job.title });
+        const role = { jobId: job.jobId, title: job.title };
+        const status = statusLine(entries, key, role);
+        // Invite shows on hover only where the rules allow it (not declined, contacted or in process).
+        const canInvite = !!candidate.email && !checkInvite(entries, comeetFor(key), key, role, roles).block;
         const title = (
           <span className="fit-top">
             <span className="fit-title">
@@ -135,17 +150,20 @@ function RelevantFor({ list, statusOf }: { list: Attendee['relevantFor']; status
           </span>
         );
         return (
-          <Hint key={job.jobId} tip={why} focusable={false}>
-            <span className={`fit ${shortlisted ? 'is-shortlist' : 'is-review'}${status ? ' has-band' : ''}`}>
-              {title}
-              {status && (
-                <span className="fit-band" title={status.simulated ? 'Simulated' : undefined}>
-                  <span className="ml-visually-hidden">, </span>
-                  {status.text}
-                </span>
-              )}
-            </span>
-          </Hint>
+          <span key={job.jobId} className="job-line">
+            <Hint tip={why} focusable={false}>
+              <span className={`fit ${shortlisted ? 'is-shortlist' : 'is-review'}${status ? ' has-band' : ''}`}>
+                {title}
+                {status && (
+                  <span className="fit-band" title={status.simulated ? 'Simulated' : undefined}>
+                    <span className="ml-visually-hidden">, </span>
+                    {status.text}
+                  </span>
+                )}
+              </span>
+            </Hint>
+            {canInvite && <InviteToJob c={candidate} fits={fits} jobId={job.jobId} compact />}
+          </span>
         );
       })}
     </span>
@@ -172,7 +190,6 @@ export function AttendeeTable({
   onSelect: (next: string[]) => void;
 }) {
   const entries = useActivity();
-  const statusOf = (key: string) => (job: { jobId: string; title: string }) => statusLine(entries, key, job);
   const pageKeys = new Set(attendees.map((a) => a.candidate.candidateKey));
   const tickedHere = selected.filter((k) => pageKeys.has(k)).length;
   // With some rows ticked (the header shows a dash), the header box clears the selection instead of ticking every row.
@@ -204,7 +221,7 @@ export function AttendeeTable({
       header: <Head icon={Briefcase04Icon} label="Relevant job" />,
       sortable: true,
       width: '30%',
-      accessor: ({ candidate, relevantFor }) => <RelevantFor list={relevantFor} statusOf={statusOf(candidate.candidateKey)} />,
+      accessor: ({ candidate, relevantFor }) => <RelevantFor list={relevantFor} candidate={candidate} entries={entries} />,
     },
     { id: 'ref', header: <Head icon={<WscMark />} label="WSC connections" />, accessor: connections },
   ];

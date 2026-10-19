@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, type KeyboardEvent, type ReactNode, type SyntheticEvent } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Cancel01Icon, MailAdd01Icon } from '@hugeicons/core-free-icons';
 import { Avatar, Button, Popover, Select } from '@meir-labs/ui-kit';
@@ -30,10 +30,29 @@ export function inviteMessage(c: Candidate, job: Job): string {
   ].join('\n\n');
 }
 
-/** The profile's one call to action: a drafted invite to a job, sent through Comeet. */
-export function InviteToJob({ c, fits }: { c: Candidate; fits: { job: Job; outcome: Relevant }[] }) {
+// Inside a table row, clicks and keys stay in the panel (the row would otherwise open the profile), except Escape.
+const stop = (e: SyntheticEvent) => e.stopPropagation();
+const keepKeys = (e: KeyboardEvent) => {
+  if (e.key !== 'Escape') e.stopPropagation();
+};
+
+/**
+ * A drafted invite to a job, sent through Comeet. On the profile it is the page's call to action;
+ * in the table (`compact`) it is the small Invite pill beside one job's chip, with that job chosen.
+ */
+export function InviteToJob({
+  c,
+  fits,
+  jobId: initialJobId,
+  compact = false,
+}: {
+  c: Candidate;
+  fits: { job: Job; outcome: Relevant }[];
+  jobId?: string;
+  compact?: boolean;
+}) {
   const [open, setOpen] = useState(false);
-  const [jobId, setJobId] = useState(fits[0]?.job.jobId ?? '');
+  const [jobId, setJobId] = useState(initialJobId ?? fits[0]?.job.jobId ?? '');
   const [text, setText] = useState<string | null>(null);
   const [status, setStatus] = useState<ReactNode>(null);
   const entries = useActivity();
@@ -51,20 +70,26 @@ export function InviteToJob({ c, fits }: { c: Candidate; fits: { job: Job; outco
 
   return (
     <Popover
-      placement="bottom-end"
+      placement={compact ? 'bottom-start' : 'bottom-end'}
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
         if (!next) setStatus(null);
       }}
     >
-      <Popover.Trigger className="ml-btn ml-btn-primary ml-btn-size-md">
-        <span className="ml-btn-icon-slot" aria-hidden="true">
-          <HugeiconsIcon icon={MailAdd01Icon} size={16} strokeWidth={1.75} />
-        </span>
-        <span className="ml-btn-label">Invite to job</span>
-      </Popover.Trigger>
-      <Popover.Content className="ask" aria-label={`Invite ${c.fullName} to a job`}>
+      {compact ? (
+        <Popover.Trigger className="invite-pill" onClick={stop} onKeyDown={keepKeys} aria-label={`Invite ${c.fullName} to ${job.title}`}>
+          Invite
+        </Popover.Trigger>
+      ) : (
+        <Popover.Trigger className="ml-btn ml-btn-primary ml-btn-size-md">
+          <span className="ml-btn-icon-slot" aria-hidden="true">
+            <HugeiconsIcon icon={MailAdd01Icon} size={16} strokeWidth={1.75} />
+          </span>
+          <span className="ml-btn-label">Invite to job</span>
+        </Popover.Trigger>
+      )}
+      <Popover.Content className="ask" aria-label={`Invite ${c.fullName} to a job`} onClick={stop} onKeyDown={keepKeys}>
         <div className="ask-head">
           <span className="ask-to">
             <Avatar size="sm" fallback={initials(c.fullName)} aria-hidden="true" />

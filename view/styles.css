@@ -1509,3 +1509,52 @@ ul {
 .d-mark-sent:focus-visible {
   color: var(--ml-text);
 }
+
+/* A job chip with, on hover, an Invite pill beside it (only where an invite is allowed). */
+.job-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+.invite-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--ml-border);
+  border-radius: 999px;
+  background: var(--ml-bg-card);
+  color: var(--ml-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 150ms ease-out,
+    background-color 150ms ease-out,
+    border-color 150ms ease-out;
+}
+.job-line:hover .invite-pill,
+.invite-pill:focus-visible,
+.invite-pill[aria-expanded='true'] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.invite-pill:hover,
+.invite-pill[aria-expanded='true'] {
+  border-color: var(--ml-text-muted);
+  background: var(--ml-bg-surface);
+}
+.invite-pill:focus-visible {
+  outline: 2px solid var(--ml-text);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .invite-pill {
+    transition: none;
+  }
+}
