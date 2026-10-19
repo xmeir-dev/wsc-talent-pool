@@ -96,11 +96,11 @@ function newContactIds(rows: ImportRow[], maxId: number): string[] {
  * Reads the outcome from the dataset the import would produce, so the preview uses exactly the
  * pipeline's grouping (URL first, then email; names never merge) instead of a separate guess.
  */
-function outcome(rows: ImportRow[], sources: SourceTexts, after: Dataset) {
+function outcome(rows: ImportRow[], sources: SourceTexts, after: Dataset, knownPeople?: ReadonlyMap<string, string>) {
   const keys = existingKeys(sources);
   const ids = newContactIds(rows, keys.maxId);
   const rowById = new Map(ids.map((id, i) => [id, rows[i]!]));
-  const existed = new Set(buildDataset(sources).candidates.map((c) => c.candidateKey));
+  const existed = new Set(buildDataset(sources, { knownPeople }).candidates.map((c) => c.candidateKey));
   let created = 0;
   const uncertain: string[] = [];
   for (const c of after.candidates) {
@@ -123,7 +123,8 @@ function outcome(rows: ImportRow[], sources: SourceTexts, after: Dataset) {
  * Validates a spreadsheet before anything changes: the CSV structure (strictly, with line and column), the
  * columns, every row, and the pool the import would produce. Problems block the import; nothing is half-applied.
  */
-export function previewImport(text: string, sources: SourceTexts): ImportPreview {
+/** `knownPeople`: the same saved-history IDs the pool is built with, so people resolve exactly as they will after import. */
+export function previewImport(text: string, sources: SourceTexts, knownPeople?: ReadonlyMap<string, string>): ImportPreview {
   let parsed;
   try {
     parsed = parseCsv(text);
@@ -152,15 +153,15 @@ export function previewImport(text: string, sources: SourceTexts): ImportPreview
 
   const all = records.map((r) => Object.fromEntries(IMPORT_COLUMNS.map((c) => [c, (r[c] ?? '').trim()])) as ImportRow);
   // Same person at the same event edition is already recorded: skip it, so a retried file changes nothing.
-  const plan = planAttendeeImport(sources.attendees, all);
+  const plan = planAttendeeImport(sources.attendees, all, { knownPeople });
   const rows = plan.add.map((i) => all[i]!);
   let after: Dataset;
   try {
-    after = buildDataset(applyImport(rows, sources));
+    after = buildDataset(applyImport(rows, sources), { knownPeople });
   } catch (err) {
     return { ok: false, problems: err instanceof DataValidationError ? err.problems : [String(err)] };
   }
-  const result = outcome(rows, sources, after);
+  const result = outcome(rows, sources, after, knownPeople);
   return {
     ok: true,
     rows,

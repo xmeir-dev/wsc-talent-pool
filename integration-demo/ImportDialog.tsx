@@ -1,6 +1,7 @@
 import { Cancel01Icon, File01Icon } from '@hugeicons/core-free-icons';
 import { useRef, useState } from 'react';
 import type { SourceTexts } from '../pipeline';
+import { useKnownPeople } from '../view/actionStore';
 import { Icon } from './Icon';
 import { previewImport, type ImportPreview, type ImportRow } from './sources';
 import { useDialog } from './useDialog';
@@ -21,12 +22,14 @@ export function ImportDialog({ sources, onClose, onImport }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const [file, setFile] = useState<{ name: string; preview: ImportPreview } | null>(null);
   const [loadError, setLoadError] = useState('');
+  // The pool is built with saved-history IDs; the preview resolves people the same way.
+  const known = useKnownPeople();
 
   useDialog(dialog, onClose);
 
   const check = (name: string, text: string) => {
     setLoadError('');
-    setFile({ name, preview: previewImport(text, sources) });
+    setFile({ name, preview: previewImport(text, sources, known) });
   };
 
   const useSample = async () => {

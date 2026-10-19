@@ -9,16 +9,24 @@ Each person has one durable ID, `candidateKey` in code and `candidate_key` in th
 | Kind of person | ID | Example |
 |---|---|---|
 | A supplied attendee (the 75 in `data/`) | Their published ID, kept through `data/person_ids.json` | `C-HS002` |
+| Someone with saved history in this browser | The ID that history is under, found through any of their LinkedIn URLs or emails | `P-b0bd83ef0fb00689` |
 | Anyone else (imports, other data folders) | `P-` + 16 hex characters: a 64-bit FNV-1a hash of their identity anchor | `P-bb8012068ac60de2` |
 
-The **identity anchor** is the identifier their attendee rows were grouped by: a valid LinkedIn URL, else an email, else a source contact ID (`hubspot_id`). Rows with none of the three get a row anchor (a hash of the whole row) and are **unanchored**.
+**Which rows are one person** (`resolvePeople` in `pipeline/identity.ts`). Only strong identifiers join rows, never a name:
+
+- the same LinkedIn URL, in canonical form `linkedin.com/in/<slug>`: scheme, any subdomain (`www.`, `uk.`, `m.`…), case, query, anything after the slug (`/en`, `/details/experience/`) and percent-encoding in the slug (`%2D`) are ignored, so `https://www.linkedin.com/in/ryan-patel-dazn/en` is Ryan's `linkedin.com/in/ryan-patel-dazn`. Lookalike domains (`linkedin.com.example.test`) are not LinkedIn. The simulated Comeet compares URLs with the same function;
+- a row with an email and no LinkedIn URL joins the one person whose LinkedIn rows carry that email (a supplied person re-imported with only their email stays one person). If several LinkedIn people share that email it joins none of them and is a `conflict`;
+- rows with no LinkedIn URL and no email join only rows with the same source ID **and** the same name. Different names that share only a source ID (`X Alice`, `X Bob`) stay different people, flagged `possible_duplicate`.
+
+**Which ID they get.** If an identifier only this person has in the data is already on record (the supplied people's file, or history this browser saved, which remembers each person's LinkedIn URLs and emails), they keep that ID. So a person first known by email who comes back with the same email and a LinkedIn URL keeps the ID their invite is under. Identifiers on record for two different people make the person a `conflict`; they are never merged. Otherwise the ID is a hash of the **anchor**: the first LinkedIn URL, else the email, else source ID + name. Rows with none of these get a row anchor (a hash of the whole row) and are **unanchored**.
 
 What follows from that:
 
-- **Durable.** Another attendance, reordered rows or an added LinkedIn profile never changes the ID. Nothing depends on row order or on which source ID sorts first (the old key was `C-<first source ID>`, so adding `HS1000` to a person known as `HS999` changed it).
-- **Distinct.** Different anchors give different IDs. Repeated or suffix-like source IDs (`X`, `X`, `X-2`) cannot collide. The build checks every person ID and attendance ID is unique before any map is keyed by them and stops with a `DataValidationError` on a clash; nothing is silently overwritten.
-- **Deterministic.** The same files give the same IDs in the CLI and every browser. No random IDs.
-- **Never a name.** A name alone never forms an ID or owns history.
+- **Durable.** Another attendance, reordered rows, an added LinkedIn profile, or a LinkedIn URL or email added to someone with saved history never changes the ID. Nothing depends on row order or on which source ID sorts first (the old key was `C-<first source ID>`, so adding `HS1000` to a person known as `HS999` changed it).
+- **Distinct.** Different people get different IDs. Repeated or suffix-like source IDs (`X`, `X`, `X-2`) cannot collide, with or without emails, and a record whose anchor is on record for someone else gets its own ID (and is a `conflict`), never theirs. The build still checks every person ID and attendance ID is unique before any map is keyed by them; a clash stops it with a plain message ("Two different records would share one person ID…, so nothing was changed") and an import is refused; nothing is silently overwritten.
+- **Deterministic.** The same files give the same IDs in the CLI and every browser with no saved history. Saved history only ever makes a person keep an earlier ID. No random IDs.
+- **Never a name.** A name alone never forms an ID, joins two records or owns history.
+- **Belt and braces.** If a person is shown under a new ID while one of their identifiers is on record under another (for example before the store finished loading), the store refuses any action for them ("Saved history for this person is under another record") instead of starting a second history.
 
 Separate from the person ID:
 
@@ -30,8 +38,8 @@ Separate from the person ID:
 | Status | When | Actions |
 |---|---|---|
 | `resolved` | One anchor, no clash with anyone | Allowed (subject to the contact rules) |
-| `possible_duplicate` | Shares an email, LinkedIn URL or source ID with another person (they are never merged) | Blocked until the source data is fixed |
-| `conflict` | Their own records disagree: different names on one URL, a profile naming someone else, several profiles or URLs | Blocked |
+| `possible_duplicate` | Shares an email or source ID with another person who has a different LinkedIn URL or name, or has exactly the same full name (case and spacing ignored) as another person with no identifier in common. They are never merged, and both records are flagged, because nothing says which one is real: a namesake with a mistyped email must not get past the real person's process, and the real person waits too | Blocked until the source data is fixed |
+| `conflict` | Their own records disagree: different names on one URL or email, a profile naming someone else, several profiles or URLs; or an email on several LinkedIn people; or identifiers on record for two different people | Blocked |
 | `unanchored` | No LinkedIn URL, email or source ID | Blocked: nothing durable to hold history against |
 
 "Blocked" covers invites, reference requests and the Comeet handoff, in both apps and in the store itself. Ordinary missing-profile people (an email, no LinkedIn) are `resolved` and work as before.
@@ -40,12 +48,12 @@ For other modules: use `candidateKey` as the person key, build maps with `indexB
 
 ## How long an imported person lasts
 
-An attendee list added with **Add conference** (recruiter view) or **Import** (integration demo) lives in memory until the page reloads; the supplied files are the pool. Saved history is not lost when an import goes: it stays under the person ID, which comes from their anchor, so:
+An attendee list added with **Add conference** (recruiter view) or **Import** (integration demo) lives in memory until the page reloads (or **Reset demo**); the supplied files are the pool. Saved history is not lost when an import goes: it stays under the person ID, and the store remembers that person's LinkedIn URLs and emails, so:
 
-- importing the same person again (same email or LinkedIn URL) gives the same ID and their history comes back, with no duplicate person. For the same event edition it adds no second attendance either: a retried list changes nothing ([importing and events](importing-and-events.md#repeated-rows-and-retries));
+- importing the same person again (same email or LinkedIn URL, with or without the other) gives the same ID and their history comes back, with no duplicate person. For the same event edition it adds no second attendance either: a retried list changes nothing ([importing and events](importing-and-events.md#repeated-rows-and-retries));
 - a different person, even with the same name, gets a different ID and inherits nothing.
 
-The one way an ID can be reused is a source-ID-only person whose contact ID was assigned by an app and later given to someone else. The store remembers the name each ID was first saved for; if a source-ID person shows up under that ID with a different name, their actions are blocked and the profile asks whether it is the same person.
+A source-ID-only person's ID includes their name, so an app-assigned contact ID later given to someone else does not hand them the first person's history. As a further guard the store remembers the name each ID was first saved for; if a source-ID person shows up under that ID with a different name, their actions are blocked and the profile asks whether it is the same person.
 
 ## Saved history and two tabs
 
@@ -72,7 +80,7 @@ The store is version 2. Version 1 was a list in `localStorage` (`wsc-activity-v1
 
 The v1 list is left in place, never wiped. No history is guessed onto a person or deleted on upgrade.
 
-**Reset** (tests, `resetActivity()`) clears this browser's saved history; the seeded examples stay. The integration demo's **Reset demo** clears its simulated Comeet records, not the history.
+**Clearing saved history.** Nothing in the apps deletes it. The integration demo's **Reset demo** starts the demo session over: it discards imports, positions added in Comeet, handed-off Comeet records and notifications, but leaves the saved outreach history alone. The recruiter view has no reset. To clear a browser's saved history, clear the site's data for that address (in Chrome: the site-information icon in the address bar → Site settings → Delete data, or DevTools → Application → Storage → Clear site data); the seeded examples come back on their own. Tests use `resetActivity()`.
 
 ## Invite versus handoff
 

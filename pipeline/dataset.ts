@@ -2,14 +2,14 @@
  * Validate the four source files and combine them into one record per person.
  *
  * Identity rules:
- * - Attendee rows with the same valid LinkedIn URL are one person (repeat attendee).
- * - Without a valid URL, the same email is one person. Names alone never merge anyone.
+ * - Attendee rows with the same LinkedIn URL (any spelling) are one person (repeat attendee); a row with no
+ *   URL joins the one LinkedIn person with its email. Names alone never merge anyone (identity.ts: resolvePeople).
  * - Exact duplicate rows are dropped and flagged; conflicting details are flagged, not resolved.
  * - Attendee rows belong to event editions (events.ts); one person at one edition is one attendance, however
  *   many rows recorded it. Files are read strictly (csv.ts): a broken file stops with its line and column.
  * - Records combined by one URL that give different names are an unresolved identity: the profile
  *   is shown but held for review. Different emails alone do not block (work vs personal is common).
- * - Each person gets a durable ID from the identifier they were grouped by (see identity.ts), never
+ * - Each person gets a durable ID from their identifiers (see identity.ts), never
  *   from a name, the row order or which source ID sorts first. Duplicate IDs are an error.
  */
 
@@ -17,7 +17,7 @@ import { CsvFormatError, parseCsv, type CsvRecord } from './csv';
 import { DataValidationError } from './errors';
 import { assignEditions, isIsoDate } from './events';
 import { parseHistory } from './history';
-import { anchorKey, assertUnique, attendanceIdFor, hash64, personIdFor, type AnchorKind } from './identity';
+import { assertUnique, attendanceIdFor, REGISTERED_IDS, resolvePeople, type IdentityRow } from './identity';
 import { isValidLinkedinUrl, normalize, normalizeEmail, normalizeLinkedinUrl, splitList, uniqueSkills } from './text';
 import type {
   Attendance,
@@ -161,7 +161,12 @@ function distinct(values: string[], key: (v: string) => string = normalize): str
 }
 
 /** Parse, validate and combine the four files. Throws DataValidationError on unusable input. */
-export function buildDataset(sources: SourceTexts): Dataset {
+export interface BuildOptions {
+  /** Identifier (`linkedin:<url>`, `email:<email>`) → person ID of people with saved history, so they keep their ID. */
+  knownPeople?: ReadonlyMap<string, string>;
+}
+
+export function buildDataset(sources: SourceTexts, options: BuildOptions = {}): Dataset {
   const problems: string[] = [];
   const warnings: string[] = [];
   const attendeeFile = readFile('attendees', sources.attendees, problems, warnings);
@@ -218,15 +223,9 @@ export function buildDataset(sources: SourceTexts): Dataset {
   for (const e of editions) {
     if (!e.startDate) warnings.push(`attendees: ${e.label} has no date; kept as its own edition, not combined with any dated one`);
   }
-  // Grouped by identity anchor: valid LinkedIn URL, else email, else source contact ID, else the row itself.
-  const groups = new Map<string, { kind: AnchorKind; rows: AttendeeRecord[]; flags: string[] }>();
-  for (const raw of attendees) {
-    const r = raw as unknown as AttendeeRecord;
-    const { kind, key } = anchorOf(r);
-    const g = groups.get(key) ?? { kind, rows: [], flags: [] };
-    g.rows.push(r);
-    groups.set(key, g);
-  }
+  // One person per group of rows sharing a strong identifier (identity.ts: resolvePeople). Names never merge.
+  const people = resolvePeople(attendees as unknown as AttendeeRecord[], identityRowOf, knownMap(options.knownPeople));
+  const groups = new Map(people.map((g) => [g.anchor, { ...g, flags: [] as string[] }]));
   for (const d of attendeeDupes) {
     for (const g of groups.values()) {
       if (g.rows.some((r) => r.hubspot_id === d.hubspot_id)) {
@@ -239,7 +238,7 @@ export function buildDataset(sources: SourceTexts): Dataset {
   const candidates: Candidate[] = [];
   const conflicts = new Map<Candidate, string[]>();
   const rowEmails = new Map<Candidate, string[]>();
-  for (const [anchor, { kind, rows, flags }] of groups) {
+  for (const { anchor, kind, rows, flags, personId, identifiers, reasons: groupReasons } of groups.values()) {
     rows.sort((a, b) => a.conference_date.localeCompare(b.conference_date) || a.hubspot_id.localeCompare(b.hubspot_id));
     const ids = [...new Set(rows.map((r) => r.hubspot_id).filter(Boolean))].sort();
     const names = distinct(rows.map((r) => r.full_name));
@@ -301,14 +300,13 @@ export function buildDataset(sources: SourceTexts): Dataset {
       }
     }
 
-    const personId = personIdFor(anchor);
-    const reasons: string[] = [];
+    const reasons: string[] = [...groupReasons];
     if (names.length > 1) reasons.push(`records give different names: ${names.join(' / ')}`);
     if (urls.length > 1) reasons.push('records give different LinkedIn URLs');
     if (profileStatus === 'conflict' && names.length <= 1) reasons.push('the LinkedIn profile does not match the attendee');
     const candidate: Candidate = {
       candidateKey: personId,
-      identity: { anchor, kind, status: 'resolved', relatedPersonIds: [], reasons: [] },
+      identity: { anchor, kind, identifiers, status: 'resolved', relatedPersonIds: [], reasons: [] },
       sourceContactIds: ids,
       fullName: names[0] ?? profile?.fullName ?? '',
       email: emails.length === 1 ? emails[0]! : '',
@@ -375,6 +373,9 @@ export function buildDataset(sources: SourceTexts): Dataset {
     for (const at of c.attendances) if (at.hubspotId) share(`source ID ${at.hubspotId}`, c);
     for (const e of rowEmails.get(c) ?? []) share(`email ${e}`, c);
     if (c.linkedinUrl) share(`LinkedIn ${c.linkedinUrl}`, c);
+    // Same full name, nothing else in common: never merged, but neither record is trusted until someone checks
+    // (e.g. "Ryan Patel" with a mistyped email must not slip past the real Ryan's active process).
+    if (normalize(c.fullName)) share(`the name "${normalize(c.fullName)}"`, c);
   }
   for (const c of candidates) {
     const related = new Set<string>();
@@ -395,35 +396,39 @@ export function buildDataset(sources: SourceTexts): Dataset {
   return { jobs, employees, candidates, editions, warnings };
 }
 
-/** The identity anchor of one attendee row (identity.ts): valid LinkedIn URL, else email, else source contact ID, else the row. */
-export function anchorOf(r: AttendeeRecord): { kind: AnchorKind; key: string } {
+/** What person resolution (identity.ts: resolvePeople) reads from one attendee row. */
+function identityRowOf(r: AttendeeRecord): IdentityRow {
   const url = r.linkedin_url ? normalizeLinkedinUrl(r.linkedin_url) : '';
-  const email = r.email ? normalizeEmail(r.email) : '';
-  const [kind, value]: [AnchorKind, string] =
-    url && isValidLinkedinUrl(url)
-      ? ['linkedin', url]
-      : email
-        ? ['email', email]
-        : r.hubspot_id
-          ? ['source_id', r.hubspot_id]
-          : ['row', hash64(rowSignature(r as unknown as CsvRecord))];
-  return { kind, key: anchorKey(kind, value) };
+  return {
+    linkedinUrl: url && isValidLinkedinUrl(url) ? url : '',
+    email: r.email ? normalizeEmail(r.email) : '',
+    sourceId: r.hubspot_id,
+    name: r.full_name,
+    signature: rowSignature(r as unknown as CsvRecord),
+  };
 }
 
+const knownMap = (knownPeople?: ReadonlyMap<string, string>) =>
+  knownPeople ? new Map([...knownPeople, ...REGISTERED_IDS]) : REGISTERED_IDS;
+
 /**
- * Which new attendee rows would add something. A row whose person (by identity anchor) already has an attendance at
- * the same event edition, in the pool or earlier in the same file, adds nothing: re-importing a list is harmless.
- * `added` rows must already be trimmed. Editions are decided over existing + new rows together, as the build will.
+ * Which new attendee rows would add something. A row whose person (resolved exactly as buildDataset does, with the
+ * same known people) already has an attendance at the same event edition, in the pool or earlier in the same file,
+ * adds nothing: re-importing a list is harmless. `added` rows must already be trimmed. People and editions are
+ * decided over existing + new rows together, as the build will.
  */
 export function planAttendeeImport(
   existingAttendees: string,
   added: readonly CsvRecord[],
+  options: BuildOptions = {},
 ): { add: number[]; alreadyRecorded: number[]; editionKeys: string[]; editions: Map<string, string> } {
   const existing = parseCsv(existingAttendees).records.map(trimRecord);
   const all = [...existing, ...added] as unknown as AttendeeRecord[];
   const { keys, editions } = assignEditions(all);
+  const personOf = new Map<AttendeeRecord, string>();
+  for (const g of resolvePeople(all, identityRowOf, knownMap(options.knownPeople))) for (const r of g.rows) personOf.set(r, g.personId);
   const seen = new Set<string>();
-  const attendanceKey = (i: number) => `${personIdFor(anchorOf(all[i]!).key)}|${keys[i]}`;
+  const attendanceKey = (i: number) => `${personOf.get(all[i]!)}|${keys[i]}`;
   existing.forEach((_, i) => seen.add(attendanceKey(i)));
   const add: number[] = [];
   const alreadyRecorded: number[] = [];

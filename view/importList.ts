@@ -48,7 +48,12 @@ function read(text: string, what: string): { records: CsvRecord[]; lines: number
 }
 
 /** `profiles` stands in for the LinkedIn lookup production runs on new attendees (the sample brings its own). */
-export function importAttendeeList(sources: SourceTexts, text: string, profiles?: string): ListImport {
+export function importAttendeeList(
+  sources: SourceTexts,
+  text: string,
+  profiles?: string,
+  knownPeople?: ReadonlyMap<string, string>,
+): ListImport {
   const list = read(text, 'This list');
   if (Array.isArray(list)) return { ok: false, problems: list };
   const missing = NEEDED.filter((c) => !list.header.includes(c));
@@ -68,7 +73,7 @@ export function importAttendeeList(sources: SourceTexts, text: string, profiles?
   });
   if (problems.length) return { ok: false, problems };
 
-  const plan = planAttendeeImport(sources.attendees, rows);
+  const plan = planAttendeeImport(sources.attendees, rows, { knownPeople });
   const addRows = plan.add.map((i) => rows[i]!);
   let profileRows: CsvRecord[] = [];
   if (profiles && addRows.length) {
@@ -92,7 +97,7 @@ export function importAttendeeList(sources: SourceTexts, text: string, profiles?
     : sources;
   let dataset: Dataset;
   try {
-    dataset = buildDataset(next);
+    dataset = buildDataset(next, { knownPeople });
   } catch (err) {
     if (err instanceof DataValidationError) return { ok: false, problems: err.problems };
     throw err;

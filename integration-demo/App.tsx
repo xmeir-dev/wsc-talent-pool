@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { buildDataset, type SourceTexts } from '../pipeline';
-import { activitySnapshot } from '../view/actionStore';
+import { activitySnapshot, useKnownPeople } from '../view/actionStore';
 import { bundledSources } from '../view/data';
 import { buildAssessmentStore, type AssessmentStore } from './assessments';
 import { createSimulatedComeet, type ComeetService } from './comeet';
@@ -45,7 +45,8 @@ function overnightNotice(store: AssessmentStore): Notice {
 /** Two simulated products side by side, like two browser tabs. The strip on top switches between them. */
 export function App({ sources: initialSources = bundledSources, delayMs }: Props) {
   const [sources, setSources] = useState(initialSources);
-  const store = useMemo(() => buildAssessmentStore(buildDataset(sources)), [sources]);
+  const known = useKnownPeople();
+  const store = useMemo(() => buildAssessmentStore(buildDataset(sources, { knownPeople: known })), [sources, known]);
   const [session, setSession] = useState(0);
   // The service reads the current pool (imports included) and history on every check, as a real backend would.
   const latest = useRef(store);
@@ -87,7 +88,7 @@ export function App({ sources: initialSources = bundledSources, delayMs }: Props
 
   const importRows = (rows: ImportRow[], fileName: string, merged: number, alreadyRecorded: number) => {
     const next = applyImport(rows, sources);
-    const nextStore = buildAssessmentStore(buildDataset(next));
+    const nextStore = buildAssessmentStore(buildDataset(next, { knownPeople: known }));
     setSources(next);
     notify({
       id: `import-${Date.now()}`,

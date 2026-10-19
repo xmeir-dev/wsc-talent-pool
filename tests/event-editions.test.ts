@@ -127,6 +127,13 @@ describe('acceptance: SportsTech Innovation Summit 2024 and 2026-11-14, then a l
     expect(d.editions.filter((e) => e.name === SUMMIT)).toHaveLength(2);
   });
 
+  it('retry detection groups people exactly as the build does: an email-only attendee re-sent with a LinkedIn URL is already recorded', () => {
+    const first = importAttendeeList(base(), list(row('Eli Email', '2026-11-14').replace(/linkedin\.com\/in\/eli-email$/, '')));
+    if (!first.ok) throw new Error(first.problems.join('; '));
+    const again = importAttendeeList(first.sources, list(row('Eli Email', '2026-11-14')));
+    expect(again.ok && { added: again.added, alreadyRecorded: again.alreadyRecorded }).toEqual({ added: 0, alreadyRecorded: 1 });
+  });
+
   it('an undated row is its own edition, never folded into a dated one, and says so', () => {
     const r = importAttendeeList(base(), list(row('Una Dated', '')));
     if (!r.ok) throw new Error(r.problems.join('; '));

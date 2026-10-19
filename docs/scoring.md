@@ -110,8 +110,10 @@ Each event a person attended is marked relevant, adjacent, or not relevant, base
 | One LinkedIn URL with different names, or a name that differs from the profile | Flagged; needs review, never shortlisted |
 | One LinkedIn URL and name with different emails (e.g. work and personal) | One row; email left blank and flagged; scored normally |
 | Two LinkedIn URLs sharing an email | Kept separate; flagged as a possible duplicate |
+| A row with a known person's email and no LinkedIn URL, or their URL spelled differently (`uk.linkedin.com/…`, `…/en`, `%2D`) | The same person: one row with both events |
+| Rows sharing only a source ID, with different names | Kept separate; flagged as a possible duplicate |
 | Several profiles for one LinkedIn URL | Not scored; needs review |
-| Two people with the same name | Kept separate; names alone never merge records |
+| Two people with the same name | Kept separate and scored as usual; names alone never merge records. Both are flagged as possible duplicates, so invites and handoff wait until someone confirms they are different people |
 
 ## Important caveats
 

@@ -10,7 +10,7 @@ import { BulkActions } from './BulkActions';
 import { NewConference } from './NewConference';
 import { SyncStatus } from './SyncStatus';
 import { STATUS_LABEL, statusIn, type RoleStatus } from './activity';
-import { useActivity } from './actionStore';
+import { useActivity, useKnownPeople } from './actionStore';
 import { PageFooter } from './PageFooter';
 import { PoolCards } from './PoolCards';
 import { bundledSources } from './data';
@@ -30,9 +30,9 @@ function keyFromHash(): string | null {
 
 type Loaded = { ok: true; dataset: Dataset } | { ok: false; problems: string[] };
 
-function load(sources: SourceTexts): Loaded {
+function load(sources: SourceTexts, knownPeople?: ReadonlyMap<string, string>): Loaded {
   try {
-    return { ok: true, dataset: buildDataset(sources) };
+    return { ok: true, dataset: buildDataset(sources, { knownPeople }) };
   } catch (err) {
     if (err instanceof DataValidationError) return { ok: false, problems: err.problems };
     return { ok: false, problems: [err instanceof Error ? err.message : String(err)] };
@@ -42,7 +42,9 @@ function load(sources: SourceTexts): Loaded {
 export function App({ sources: initial = bundledSources }: { sources?: SourceTexts }) {
   // An added conference lives in memory only; a reload goes back to the supplied files.
   const [sources, setSources] = useState(initial);
-  const loaded = useMemo(() => load(sources), [sources]);
+  // People with saved history keep the ID it is under, even if a later import adds or drops a LinkedIn URL or email.
+  const known = useKnownPeople();
+  const loaded = useMemo(() => load(sources, known), [sources, known]);
   if (!loaded.ok) {
     return (
       <main className="content">
@@ -58,8 +60,9 @@ export function App({ sources: initial = bundledSources }: { sources?: SourceTex
     );
   }
   // The whole list is checked and the merged pool built before anything changes; a problem leaves the pool as it was.
+  // People are resolved with the same known IDs as the pool, so saved history keeps its owner.
   const addAttendees: AddAttendees = (text, profiles) => {
-    const result = importAttendeeList(sources, text, profiles);
+    const result = importAttendeeList(sources, text, profiles, known);
     if (result.ok && result.added > 0) setSources(result.sources);
     return result;
   };

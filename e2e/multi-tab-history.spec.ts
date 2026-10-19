@@ -212,3 +212,45 @@ test('two different Alex Reviews imported across reloads never share history; th
   await expect(send(page)).toBeDisabled();
   expect(errors).toEqual([]);
 });
+
+test('a person first known by email, re-imported with a LinkedIn URL after a reload, keeps their invite and cannot be invited again', async ({ page }) => {
+  const errors = watchErrors(page);
+  const importGil = async (columns: string, values: string) => {
+    await page.goto('/');
+    await page.reload();
+    await page.getByRole('button', { name: 'Add conference' }).click();
+    await page
+      .getByRole('dialog', { name: 'Add a conference' })
+      .locator('input[type=file]')
+      .setInputFiles({ name: 'gil.csv', mimeType: 'text/csv', buffer: Buffer.from(`full_name,email,company,title,conference_name,conference_date${columns}\nGil Upgrade,gil@example.test,Acme,Data Engineer,Review Event,2026-10-19${values}\n`) });
+    await page.getByRole('row', { name: /Gil Upgrade/ }).getByText('Gil Upgrade').click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Gil Upgrade' })).toBeVisible();
+  };
+  const allInvites = () =>
+    page.evaluate(
+      () =>
+        new Promise<number>((resolve, reject) => {
+          const open = indexedDB.open('wsc-talent-pool');
+          open.onerror = () => reject(open.error);
+          open.onsuccess = () => {
+            const all = open.result.transaction('entries').objectStore('entries').getAll();
+            all.onsuccess = () => resolve((all.result as { kind: string; state: string }[]).filter((e) => e.kind === 'invite' && e.state === 'sent').length);
+          };
+        }),
+    );
+
+  await importGil('', '');
+  await openInvite(page);
+  await send(page).click();
+  await expect(page.locator('.ask .ask-status')).toHaveText(/^Sent · Simulated/);
+  const firstUrl = page.url();
+
+  await importGil(',linkedin_url', ',https://uk.linkedin.com/in/gil-upgrade');
+  expect(page.url()).toBe(firstUrl); // Same person ID in the address.
+  await expect(activity(page)).toContainText('Invited to');
+  await inviteButton(page).click();
+  await expect(page.locator('.ask .check-note')).toHaveText(/^Already contacted for /);
+  await expect(send(page)).toBeDisabled();
+  expect(await allInvites()).toBe(1);
+  expect(errors).toEqual([]);
+});
