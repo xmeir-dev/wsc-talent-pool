@@ -7,7 +7,7 @@ import type { Attendee } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
 import { CountryFlag } from './Location';
 import { WscMark } from './WscMark';
-import { fitChecks, shortDate, TABLE_OUTCOME_LABEL } from './format';
+import { conferenceShort, fitChecks, shortDate, TABLE_OUTCOME_LABEL } from './format';
 
 interface Shared {
   onOpen: (key: string) => void;
@@ -73,6 +73,32 @@ const connections = ({ any, candidate, relevantFor }: Attendee) => {
   );
 };
 
+/** Up to two short-name chips, latest first ("WSC Meetup '26"), full name and date on hover; any more go in a "+N" chip. */
+function Conferences({ attendances }: { attendances: Attendee['candidate']['attendances'] }) {
+  const latest = [...attendances].sort((x, y) => y.conferenceDate.localeCompare(x.conferenceDate));
+  const year = (iso: string) => `’${iso.slice(2, 4)}`;
+  const full = (at: (typeof latest)[number]) => `${at.conferenceName}, ${shortDate(at.conferenceDate)}`;
+  const rest = latest.slice(2);
+  return (
+    <span className="confs">
+      {latest.slice(0, 2).map((at) => (
+        <Hint key={at.hubspotId} tip={full(at)} focusable={false}>
+          <Tag size="sm" className="conf-tag">
+            {conferenceShort(at.conferenceName)} {year(at.conferenceDate)}
+          </Tag>
+        </Hint>
+      ))}
+      {rest.length > 0 && (
+        <Hint tip={rest.map(full).join('; ')} focusable={false}>
+          <Tag size="sm" className="conf-tag">
+            +{rest.length}
+          </Tag>
+        </Hint>
+      )}
+    </span>
+  );
+}
+
 /** One pill per job, shortlist first: the title, tinted green (shortlisted) or amber (maybe relevant), with the reason on hover. */
 function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
   if (list.length === 0) return empty;
@@ -134,16 +160,7 @@ export function AttendeeTable({
       header: <Head icon={Calendar03Icon} label="Conference" />,
       width: '20%',
       sortable: true,
-      accessor: ({ candidate }) => (
-        <span className="confs">
-          {candidate.attendances.map((at) => (
-            <span key={at.hubspotId} className="who">
-              <span>{at.conferenceName}</span>
-              <span className="muted who-role">{shortDate(at.conferenceDate)}</span>
-            </span>
-          ))}
-        </span>
-      ),
+      accessor: ({ candidate }) => <Conferences attendances={candidate.attendances} />,
     },
     {
       id: 'relevant',

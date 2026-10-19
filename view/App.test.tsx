@@ -121,8 +121,8 @@ describe('recruiter view: list', () => {
       'Backend Engineer: Needs review',
     ]);
     expect(adaora.textContent).not.toContain('JOB001');
-    expect(adaora.textContent).toContain('Data & AI Summit Europe');
-    expect(adaora.textContent).toContain('21 Mar 2025');
+    // Conference as a short chip; the full name and date are in its hover.
+    expect(adaora.querySelector('.conf-tag')!.textContent).toBe('Data & AI Summit ’25');
     const alexei = screen.getByRole('row', { name: /Alexei Volkov/ });
     expect(alexei.querySelector('.jobs')).toBeNull();
     expect(alexei.querySelector('.empty-line')).not.toBeNull();

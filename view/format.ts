@@ -24,6 +24,7 @@ const CONFERENCE_SHORT: Record<string, string> = {
   'Broadcast & Streaming Technology Expo': 'Broadcast Expo',
   'Data & AI Summit Europe': 'Data & AI Summit',
   'DevOps World 2025': 'DevOps World',
+  'WSC Product Meetup': 'WSC Meetup',
 };
 
 /** "Data & AI Summit Europe" → "Data & AI Summit": how a conference reads in the filter. Unknown names stay whole. */

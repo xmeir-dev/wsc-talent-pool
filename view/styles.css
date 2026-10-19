@@ -565,10 +565,26 @@ ul {
   background: var(--ml-border);
 }
 
+/* Conference chips, latest first, side by side; they wrap if the column is narrow. */
 .confs {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.confs > * {
+  display: flex;
+}
+/* An outline, like the connection tags, so the chip still shows on the grey row hover. */
+.conf-tag.conf-tag {
+  box-sizing: border-box;
+  min-height: 24px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ml-text);
+  white-space: nowrap;
+  cursor: default;
+  box-shadow: inset 0 0 0 1px var(--ml-border);
 }
 .who-role {
   font-size: 13px;
