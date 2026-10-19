@@ -225,7 +225,7 @@ ul {
   justify-content: center;
   gap: 6px;
   padding: 40px var(--ml-space-xl) 24px;
-  background: linear-gradient(to bottom, transparent, color-mix(in srgb, #d7f20a 18%, transparent));
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, #d7f20a 9%, transparent));
   font-size: 13px;
   color: var(--ml-text-muted);
 }
