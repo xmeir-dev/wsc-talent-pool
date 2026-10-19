@@ -53,11 +53,30 @@ ul {
   gap: var(--ml-space-sm);
   margin-bottom: var(--ml-space-lg);
 }
+.page-logo {
+  border-radius: 10px;
+  margin-right: 4px;
+}
+.page-title {
+  margin-right: auto;
+}
+.page-title p {
+  margin: 2px 0 0;
+}
 .page-head h1 {
-  margin: 0 auto 0 0;
+  margin: 0;
   font-size: 24px;
   font-weight: 600;
   letter-spacing: -0.01em;
+}
+
+.page-foot {
+  margin-top: var(--ml-space-lg);
+  font-size: 13px;
+  color: var(--ml-text-faint);
+}
+.page-foot a {
+  color: var(--ml-text-muted);
 }
 
 .list-count {

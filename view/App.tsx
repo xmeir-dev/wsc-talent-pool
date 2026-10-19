@@ -208,7 +208,11 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   return (
     <main className="content">
       <header className="page-head">
-        <h1>Talent pool</h1>
+        <img className="page-logo" src="/favicon-192.png" alt="WSC Sports" width={44} height={44} />
+        <div className="page-title">
+          <h1>WSC talent pool</h1>
+          <p className="muted">Conference to candidate pipeline</p>
+        </div>
         <Button variant="secondary" leftIcon={<HugeiconsIcon icon={Add01Icon} size={16} strokeWidth={1.75} />}>
           New conference
         </Button>
@@ -216,6 +220,13 @@ function Workspace({ dataset }: { dataset: Dataset }) {
       </header>
       {filters}
       <AttendeeTable attendees={attendees} onOpen={openProfile} emptyState={empty} sort={sort} onSort={setSort} />
+      <footer className="page-foot">
+        Created by{' '}
+        <a href="https://www.linkedin.com/in/meir-rosenschein" target="_blank" rel="noreferrer">
+          Meir Rosenschein
+        </a>{' '}
+        for WSC Sports, Oct 18–20, 2026
+      </footer>
     </main>
   );
 }
