@@ -98,11 +98,12 @@ describe('acceptance: SportsTech Innovation Summit 2024 and 2026-11-14, then a l
     if (!first.ok) throw new Error(first.problems.join('; '));
     const later = importAttendeeList(first.sources, list(row('Cara New', '2026-11-15'), row('Dev Later', '2026-11-15')));
     if (!later.ok) throw new Error(later.problems.join('; '));
-    // Cara is already recorded for the 2026 edition (day two of the same run); Dev is new.
-    expect({ added: later.added, alreadyRecorded: later.alreadyRecorded }).toEqual({ added: 1, alreadyRecorded: 1 });
+    // Cara's day two of the 2026 run is kept as a row (a new date) but stays one attendance; Dev is new.
+    expect({ added: later.added, alreadyRecorded: later.alreadyRecorded }).toEqual({ added: 2, alreadyRecorded: 0 });
     const cara = later.dataset.candidates.filter((c) => c.fullName === 'Cara New');
     expect(cara).toHaveLength(1);
     expect(cara[0]!.attendances).toHaveLength(1);
+    expect(later.dataset.editions.filter((e) => e.name === SUMMIT).map((e) => e.label)).toEqual([`${SUMMIT} (2024)`, `${SUMMIT} (2026)`]);
 
     const retry = importAttendeeList(later.sources, list(row('Cara New', '2026-11-15'), row('Dev Later', '2026-11-15')));
     expect(retry.ok && { added: retry.added, alreadyRecorded: retry.alreadyRecorded, same: retry.sources === later.sources }).toEqual({
@@ -127,11 +128,60 @@ describe('acceptance: SportsTech Innovation Summit 2024 and 2026-11-14, then a l
     expect(d.editions.filter((e) => e.name === SUMMIT)).toHaveLength(2);
   });
 
-  it('retry detection groups people exactly as the build does: an email-only attendee re-sent with a LinkedIn URL is already recorded', () => {
+  it('retry detection groups people exactly as the build does: an email-only attendee re-sent with a LinkedIn URL is the same attendance, and the URL is kept', () => {
     const first = importAttendeeList(base(), list(row('Eli Email', '2026-11-14').replace(/linkedin\.com\/in\/eli-email$/, '')));
     if (!first.ok) throw new Error(first.problems.join('; '));
     const again = importAttendeeList(first.sources, list(row('Eli Email', '2026-11-14')));
-    expect(again.ok && { added: again.added, alreadyRecorded: again.alreadyRecorded }).toEqual({ added: 0, alreadyRecorded: 1 });
+    if (!again.ok) throw new Error(again.problems.join('; '));
+    expect({ added: again.added, alreadyRecorded: again.alreadyRecorded }).toEqual({ added: 1, alreadyRecorded: 0 });
+    const eli = again.dataset.candidates.filter((c) => c.fullName === 'Eli Email');
+    expect(eli.map((c) => [c.linkedinUrl, c.attendances.length])).toEqual([['linkedin.com/in/eli-email', 1]]);
+    const third = importAttendeeList(again.sources, list(row('Eli Email', '2026-11-14')));
+    expect(third.ok && { added: third.added, alreadyRecorded: third.alreadyRecorded }).toEqual({ added: 0, alreadyRecorded: 1 });
+  });
+
+  it('verifier repro: Cara 11-14, Cara 11-17, Dev 11-20 in one file give the same editions in the preview, the pool and the CLI', () => {
+    const file = list(row('Cara New', '2026-11-14'), row('Cara New', '2026-11-17'), row('Dev Later', '2026-11-20'));
+    const s = base();
+    const r = importAttendeeList(s, file);
+    if (!r.ok) throw new Error(r.problems.join('; '));
+    expect({ added: r.added, alreadyRecorded: r.alreadyRecorded }).toEqual({ added: 3, alreadyRecorded: 0 });
+    const labels = (d: { editions: { name: string; label: string; startDate: string; endDate: string }[] }) =>
+      d.editions.filter((e) => e.name === SUMMIT).map((e) => `${e.label} ${e.startDate}..${e.endDate}`);
+    expect(labels(r.dataset)).toEqual([`${SUMMIT} (2024) 2024-11-14..2024-11-15`, `${SUMMIT} (2026) 2026-11-14..2026-11-20`]);
+    // The CLI reads the same rows from data/: the same editions, and Cara's 11-17 row is still in the table.
+    expect(labels(buildDataset(r.sources))).toEqual(labels(r.dataset));
+    expect(parseCsv(r.sources.attendees).records.filter((x) => x.full_name === 'Cara New').map((x) => x.conference_date)).toEqual(['2026-11-14', '2026-11-17']);
+    // The filter the import selects shows both people.
+    const pool = buildPool(r.dataset);
+    expect(filterAttendees(pool, r.editions, []).map((p) => p.candidate.fullName).sort()).toEqual(['Cara New', 'Dev Later']);
+    // The demo's preview names the same single 2026 edition, and its pool matches.
+    const p = previewImport(file, s);
+    if (!p.ok) throw new Error(p.problems.join('; '));
+    expect(p.conferences).toEqual([`${SUMMIT} (2026)`]);
+    expect({ rows: p.rows.length, alreadyRecorded: p.alreadyRecorded }).toEqual({ rows: 3, alreadyRecorded: 0 });
+    expect(labels(buildDataset(applyImport(p.rows, s)))).toEqual(labels(r.dataset));
+    // And the exact file again is still harmless.
+    const retry = importAttendeeList(r.sources, file);
+    expect(retry.ok && { added: retry.added, same: retry.sources === r.sources }).toEqual({ added: 0, same: true });
+  });
+
+  it('warns when rows with and without an event ID look like one event split in two', () => {
+    const s = loadSources(FIXTURE_DIR);
+    const a = parseCsv(s.attendees);
+    const rows = ['E-1', ''].map((id, i) => ({
+      hubspot_id: `HS82${i}`,
+      full_name: `Iris ${i}`,
+      email: `iris${i}@example.test`,
+      conference_name: 'Split Expo',
+      conference_domain: 'Sports Technology',
+      conference_date: '2026-03-01',
+      linkedin_url: '',
+      event_id: id,
+    }));
+    const d = buildDataset({ ...s, attendees: toCsv([...a.header, 'event_id'], [...a.records, ...rows]) });
+    expect(d.editions.filter((e) => e.name === 'Split Expo')).toHaveLength(2);
+    expect(d.warnings).toContainEqual(expect.stringMatching(/event_id E-1\) and Split Expo .* \(no event_id\) share a name and dates; kept apart/));
   });
 
   it('an undated row is its own edition, never folded into a dated one, and says so', () => {

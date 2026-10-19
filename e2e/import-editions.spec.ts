@@ -79,3 +79,14 @@ test('F14: a formula-like name downloads as text in the Excel file', async ({ pa
   expect(records(sheet)[0]).toMatchObject({ full_name: '=1+2', firstname: '=1+2', company: '@SUM(1,2)' });
   expect(sheet.cells.every((c) => c.type === 'inlineStr' && !c.formula)).toBe(true);
 });
+
+test('F11 (verifier repro): one file with Cara on the 14th and 17th and Dev on the 20th is one edition, and both stay in view', async ({ page }) => {
+  await page.goto('/');
+  const at = (name: string, date: string) =>
+    `${name},${name.toLowerCase().replace(' ', '.')}@example.test,Synth,Engineer,${SUMMIT},Sports Technology & Analytics,${date},,linkedin.com/in/${name.toLowerCase().replace(' ', '-')}`;
+  await addList(page, 'summit-2026.csv', csv(at('Cara New', '2026-11-14'), at('Cara New', '2026-11-17'), at('Dev Later', '2026-11-20')));
+  await expect(title(page)).toHaveText('2 of 77 attendees');
+  await expect(page.getByRole('row', { name: /Dev Later/ })).toBeVisible();
+  await page.locator('.filters').getByRole('button', { name: /^Conference/ }).click();
+  await expect(conferenceMenu(page).getByRole('button', { name: /^SportsTech/ })).toHaveText(['SportsTech (2024) 40', 'SportsTech (2026) 2']);
+});

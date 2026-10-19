@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { NUMERIC_OUTPUT_COLUMNS, OUTPUT_COLUMNS, parseCsv, splitName, toOutputRows, toXlsx, XLSX_MIME } from '../pipeline';
-import { cellText } from '../pipeline/xlsx';
+import { cellText, fitCell, XLSX_MAX_CELL_CHARS } from '../pipeline/xlsx';
 import { assessmentDownloads, attendeesDownload, FORMULA_LIKE, LEADING_VARIANTS, payloadPool, variantsDownload } from './formula-payloads';
 import { decodeText, readXlsx, records } from './xlsx-read';
 
@@ -53,6 +53,19 @@ describe('Excel cells are typed by column, never by how a value looks', () => {
       ['B2', '', 3],
       ['A3', 'inlineStr', '1e3'],
     ]);
+  });
+
+  it('text over the 32,767-character cell limit is cut visibly, never silently; shorter text is untouched', () => {
+    const long = 'x'.repeat(40_000);
+    const sheet = readXlsx(toXlsx('T', [{ name: 'notes' }], [{ notes: long }, { notes: 'y'.repeat(XLSX_MAX_CELL_CHARS) }]));
+    const cut = String(sheet.rows[1]![0]);
+    expect(cut).toHaveLength(XLSX_MAX_CELL_CHARS);
+    expect(cut).toBe(fitCell(long));
+    expect(cut.endsWith(' … [truncated: 40000 characters in total; the CRM import CSV has the full text]')).toBe(true);
+    expect(sheet.rows[2]![0]).toBe('y'.repeat(XLSX_MAX_CELL_CHARS));
+    // A surrogate pair at the cut is never split.
+    const emoji = '😀'.repeat(20_000);
+    expect(fitCell(emoji).replace(/ … \[truncated.*$/, '')).toMatch(/^(😀)+$/);
   });
 
   it('is deterministic: the same rows give the same bytes', () => {

@@ -171,6 +171,9 @@ export function buildDataset(sources: SourceTexts, options: BuildOptions = {}): 
   const warnings: string[] = [];
   const attendeeFile = readFile('attendees', sources.attendees, problems, warnings);
   checkDates(attendeeFile.records, attendeeFile.lines, problems);
+  // Same rule as both importers: a list with no attendees is a mistake, not an empty pool.
+  if (attendeeFile.records.length === 0 && !problems.some((p) => p.startsWith('attendees:')))
+    problems.push('attendees: the file has a header but no attendee rows');
   const attendeeRows = attendeeFile.records as unknown as AttendeeRecord[];
   const profileRows = readFile('profiles', sources.profiles, problems, warnings).records as unknown as ProfileRecord[];
   const employeeRows = readFile('employees', sources.employees, problems, warnings).records;
@@ -222,6 +225,16 @@ export function buildDataset(sources: SourceTexts, options: BuildOptions = {}): 
   const editionByKey = new Map(editions.map((e) => [e.key, e]));
   for (const e of editions) {
     if (!e.startDate) warnings.push(`attendees: ${e.label} has no date; kept as its own edition, not combined with any dated one`);
+    // Same name and overlapping dates, but only some rows carry an event ID: probably one event split in two.
+    if (e.eventId && e.startDate) {
+      const twin = editions.find(
+        (o) => !o.eventId && o.startDate && normalize(o.name) === normalize(e.name) && o.startDate <= e.endDate && e.startDate <= o.endDate,
+      );
+      if (twin)
+        warnings.push(
+          `attendees: ${e.label} (event_id ${e.eventId}) and ${twin.label} (no event_id) share a name and dates; kept apart. Add the event_id to every row if they are one event`,
+        );
+    }
   }
   // One person per group of rows sharing a strong identifier (identity.ts: resolvePeople). Names never merge.
   const people = resolvePeople(attendees as unknown as AttendeeRecord[], identityRowOf, knownMap(options.knownPeople));
@@ -413,9 +426,11 @@ const knownMap = (knownPeople?: ReadonlyMap<string, string>) =>
 
 /**
  * Which new attendee rows would add something. A row whose person (resolved exactly as buildDataset does, with the
- * same known people) already has an attendance at the same event edition, in the pool or earlier in the same file,
- * adds nothing: re-importing a list is harmless. `added` rows must already be trimmed. People and editions are
- * decided over existing + new rows together, as the build will.
+ * same known people) is already recorded at the same event edition on the same date, with no new LinkedIn URL or
+ * email, in the pool or earlier in the same file, adds nothing: re-importing a list is harmless. Every other row is
+ * kept (several rows of one person and edition still make one attendance in the build). `added` rows must already
+ * be trimmed. People and editions are decided over existing + new rows together, as the build will, and skipping
+ * only such rows leaves both unchanged.
  */
 export function planAttendeeImport(
   existingAttendees: string,
@@ -427,19 +442,27 @@ export function planAttendeeImport(
   const { keys, editions } = assignEditions(all);
   const personOf = new Map<AttendeeRecord, string>();
   for (const g of resolvePeople(all, identityRowOf, knownMap(options.knownPeople))) for (const r of g.rows) personOf.set(r, g.personId);
-  const seen = new Set<string>();
-  const attendanceKey = (i: number) => `${personOf.get(all[i]!)}|${keys[i]}`;
-  existing.forEach((_, i) => seen.add(attendanceKey(i)));
+  // A row is skipped only when it adds nothing at all: the same person, edition and date is already recorded, and
+  // every LinkedIn URL / email on it is already on those rows. Then dropping it changes neither the editions (the
+  // name still has that date) nor who is who, so the preview, the committed pool and the CLI on the same rows agree.
+  // A new day of the same edition, or a row adding an identifier, is kept and joins that one attendance.
+  const seen = new Map<string, Set<string>>();
+  const identifiersOf = (r: AttendeeRecord) => {
+    const k = identityRowOf(r);
+    return [...(k.linkedinUrl ? [`linkedin:${k.linkedinUrl}`] : []), ...(k.email ? [`email:${k.email}`] : [])];
+  };
+  const record = (i: number) => {
+    const key = `${personOf.get(all[i]!)}|${keys[i]}|${all[i]!.conference_date}`;
+    const ids = seen.get(key) ?? new Set<string>();
+    const isNew = !seen.has(key) || identifiersOf(all[i]!).some((id) => !ids.has(id));
+    for (const id of identifiersOf(all[i]!)) ids.add(id);
+    seen.set(key, ids);
+    return isNew;
+  };
+  existing.forEach((_, i) => record(i));
   const add: number[] = [];
   const alreadyRecorded: number[] = [];
-  added.forEach((_, j) => {
-    const k = attendanceKey(existing.length + j);
-    if (seen.has(k)) alreadyRecorded.push(j);
-    else {
-      seen.add(k);
-      add.push(j);
-    }
-  });
+  added.forEach((_, j) => (record(existing.length + j) ? add : alreadyRecorded).push(j));
   return {
     add,
     alreadyRecorded,

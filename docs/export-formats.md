@@ -16,6 +16,7 @@ A spreadsheet program guesses each CSV cell's type when it opens the file. A cel
   - Text is written as an inline string cell (`t="inlineStr"`) with the Text number format (`@`). It is never a formula element and never left for the program to type, and it is not changed. A value that looks like a number in a text column (such as `007`) stays text.
   - Counts, ranks and years (`shortlist_rank`, the skill counts, `years_experience`, `connection_count`) are number cells, so they sort and add up. The column decides the type, never the look of a value.
   - Characters XML cannot hold (control characters) use the format's own `_xHHHH_` escape. Tab, line feed and carriage return are written as character references, so a reader keeps them.
+  - A cell holds at most 32,767 characters, the format's limit; LibreOffice silently cuts anything longer when it opens a file. Longer text is therefore cut by the writer, visibly. It is cut to fit the limit and ends with "… [truncated: N characters in total; the CRM import CSV has the full text]". Only the Excel download does this; the CRM CSV keeps every character. The LibreOffice test checks that a 40,001-character value opens as exactly this marked text.
 
 The Excel assessment has the same columns, people, order and decisions as the CSV for that job. The attendee download has the same people, order and filters as the table on screen. `conference_name` there holds each event edition's label, so two runs of one conference read apart ([importing and events](importing-and-events.md#event-editions)).
 

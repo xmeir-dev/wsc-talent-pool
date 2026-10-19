@@ -9,6 +9,7 @@
  *   and no text is auto-typed or altered (no added apostrophes or prefixes).
  * - counts and ranks are numeric cells (`<v>3</v>`), so they sort and add up as numbers.
  * The column decides the type, never the look of a value: "007" in a text column stays the text "007".
+ * Text longer than the format's 32,767-character cell limit is cut with a visible marker (fitCell).
  *
  * Verified by opening and re-saving in LibreOffice (tests/xlsx-libreoffice.test.ts; docs/export-formats.md
  * names the version). This is not a claim about every spreadsheet program.
@@ -68,8 +69,24 @@ function columnLetter(index: number): string {
   return s;
 }
 
+/** The most characters (UTF-16 code units) one cell may hold in the .xlsx format; longer text is cut by readers. */
+export const XLSX_MAX_CELL_CHARS = 32_767;
+
+/**
+ * Text that fits one cell. Longer text is cut visibly, never silently: it ends with a marker giving the full length.
+ * Only the person-facing Excel download does this; the CRM CSV keeps every character.
+ */
+export function fitCell(value: string): string {
+  if (value.length <= XLSX_MAX_CELL_CHARS) return value;
+  const marker = ` … [truncated: ${value.length} characters in total; the CRM import CSV has the full text]`;
+  let cut = XLSX_MAX_CELL_CHARS - marker.length;
+  // Never split a surrogate pair.
+  if ((value.charCodeAt(cut - 1) & 0xfc00) === 0xd800) cut--;
+  return value.slice(0, cut) + marker;
+}
+
 const textCell = (ref: string, value: string, style: number) =>
-  `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${cellText(value)}</t></is></c>`;
+  `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${cellText(fitCell(value))}</t></is></c>`;
 
 function cell(ref: string, value: XlsxCell, type: XlsxColumn['type']): string {
   if (value === null || value === undefined || value === '') return '';

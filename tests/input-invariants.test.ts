@@ -126,7 +126,7 @@ describe('F7: a repeated job skill is one requirement', () => {
     );
     expect(r.job.requiredSkills).toEqual(['Go', 'Kafka', 'SQL', 'Spark', 'Airflow']);
     expect([byName(r, 'Gil Golang').tally.required, byName(r, 'Gil Golang').tally.requiredTotal]).toEqual([1, 5]);
-    const d = buildDataset(sources({ seniority: 'Mid', required: 'C;C#;C++;Python;Python Basics;PyTorch;TensorFlow' }, []));
+    const d = buildDataset(sources({ seniority: 'Mid', required: 'C;C#;C++;Python;Python Basics;PyTorch;TensorFlow' }, [person]));
     expect(d.jobs[0]!.requiredSkills).toEqual(['C', 'C#', 'C++', 'Python', 'Python Basics', 'PyTorch', 'TensorFlow']);
   });
 

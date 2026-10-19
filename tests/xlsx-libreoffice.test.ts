@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { NUMERIC_OUTPUT_COLUMNS, OUTPUT_COLUMNS, parseCsv, toOutputRows } from '../pipeline';
+import { fitCell } from '../pipeline/xlsx';
 import { assessmentDownloads, attendeesDownload, LEADING_VARIANTS, payloadPool, variantsDownload } from './formula-payloads';
 import { readXlsx, records } from './xlsx-read';
 
@@ -66,6 +67,8 @@ describe.skipIf(!soffice)(TITLE, () => {
     // A CRLF variant in its own file, so its documented normalisation does not mix with the exact ones.
     crlf: variantsDownload(pool, [CRLF_VARIANT]).file.data,
     assessment: assessmentDownloads(assessment).xlsx.data as Uint8Array,
+    // Over the cell limit: our marker must survive, rather than LibreOffice cutting it silently.
+    long: variantsDownload(pool, ['=' + 'x'.repeat(40_000)]).file.data,
   };
   const saved: Record<string, ReturnType<typeof readXlsx>> = {};
   const reopened: Record<string, Record<string, string>[]> = {};
@@ -161,6 +164,14 @@ describe.skipIf(!soffice)(TITLE, () => {
     const formulas = saved.crm!.cells.filter((c) => c.formula);
     expect(formulas.length).toBeGreaterThan(0);
     expect(saved.crm!.files.get('xl/worksheets/sheet1.xml')).toMatch(/<f[^>]*>1\+2<\/f><v>3<\/v>/);
+  });
+
+  it('text over the cell limit opens as our visibly truncated text, not a silent cut', () => {
+    noFormulas('long');
+    const [row] = records(saved.long!);
+    expect(row!.full_name).toBe(fitCell('=' + 'x'.repeat(40_000)));
+    expect(String(row!.full_name)).toMatch(/ … \[truncated: 40001 characters in total; the CRM import CSV has the full text\]$/);
+    expect(reopened.long![0]!.full_name).toBe(row!.full_name);
   });
 
   it('records the reader version', () => {

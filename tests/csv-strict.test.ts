@@ -88,6 +88,27 @@ describe('acceptance: Ada opens a quote and never closes it, Bob follows', () =>
   }, 60_000);
 });
 
+describe('a header-only attendee file is refused everywhere', () => {
+  it('the CLI exits 1 with a clear message, like both importers', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'wsc-csv-'));
+    try {
+      cpSync(FIXTURE_DIR, join(dir, 'data'), { recursive: true });
+      writeFileSync(join(dir, 'data', 'conference_attendees.csv'), HEADER + '\n');
+      const run = spawnSync(process.execPath, ['--import', 'tsx', join(ROOT, 'cli', 'run-pipeline.ts'), '--all', '--data', join(dir, 'data'), '--out', join(dir, 'out')], {
+        cwd: ROOT,
+        encoding: 'utf8',
+      });
+      expect(run.status).toBe(1);
+      expect(run.stderr).toMatch(/attendees: the file has a header but no attendee rows/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+    const sources = loadSources(FIXTURE_DIR);
+    expect(importAttendeeList(sources, HEADER + '\n')).toEqual({ ok: false, problems: ['This list has no attendees.'] });
+    expect(previewImport(HEADER + '\n', sources)).toEqual({ ok: false, problems: ['The file has no rows.'] });
+  }, 60_000);
+});
+
 describe('acceptance: valid quoting round-trips; broken structure never shifts fields', () => {
   it('keeps quoted commas, line breaks, doubled quotes, a BOM and every line ending exactly', () => {
     const values = [
