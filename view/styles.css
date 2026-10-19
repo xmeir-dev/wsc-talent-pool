@@ -83,8 +83,6 @@ ul {
 }
 .page-foot a:hover {
   color: var(--ml-text-muted);
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 .list-count {
