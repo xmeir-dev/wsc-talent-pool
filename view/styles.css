@@ -1418,3 +1418,8 @@ ul {
   display: block;
   border-radius: 4px;
 }
+
+/* Wrapper that only catches the header tick-box click; it adds no box of its own. */
+.dt-catch {
+  display: contents;
+}

@@ -1,4 +1,4 @@
-import { isValidElement, type ReactElement, type ReactNode } from 'react';
+import { isValidElement, type MouseEvent, type ReactElement, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import { Briefcase04Icon, Calendar03Icon, Cancel01Icon, CheckmarkBadge01Icon, HelpCircleIcon, Tick02Icon, UserIcon } from '@hugeicons/core-free-icons';
 import { DataTable, Hint, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
@@ -158,6 +158,16 @@ export function AttendeeTable({
   onSelect: (next: string[]) => void;
 }) {
   const pageKeys = new Set(attendees.map((a) => a.candidate.candidateKey));
+  const tickedHere = selected.filter((k) => pageKeys.has(k)).length;
+  // With some rows ticked (the header shows a dash), the header box clears the selection instead of ticking every row.
+  const clearOnPartial = (e: MouseEvent) => {
+    const partial = tickedHere > 0 && tickedHere < pageKeys.size;
+    if (partial && (e.target as HTMLElement).closest('thead .ml-dt-check')) {
+      e.preventDefault();
+      e.stopPropagation();
+      onSelect([]);
+    }
+  };
   const columns: Column<Attendee>[] = [
     {
       id: 'candidate',
@@ -184,22 +194,25 @@ export function AttendeeTable({
   ];
 
   return (
-    <DataTable
-      className="candidates attendees"
-      aria-label="Attendees"
-      columns={columns}
-      data={attendees}
-      sortState={sort}
-      onSortChange={onSort}
-      manualSort
-      getRowId={({ candidate }) => candidate.candidateKey}
-      selectable="multiple"
-      selectedIds={selected.filter((k) => pageKeys.has(k))}
-      // The table only knows this page; keep ticks made on other pages.
-      onSelectionChange={(ids) => onSelect([...selected.filter((k) => !pageKeys.has(k)), ...ids])}
-      onRowClick={({ candidate }) => onOpen(candidate.candidateKey)}
-      emptyState={emptyState}
-      footer={footer}
-    />
+    // display: contents keeps the table's layout; the wrapper only catches the header box click first.
+    <div className="dt-catch" onClickCapture={clearOnPartial}>
+      <DataTable
+        className="candidates attendees"
+        aria-label="Attendees"
+        columns={columns}
+        data={attendees}
+        sortState={sort}
+        onSortChange={onSort}
+        manualSort
+        getRowId={({ candidate }) => candidate.candidateKey}
+        selectable="multiple"
+        selectedIds={selected.filter((k) => pageKeys.has(k))}
+        // The table only knows this page; keep ticks made on other pages.
+        onSelectionChange={(ids) => onSelect([...selected.filter((k) => !pageKeys.has(k)), ...ids])}
+        onRowClick={({ candidate }) => onOpen(candidate.candidateKey)}
+        emptyState={emptyState}
+        footer={footer}
+      />
+    </div>
   );
 }
