@@ -8,12 +8,12 @@ import { connectionPeople } from './AskConnection';
 import { inviteMessage } from './InviteToJob';
 import comeetIcon from './assets/comeet.png';
 import { DemoBadge } from './DemoBadge';
-import { checkInvite, checkReference, comeetFor, record, useActivity } from './activity';
+import { checkInvite, checkReference, comeetFor, personFlags, record, useActivity } from './activity';
 import { AVATAR, initials } from './avatars';
 
 const firstName = (name: string) => name.split(' ')[0] ?? name;
-const names = (cs: Candidate[]) =>
-  cs.length <= 2 ? cs.map((c) => c.fullName).join(' and ') : `${cs.slice(0, -1).map((c) => c.fullName).join(', ')} and ${cs.at(-1)!.fullName}`;
+const joinNames = (ns: string[]) => (ns.length <= 2 ? ns.join(' and ') : `${ns.slice(0, -1).join(', ')} and ${ns.at(-1)!}`);
+const names = (cs: Candidate[]) => joinNames(cs.map((c) => c.fullName));
 
 /** One request per colleague, covering everyone selected who they know. */
 function askMessage(employee: Employee, people: Candidate[]): string {
@@ -87,6 +87,8 @@ export function BulkActions({
     let noEmail = 0;
     // Same rules as a single invite: anyone blocked is skipped, with the reason shown.
     const blocked: { name: string; reason: string }[] = [];
+    // Allowed, but worth knowing first (e.g. declined another role): shown against the name, as in a single invite.
+    const warned: { name: string; reason: string }[] = [];
     for (const p of selected) {
       const best = [...p.relevantFor].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1))[0];
       const key = p.candidate.candidateKey;
@@ -103,35 +105,58 @@ export function BulkActions({
       else if (!p.candidate.email) noEmail++;
       else if (check?.block) blocked.push({ name: p.candidate.fullName, reason: check.block });
       else {
+        if (check?.warn) warned.push({ name: p.candidate.fullName, reason: check.warn });
         const g = byJob.get(best.job.jobId) ?? { job: best.job, people: [] };
         g.people.push(p.candidate);
         byJob.set(best.job.jobId, g);
       }
     }
     const groups = jobs.flatMap((j) => byJob.get(j.jobId) ?? []);
-    return { groups, total: groups.reduce((n, g) => n + g.people.length, 0), noJob, noEmail, blocked };
+    return { groups, total: groups.reduce((n, g) => n + g.people.length, 0), noJob, noEmail, blocked, warned };
   }, [selected, jobs, entries]);
 
   // Colleague → the selected people they know.
   const asks = useMemo(() => {
     const by = new Map<string, { employee: Employee; people: Candidate[] }>();
-    let skipped = 0;
+    // Everyone left out, by name, with the real reason; separate from people with no connection at all.
+    const leftOut: { name: string; reason: string }[] = [];
+    let unconnected = 0;
     for (const p of selected) {
       const key = p.candidate.candidateKey;
-      for (const { employee } of connectionPeople(p.any.a)) {
+      const colleagues = connectionPeople(p.any.a);
+      if (!colleagues.length) unconnected++;
+      const asked: string[] = [];
+      let personBlock: string | undefined;
+      for (const { employee } of colleagues) {
         // A colleague is asked about a person once; a blocked pair is left out.
-        if (checkReference(entries, comeetFor(key), key, employee.employeeId, employee.fullName).block) {
-          skipped++;
+        const block = checkReference(entries, comeetFor(key), key, employee.employeeId, employee.fullName).block;
+        if (block) {
+          if (personFlags(entries, comeetFor(key), key).doNotContact) personBlock = block;
+          else asked.push(employee.fullName);
           continue;
         }
         const g = by.get(employee.employeeId) ?? { employee, people: [] };
         g.people.push(p.candidate);
         by.set(employee.employeeId, g);
       }
+      if (personBlock) leftOut.push({ name: p.candidate.fullName, reason: personBlock });
+      else if (asked.length)
+        leftOut.push({ name: p.candidate.fullName, reason: `${asked.length === 1 ? 'request' : 'requests'} to ${joinNames(asked)} already sent` });
     }
-    return Object.assign([...by.values()].sort((x, y) => y.people.length - x.people.length), { skipped });
+    return Object.assign([...by.values()].sort((x, y) => y.people.length - x.people.length), { leftOut, unconnected });
   }, [selected, entries]);
-  const unconnected = selected.filter((p) => !asks.some((g) => g.people.includes(p.candidate))).length;
+  const leftOutNote = asks.leftOut.length > 0 && (
+    <div className="check-note">
+      <p className="bulk-note">Left out:</p>
+      <ul className="bulk-blocked">
+        {asks.leftOut.map((b) => (
+          <li key={b.name}>
+            {b.name}: {b.reason}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 
   if (!selected.length) return null;
   const preview = plan.groups[0];
@@ -154,6 +179,7 @@ export function BulkActions({
                   </li>
                 ))}
               </ul>
+              {leftOutNote}
               <p className="muted bulk-note">Preview for {asks[0]!.employee.fullName}:</p>
               <textarea className="ask-text" readOnly rows={6} value={askMessage(asks[0]!.employee, asks[0]!.people)} aria-label="Request preview" />
               <div className="ask-actions">
@@ -180,14 +206,18 @@ export function BulkActions({
                 >
                   Send {asks.length} in Slack
                 </Button>
-                {unconnected > 0 && <span className="ask-status muted">{unconnected} selected have no WSC connection</span>}
-                {asks.skipped > 0 && <span className="ask-status muted">{asks.skipped} already asked, left out</span>}
+                {asks.unconnected > 0 && <span className="ask-status muted">{asks.unconnected} selected have no WSC connection</span>}
               </div>
             </>
           ) : (
-            <p className="muted">
-              {asks.skipped > 0 ? 'Every colleague connected to them was already asked.' : 'No one at WSC is connected to the selected people.'}
-            </p>
+            <>
+              {leftOutNote}
+              {asks.unconnected > 0 && (
+                <p className="muted">
+                  {asks.leftOut.length ? `${asks.unconnected} selected have no WSC connection` : 'No one at WSC is connected to the selected people.'}
+                </p>
+              )}
+            </>
           )
         }
       </BulkPanel>
@@ -225,6 +255,17 @@ export function BulkActions({
                   {plan.blocked.map((b) => (
                     <li key={b.name}>
                       {b.name}: {b.reason}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {plan.warned.length > 0 && (
+              <div className="check-note">
+                <ul className="bulk-blocked">
+                  {plan.warned.map((w) => (
+                    <li key={w.name}>
+                      {w.name}: {w.reason}
                     </li>
                   ))}
                 </ul>

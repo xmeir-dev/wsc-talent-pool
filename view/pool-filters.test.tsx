@@ -1,0 +1,112 @@
+// @vitest-environment jsdom
+// Regressions for QA 2026-10-19 #003 (download scope) and #009 (hidden status filter).
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { assessmentToCsv, buildDataset } from '../pipeline';
+import { App } from './App';
+import { buildPool } from './attendees';
+import { bundledSources } from './data';
+import { downloadFile } from './download';
+
+vi.mock('./download', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./download')>()),
+  downloadFile: vi.fn(),
+}));
+
+afterEach(() => {
+  cleanup();
+  vi.mocked(downloadFile).mockClear();
+  window.history.replaceState(null, '', '/');
+});
+
+type User = ReturnType<typeof userEvent.setup>;
+type Filter = 'Conference' | 'Job' | 'Location' | 'Status';
+const pool = buildPool(buildDataset(bundledSources));
+const heading = () => document.querySelector('.list-count')!.textContent!;
+const shownCount = () => (heading().startsWith('All') ? pool.attendees.length : Number(heading().split(' ')[0]));
+const trigger = (name: Filter) =>
+  within(document.querySelector<HTMLElement>('.filters')!).getByRole('button', { name: new RegExp(`^${name}`) });
+const value = (name: Filter) => trigger(name).querySelector('.filter-value')!.textContent;
+const menu = (name: string) => screen.queryByRole('dialog', { name });
+
+async function pick(user: User, name: Filter, ...chips: RegExp[]) {
+  if (!menu(name)) await user.click(trigger(name));
+  for (const chip of chips) await user.click(within(menu(name)!).getByRole('button', { name: chip }));
+  await user.keyboard('{Escape}');
+  await waitFor(() => expect(menu(name)).toBeNull());
+}
+
+const download = () => screen.getByRole('button', { name: 'Download CSV' });
+const lastFile = () => vi.mocked(downloadFile).mock.lastCall![0];
+const csvRows = (text: string) => text.trim().split('\n').length - 1;
+
+describe('#009 status filter stays visible', () => {
+  it('keeps a chosen status on the trigger and in the menu when the role has no one in it; Clear resets the label', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await pick(user, 'Status', /^Declined/);
+    expect(value('Status')).toBe('Declined');
+    await pick(user, 'Job', /^Senior ML Engineer/);
+    expect(heading()).toBe('0 of 75 attendees');
+    // Not "All" while a filter is hiding everyone.
+    expect(value('Status')).toBe('Declined');
+    await user.click(trigger('Status'));
+    const declined = within(menu('Status')!).getByRole('button', { name: /^Declined/ });
+    expect(declined.getAttribute('aria-pressed')).toBe('true');
+    expect(declined.textContent).toBe('Declined 0');
+    await user.click(within(menu('Status')!).getByRole('button', { name: 'Clear' }));
+    expect(value('Status')).toBe('All');
+    expect(heading()).toBe('12 of 75 attendees');
+  });
+});
+
+describe('#003 download scope', () => {
+  it('with no job chosen, downloads exactly the people shown (every filter, status included)', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await pick(user, 'Status', /^Declined/);
+    await user.click(download());
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(csvRows(lastFile().text)).toBe(shownCount());
+  });
+
+  it('with one job chosen, offers the people shown and the full assessment as two named choices', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await pick(user, 'Job', /^Senior ML Engineer/);
+    await pick(user, 'Conference', /^Data & AI Summit/);
+    const shown = shownCount();
+    expect(shown).toBeLessThan(pool.results.get('JOB001')!.candidates.length);
+
+    await user.click(download());
+    const items = within(screen.getByRole('menu')).getAllByRole('menuitem');
+    expect(items.map((i) => i.textContent)).toEqual([
+      `Attendees shown (${shown})`,
+      `Full JOB001 assessment (${pool.results.get('JOB001')!.candidates.length})`,
+    ]);
+
+    await user.click(items[0]!);
+    expect(lastFile().fileName).toBe('attendees_data-ai-summit-europe_job001.csv');
+    expect(csvRows(lastFile().text)).toBe(shown);
+
+    await user.click(download());
+    await user.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: /^Full JOB001/ }));
+    expect(lastFile().fileName).toBe('candidates_JOB001.csv');
+    // Byte-identical to the CLI output.
+    expect(lastFile().text).toBe(assessmentToCsv(pool.results.get('JOB001')!));
+  });
+
+  it('the shown download honours a status that empties the role', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await pick(user, 'Status', /^Declined/);
+    await pick(user, 'Job', /^Senior ML Engineer/);
+    await user.click(download());
+    expect(within(screen.getByRole('menu')).getByRole('menuitem', { name: /^Attendees shown/ }).textContent).toBe(
+      'Attendees shown (0)',
+    );
+    await user.click(within(screen.getByRole('menu')).getByRole('menuitem', { name: /^Attendees shown/ }));
+    expect(csvRows(lastFile().text)).toBe(0);
+  });
+});

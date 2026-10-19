@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Download04Icon, Briefcase01Icon, Calendar03Icon, Location01Icon, MailSend01Icon } from '@hugeicons/core-free-icons';
-import { Button, Callout, EmptyState, PaginationFooter, usePagination, type SortState } from '@meir-labs/ui-kit';
+import { Button, Callout, Dropdown, EmptyState, PaginationFooter, usePagination, type SortState } from '@meir-labs/ui-kit';
 import { buildDataset, DataValidationError, parseCsv, toCsv, type Dataset, type SourceTexts } from '../pipeline';
 import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
 import { CandidateDetail } from './CandidateDetail';
@@ -102,10 +102,11 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
   const statusOptions: FilterOption[] = useMemo(() => {
     const count = new Map<RoleStatus, number>();
     for (const s of statusOf.values()) count.set(s, (count.get(s) ?? 0) + 1);
+    // A chosen status stays listed (with 0) when the role has no one in it, so the filter never hides people while saying "All".
     return (Object.keys(STATUS_LABEL) as RoleStatus[])
-      .filter((s) => count.has(s))
-      .map((s) => ({ value: s, label: STATUS_LABEL[s], short: STATUS_LABEL[s], count: count.get(s)! }));
-  }, [statusOf]);
+      .filter((s) => count.has(s) || statuses.includes(s))
+      .map((s) => ({ value: s, label: STATUS_LABEL[s], short: STATUS_LABEL[s], count: count.get(s) ?? 0 }));
+  }, [statusOf, statuses]);
   const attendees = useMemo(() => {
     const list = statuses.length ? others.filter((p) => statuses.includes(statusOf.get(p.candidate.candidateKey)!)) : others;
     if (sort || !job) return sortAttendees(list, sort ?? BY_RELEVANT_JOB, pool.jobs);
@@ -217,8 +218,16 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
     );
   }
 
-  const onExport = () =>
-    downloadFile(job ? exportCsv(pool.results.get(job)!) : attendeesCsv(attendees, conferences, jobIds, countries));
+  // The people shown, every filter applied. With one job there is a second, named choice: that job's full CLI file.
+  const exportShown = () => downloadFile(attendeesCsv(attendees, conferences, jobIds, countries));
+  const exportButton = (
+    <Button variant="secondary" className="export" onClick={job ? undefined : exportShown} aria-label="Download CSV">
+      <HugeiconsIcon icon={Download04Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
+      <span className="export-label" aria-hidden="true">
+        Download CSV
+      </span>
+    </Button>
+  );
 
   const filtered = conferences.length > 0 || jobIds.length > 0 || countries.length > 0 || statuses.length > 0;
   const filters = (
@@ -241,12 +250,21 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         featured={{ label: 'WSC offices', values: Object.keys(offices.offices), more: (n) => `${n} more countries` }}
       />
       <FilterMenu label="Status" icon={MailSend01Icon} options={statusOptions} selected={statuses} onChange={setStatuses} />
-      <Button variant="secondary" className="export" onClick={onExport} aria-label="Download CSV">
-        <HugeiconsIcon icon={Download04Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
-        <span className="export-label" aria-hidden="true">
-          Download CSV
-        </span>
-      </Button>
+      {job ? (
+        <Dropdown
+          // The menu is portaled; `contents` keeps the button itself on the filter line's flex layout.
+          style={{ display: 'contents' }}
+          align="end"
+          trigger={exportButton}
+          items={[
+            { value: 'shown', label: `Attendees shown (${shown})` },
+            { value: 'job', label: `Full ${job} assessment (${pool.results.get(job)!.candidates.length})` },
+          ]}
+          onSelect={(v) => (v === 'job' ? downloadFile(exportCsv(pool.results.get(job)!)) : exportShown())}
+        />
+      ) : (
+        exportButton
+      )}
     </div>
   );
   const empty = <EmptyState variant="no-results" title="No one matches these filters." />;

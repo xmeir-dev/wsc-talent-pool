@@ -52,7 +52,7 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
     if (!payload) return;
     let live = true;
     setState({ step: 'checking' });
-    comeet.find(payload.email, payload.positionUid).then((r) => {
+    comeet.find(payload, payload.positionUid).then((r) => {
       if (!live) return;
       if (r.kind === 'unavailable') setState({ step: 'unavailable', message: r.message });
       else setState(r.candidate ? { step: 'existing', candidate: r.candidate } : { step: 'review' });

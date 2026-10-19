@@ -337,8 +337,11 @@ export function AskConnection({
             title={copied ? 'Copied' : 'Copy message'}
             onClick={async () => {
               if (await copy()) {
-                prepare('copy');
-                setStatus('Prepared, not sent: mark it sent on the profile once you send it.');
+                // Already asked (or not to be contacted): a copy is not a new request, so nothing is recorded.
+                if (!check.block) {
+                  prepare('copy');
+                  setStatus('Prepared, not sent: mark it sent on the profile once you send it.');
+                }
                 setCopied(true);
                 window.setTimeout(() => setCopied(false), 1600);
               } else setStatus('Select the text and copy it');

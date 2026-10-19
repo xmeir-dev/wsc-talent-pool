@@ -31,7 +31,7 @@ import { AVATAR, initials } from './avatars';
 import comeetHistory from '../data/demo_comeet.json';
 import comeetIcon from './assets/comeet.png';
 import hubspotIcon from './assets/hubspot.png';
-import { current, comeetFor, describe, personFlags, record, roleStatus, shortDay, STATE_LABEL, STATUS_LABEL, useActivity, type Entry } from './activity';
+import { current, comeetFor, describe, historyUnreadable, personFlags, record, referenceSummary, roleStatus, shortDay, STATE_LABEL, STATUS_LABEL, useActivity, type Entry } from './activity';
 import { InviteToJob } from './InviteToJob';
 import { CountryFlag } from './Location';
 import { overviewFor } from './Overview';
@@ -464,9 +464,8 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
     if (s.status === 'not_contacted') return { fromComeet: false, text: 'Not contacted for this role' };
     return { fromComeet: false, text: [STATUS_LABEL[s.status], s.at && shortDay(s.at), s.simulated && 'Simulated'].filter(Boolean).join(' · ') };
   };
-  // The latest request to each colleague about this person, if any.
-  const askedBy = (employeeId: string) =>
-    history.find((e): e is Extract<typeof e, { kind: 'reference' }> => e.kind === 'reference' && e.employeeId === employeeId);
+  // The request to each colleague about this person, if any: a send outranks a later copy.
+  const askedBy = (employeeId: string) => referenceSummary(entries, c.candidateKey, employeeId);
   const contacts = [
     c.email && { key: 'email', icon: <HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.75} />, name: 'Email', value: c.email, href: `mailto:${c.email}` },
     c.linkedinUrl && {
@@ -602,6 +601,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
   const activityCard = (
     <section className="d-card">
       <Label icon={Clock01Icon}>Activity</Label>
+      {historyUnreadable && <p className="unknown">Some saved history couldn't be read.</p>}
       {flags.doNotContact && <p className="check-note is-block">Asked not to be contacted.</p>}
       {flags.inProcess && (
         <p className="check-note is-block">

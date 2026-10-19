@@ -4,7 +4,8 @@
  * are assessed by exactly the same rules as the supplied data.
  */
 
-import { buildDataset, DataValidationError, parseCsv, toCsv, type SourceTexts } from '../pipeline';
+import { buildDataset, DataValidationError, parseCsv, toCsv, type Dataset, type SourceTexts } from '../pipeline';
+import { NAME_CONFLICT_FLAG } from '../pipeline/dataset';
 import { normalizeEmail, normalizeLinkedinUrl } from '../pipeline/text';
 
 const ATTENDEE_COLUMNS = [
@@ -67,9 +68,15 @@ export type ImportPreview =
   | {
       ok: true;
       rows: ImportRow[];
-      /** Rows matching an existing contact by LinkedIn URL or email: the event is added, no duplicate. */
+      /**
+       * Rows that add an event to a contact instead of creating one (an existing contact, or an
+       * earlier row for the same person). Counted from the real grouping, so rows - merged = created.
+       */
       merged: number;
+      /** Contacts the import adds to the pool. */
       created: number;
+      /** One line per row whose match is uncertain: what happens to it and why. */
+      uncertain: string[];
       conferences: string[];
       ignoredColumns: string[];
     }
@@ -83,17 +90,39 @@ function appendRows(base: string, columns: readonly string[], rows: Record<strin
 
 function existingKeys(sources: SourceTexts) {
   const attendees = parseCsv(sources.attendees).records;
-  const urls = new Set(attendees.map((r) => normalizeLinkedinUrl(r.linkedin_url ?? '')).filter(Boolean));
   const emails = new Set(attendees.map((r) => normalizeEmail(r.email ?? '')).filter(Boolean));
   const profiles = new Set(parseCsv(sources.profiles).records.map((r) => normalizeLinkedinUrl(r.linkedin_url ?? '')));
   const maxId = Math.max(0, ...attendees.map((r) => Number(/^HS(\d+)$/.exec(r.hubspot_id ?? '')?.[1] ?? 0)));
-  return { urls, emails, profiles, maxId };
+  return { emails, profiles, maxId };
 }
 
-function isMerged(row: ImportRow, keys: ReturnType<typeof existingKeys>): boolean {
-  const url = normalizeLinkedinUrl(row.linkedin_url ?? '');
-  const email = normalizeEmail(row.email ?? '');
-  return (url !== '' && keys.urls.has(url)) || (email !== '' && keys.emails.has(email));
+function newContactIds(rows: ImportRow[], maxId: number): string[] {
+  return rows.map((_, i) => `HS${String(maxId + i + 1).padStart(3, '0')}`);
+}
+
+/**
+ * Reads the outcome from the dataset the import would produce, so the preview uses exactly the
+ * pipeline's grouping (URL first, then email; names never merge) instead of a separate guess.
+ */
+function outcome(rows: ImportRow[], sources: SourceTexts, after: Dataset) {
+  const keys = existingKeys(sources);
+  const ids = newContactIds(rows, keys.maxId);
+  const rowById = new Map(ids.map((id, i) => [id, rows[i]!]));
+  let created = 0;
+  const uncertain: string[] = [];
+  for (const c of after.candidates) {
+    const mine = c.sourceContactIds.filter((id) => rowById.has(id)).map((id) => rowById.get(id)!);
+    if (mine.length === 0) continue;
+    const isNew = mine.length === c.sourceContactIds.length;
+    if (isNew) created++;
+    const names = [...new Set(mine.map((r) => r.full_name))].join(' / ');
+    if (c.dataQualityFlags.some((f) => f.startsWith(NAME_CONFLICT_FLAG))) {
+      uncertain.push(`${names}: LinkedIn URL is shared with a different name. Combined and held for review.`);
+    } else if (isNew && mine.some((r) => keys.emails.has(normalizeEmail(r.email ?? '')))) {
+      uncertain.push(`${names}: email matches an existing contact, but the LinkedIn URL does not. Added as new and flagged as a possible duplicate.`);
+    }
+  }
+  return { created, merged: rows.length - created, uncertain };
 }
 
 /** Validates a spreadsheet before anything changes. Problems block the import; nothing is half-applied. */
@@ -113,18 +142,16 @@ export function previewImport(text: string, sources: SourceTexts): ImportPreview
   if (problems.length > 0) return { ok: false, problems };
 
   const rows = records.map((r) => Object.fromEntries(IMPORT_COLUMNS.map((c) => [c, (r[c] ?? '').trim()])) as ImportRow);
+  let after: Dataset;
   try {
-    buildDataset(applyImport(rows, sources));
+    after = buildDataset(applyImport(rows, sources));
   } catch (err) {
     return { ok: false, problems: err instanceof DataValidationError ? err.problems : [String(err)] };
   }
-  const keys = existingKeys(sources);
-  const merged = rows.filter((r) => isMerged(r, keys)).length;
   return {
     ok: true,
     rows,
-    merged,
-    created: rows.length - merged,
+    ...outcome(rows, sources, after),
     conferences: [...new Set(rows.map((r) => r.conference_name!))],
     ignoredColumns: header.filter((h) => !(IMPORT_COLUMNS as readonly string[]).includes(h)),
   };
@@ -133,9 +160,9 @@ export function previewImport(text: string, sources: SourceTexts): ImportPreview
 /** New contacts get the next HubSpot IDs; profile rows are added only for people not already enriched. */
 export function applyImport(rows: ImportRow[], sources: SourceTexts): SourceTexts {
   const keys = existingKeys(sources);
-  let next = keys.maxId;
-  const attendees = rows.map((r) => ({
-    hubspot_id: `HS${String(++next).padStart(3, '0')}`,
+  const ids = newContactIds(rows, keys.maxId);
+  const attendees = rows.map((r, i) => ({
+    hubspot_id: ids[i]!,
     full_name: r.full_name ?? '',
     email: r.email ?? '',
     company: r.company ?? '',

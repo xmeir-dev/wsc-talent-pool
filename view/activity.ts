@@ -171,6 +171,15 @@ export function checkReference(entries: readonly Entry[], comeet: readonly Comee
   return {};
 }
 
+/**
+ * The request to show for one colleague on a profile: the latest sent or confirmed one wins over any later
+ * prepared copy (copying the text again does not undo a send), otherwise the latest request.
+ */
+export function referenceSummary(entries: readonly Entry[], candidateKey: string, employeeId: string): Extract<Entry, { kind: 'reference' }> | undefined {
+  const asked = current(entries).filter((e): e is Extract<Entry, { kind: 'reference' }> => e.kind === 'reference' && e.candidateKey === candidateKey && e.employeeId === employeeId);
+  return asked.filter(counts).at(-1) ?? asked.at(-1);
+}
+
 /** Seeded examples (simulated) so reviewers see the rules without clicking around. */
 export const SEEDED: readonly Entry[] = [
   // Declined one role, open for another.
@@ -182,16 +191,63 @@ export const SEEDED: readonly Entry[] = [
 
 // The store: seeded examples plus what was done in this browser. Storage can be blocked; memory still works.
 const STORAGE_KEY = 'wsc-activity-v1';
-function load(): Entry[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Entry[]) : [];
-  } catch {
-    return [];
+/** Where an unreadable saved history is kept, so the next save does not erase it. */
+const UNREADABLE_KEY = `${STORAGE_KEY}-unreadable`;
+const isStr = (v: unknown): v is string => typeof v === 'string';
+const oneOf = (v: unknown, options: readonly string[]) => isStr(v) && options.includes(v);
+const CHANNELS = ['comeet', 'slack', 'email', 'copy'] as const;
+const STATES = ['prepared', 'sent', 'failed', 'confirmed'] as const;
+/** Saved data is untrusted: an entry is kept only if it has every field the views read. */
+function isEntry(v: unknown): v is Entry {
+  if (!v || typeof v !== 'object') return false;
+  const e = v as Record<string, unknown>;
+  if (!isStr(e.id) || !isStr(e.candidateKey) || !isStr(e.by) || !isStr(e.at) || Number.isNaN(Date.parse(e.at))) return false;
+  if (typeof e.simulated !== 'boolean' || (e.supersedes !== undefined && !isStr(e.supersedes))) return false;
+  switch (e.kind) {
+    case 'invite':
+      return isStr(e.jobId) && isStr(e.jobTitle) && oneOf(e.channel, CHANNELS) && oneOf(e.state, STATES);
+    case 'reference':
+      return isStr(e.employeeId) && isStr(e.employeeName) && oneOf(e.channel, CHANNELS) && oneOf(e.state, STATES);
+    case 'outcome':
+      return isStr(e.jobId) && isStr(e.jobTitle) && oneOf(e.outcome, ['responded', 'interested', 'declined']);
+    case 'do_not_contact':
+      return true;
+    default:
+      return false;
   }
+}
+/** True when some saved history could not be read; the profile's Activity card says so. */
+export let historyUnreadable = false;
+function load(): Entry[] {
+  let raw: string | null;
+  try {
+    raw = window.localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return []; // Blocked storage: nothing saved to lose.
+  }
+  if (!raw) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    parsed = undefined;
+  }
+  const list = Array.isArray(parsed) ? parsed : [];
+  const valid = list.filter(isEntry);
+  if (!Array.isArray(parsed) || valid.length < list.length) {
+    historyUnreadable = true;
+    try {
+      window.localStorage.setItem(UNREADABLE_KEY, raw);
+    } catch {
+      // Nothing more to do.
+    }
+  }
+  return valid;
 }
 let added: Entry[] = typeof window === 'undefined' ? [] : load();
 let snapshot: readonly Entry[] = [...SEEDED, ...added];
+/** What the store holds now (seeded plus this browser's entries). */
+export const loadedEntries = (): readonly Entry[] => snapshot;
 const listeners = new Set<() => void>();
 function save() {
   snapshot = [...SEEDED, ...added];

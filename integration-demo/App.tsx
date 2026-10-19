@@ -88,7 +88,7 @@ export function App({ sources: initialSources = bundledSources, delayMs }: Props
     notify({
       id: `import-${Date.now()}`,
       title: `Import finished: ${fileName}`,
-      body: `${rows.length - merged} new contacts, ${merged} matched an existing contact. Pool re-scored for ${nextStore.dataset.jobs.length} open roles.`,
+      body: `${rows.length - merged} new contacts, ${merged} added as an event to an existing contact. Pool re-scored for ${nextStore.dataset.jobs.length} open roles.`,
       lines: roleLines(
         nextStore,
         nextStore.dataset.jobs.map((j) => j.jobId),

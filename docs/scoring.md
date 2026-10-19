@@ -19,7 +19,7 @@ Only the skills listed on the profile count, compared as whole names, ignoring c
 | What the profile shows | Shown as | Counts toward the shortlist? |
 |---|---|---|
 | The skill, by name or an accepted alias (table below) | "on profile" (green) | Yes |
-| Only a related skill (e.g. TensorFlow for PyTorch), or work that suggests it (Object Detection from tracking, pose estimation, sports CV, highlight or event detection) | "likely, please confirm" (amber) | No: it sends the person to review, so a recruiter can confirm it |
+| Only a related skill (e.g. TensorFlow for PyTorch), or work that suggests it (Object Detection from tracking, pose estimation, sports CV, highlight or event detection) | "likely, please confirm" (amber) | Not toward the 60% bar: it sends the person to review, so a recruiter can confirm it. It can meet a JOB001 must-have (below) |
 | Nothing | "missing" | No |
 
 A nice-to-have counts when the profile shows it by name, an alias or a related skill; work that only suggests it is too indirect. Nice-to-haves never decide the outcome; they only order people. Each profile skill is checked against every job skill separately, so **one profile skill can count toward several**. For example, "Sports CV" is Computer Vision (on profile) and Object Detection (likely, please confirm). "Kubernetes" is a related skill for both Docker and Microservices.
@@ -43,7 +43,7 @@ Collecting supporting skills never makes up for a missing must-have.
 
 | Role | Must-haves for the shortlist | Core discipline (none → not recommended) |
 |---|---|---|
-| JOB001 Senior ML Engineer | Computer Vision, and PyTorch or related deep learning. A related skill is enough for either must-have. | Any of: PyTorch, TensorFlow, Keras, Deep Learning, Machine Learning, Computer Vision, OpenCV, YOLO, Object Detection, Sports CV, Pose Estimation, Sports Tracking, Video Understanding, Video Analytics, Highlight Detection, Event Detection, Action Detection |
+| JOB001 Senior ML Engineer | Computer Vision, and PyTorch or related deep learning. A related skill is enough for either must-have, but still not toward the 60% bar. Priya Anand is #1 with Deep Learning for PyTorch because 4 other required skills are on her profile. | Any of: PyTorch, TensorFlow, Keras, Deep Learning, Machine Learning, Computer Vision, OpenCV, YOLO, Object Detection, Sports CV, Pose Estimation, Sports Tracking, Video Understanding, Video Analytics, Highlight Detection, Event Detection, Action Detection |
 | JOB002 Backend Engineer | Python or Go, on profile | Any of: Kafka, Microservices, REST APIs, REST API |
 | JOB003 Senior Product Manager – Sports Data | Product Management and Sports Analytics, both on profile. Sports broadcasting or data-product experience counts only as a related skill, so it can earn needs review but never the shortlist. | Product Management |
 | JOB004 Data Engineer | Python, on profile | Any of: Spark, dbt, Airflow |
@@ -101,14 +101,17 @@ Each event a person attended is marked relevant, adjacent, or not relevant, base
 | No LinkedIn URL, a non-profile URL, or no matching profile | Kept; needs review; "find their profile" as the next step |
 | The same person at several events | One row listing every event |
 | An exact duplicate row | Dropped and noted |
-| Different names, emails or profiles for what looks like one person | Not merged or guessed; flagged; needs review |
+| One LinkedIn URL with different names, or a name that differs from the profile | Flagged; needs review, never shortlisted |
+| One LinkedIn URL and name with different emails (e.g. work and personal) | One row; email left blank and flagged; scored normally |
+| Two LinkedIn URLs sharing an email | Kept separate; flagged as a possible duplicate |
+| Several profiles for one LinkedIn URL | Not scored; needs review |
 | Two people with the same name | Kept separate; names alone never merge records |
 
 ## Important caveats
 
 - **The 60% bar, the minimum years, the must-haves and the equivalents above are stated assumptions for this exercise, not validated hiring standards.** They should be reviewed with the hiring managers and checked against past hiring decisions before anyone relies on them.
 - **Internships count toward total years.** This is a deliberate, visible choice: the tool keeps the profile's total and asks the recruiter to confirm non-intern years for everyone affected. Subtracting intern years instead would move two JOB001 shortlisted people (James Thornton and Nathan Brooks, each at exactly 5 years) to needs review.
-- **Likely skills are leads, not facts.** They keep people like Mason Young (TensorFlow for PyTorch, Highlight Detection for Object Detection) in needs review rather than out of sight, and their next step asks to confirm them. They never put anyone on the shortlist.
+- **Likely skills are leads, not facts.** They keep people like Mason Young (TensorFlow for PyTorch, Highlight Detection for Object Detection) in needs review rather than out of sight, and their next step asks to confirm them. They never count toward the 60% bar; the one place they count is a JOB001 must-have (above).
 
 ## Results on the supplied data
 

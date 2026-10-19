@@ -17,12 +17,12 @@ function watchErrors(page: Page): string[] {
 const bodyRows = (page: Page) => page.locator('table tbody tr');
 const title = (page: Page) => page.locator('.list-count');
 
-const trigger = (page: Page, name: 'Conference' | 'Job') =>
+const trigger = (page: Page, name: 'Conference' | 'Job' | 'Status') =>
   page.locator('.filters').getByRole('button', { name: new RegExp(`^${name}`) });
 const menu = (page: Page, name: string) => page.getByRole('dialog', { name });
 
 /** Opens a filter menu, toggles chips, and closes it with Escape. */
-async function pick(page: Page, name: 'Conference' | 'Job', ...chips: RegExp[]) {
+async function pick(page: Page, name: 'Conference' | 'Job' | 'Status', ...chips: RegExp[]) {
   await trigger(page, name).click();
   for (const chip of chips) await menu(page, name).getByRole('button', { name: chip }).click();
   await page.keyboard.press('Escape');
@@ -169,11 +169,14 @@ test('a profile shows every job they may fit, whatever the list filter', async (
   expect(errors).toEqual([]);
 });
 
-test('export: a job downloads the same bytes the CLI writes; no job downloads the filtered attendees', async ({ page }) => {
+test('export: a job offers the same bytes the CLI writes; no job downloads the filtered attendees', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
-  const exportNow = async () => {
-    const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download CSV' }).click()]);
+  const exportNow = async (choice?: RegExp) => {
+    const button = page.getByRole('button', { name: 'Download CSV' });
+    if (choice) await button.click();
+    const target = choice ? page.getByRole('menuitem', { name: choice }) : button;
+    const [download] = await Promise.all([page.waitForEvent('download'), target.click()]);
     return download;
   };
 
@@ -192,7 +195,7 @@ test('export: a job downloads the same bytes the CLI writes; no job downloads th
     ['JOB003', [/^Senior ML Engineer/, /^Senior Product Manager/]],
   ] as const) {
     await pick(page, 'Job', ...chips);
-    const download = await exportNow();
+    const download = await exportNow(new RegExp(`^Full ${jobId} assessment`));
     expect(download.suggestedFilename()).toBe(`candidates_${jobId}.csv`);
     const file = await download.path();
     expect(readFileSync(file).equals(readFileSync(join(ROOT, 'output', `candidates_${jobId}.csv`)))).toBe(true);
@@ -237,4 +240,24 @@ test.describe('narrow screen', () => {
     expect(await overflow()).toBeLessThanOrEqual(0);
     expect(errors).toEqual([]);
   });
+});
+
+test('QA #003/#009: a chosen status stays visible, and one job offers shown people or the full CLI file', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/');
+  await pick(page, 'Status', /^Declined/);
+  await pick(page, 'Job', /^Senior ML Engineer/);
+  await expect(title(page)).toHaveText('0 of 75 attendees');
+  await expect(trigger(page, 'Status').locator('.filter-value')).toHaveText('Declined');
+
+  await page.getByRole('button', { name: 'Download CSV' }).click();
+  await expect(page.getByRole('menuitem')).toHaveText(['Attendees shown (0)', 'Full JOB001 assessment (75)']);
+  const [shown] = await Promise.all([page.waitForEvent('download'), page.getByRole('menuitem', { name: /^Attendees shown/ }).click()]);
+  expect(readFileSync(await shown.path(), 'utf8').trim().split('\n')).toHaveLength(1);
+
+  await trigger(page, 'Status').click();
+  await menu(page, 'Status').getByRole('button', { name: 'Clear' }).click();
+  await expect(trigger(page, 'Status').locator('.filter-value')).toHaveText('All');
+  await expect(title(page)).toHaveText('12 of 75 attendees');
+  expect(errors).toEqual([]);
 });

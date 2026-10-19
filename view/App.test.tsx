@@ -226,16 +226,18 @@ describe('recruiter view: list', () => {
     expect(trigger('Job')).toBeTruthy();
   });
 
-  it('exports the job CSV for one job, else the attendees shown', async () => {
+  it('exports the job CSV for one job (as a named choice), else the attendees shown', async () => {
     const user = userEvent.setup();
     render(<App />);
-    const lastExport = async () => {
+    const lastExport = async (choice?: RegExp) => {
       await user.click(screen.getByRole('button', { name: 'Download CSV' }));
+      if (choice) await user.click(screen.getByRole('menuitem', { name: choice }));
       return vi.mocked(downloadFile).mock.lastCall![0];
     };
     await pick(user, 'Job', /^Senior ML Engineer/);
     await pick(user, 'Conference', /^Data & AI Summit/);
-    const one = await lastExport();
+    // One job: the full CLI file is an explicit menu choice.
+    const one = await lastExport(/^Full JOB001 assessment/);
     expect(one.fileName).toBe('candidates_JOB001.csv');
     // The whole job, as the CLI writes it: the conference filter does not trim it.
     expect(one.text).toBe(assessmentToCsv(pool.results.get('JOB001')!));

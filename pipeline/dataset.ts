@@ -5,6 +5,8 @@
  * - Attendee rows with the same valid LinkedIn URL are one person (repeat attendee).
  * - Without a valid URL, the same email is one person. Names alone never merge anyone.
  * - Exact duplicate rows are dropped and flagged; conflicting details are flagged, not resolved.
+ * - Records combined by one URL that give different names are an unresolved identity: the profile
+ *   is shown but held for review. Different emails alone do not block (work vs personal is common).
  */
 
 import { parseCsv, type CsvRecord } from './csv';
@@ -121,6 +123,9 @@ function toProfile(r: ProfileRecord): Profile {
   };
 }
 
+/** Start of the flag for one LinkedIn URL whose attendee records give different names. */
+export const NAME_CONFLICT_FLAG = 'attendee records give different names';
+
 function distinct(values: string[], key: (v: string) => string = normalize): string[] {
   const seen = new Map<string, string>();
   for (const v of values) {
@@ -203,7 +208,7 @@ export function buildDataset(sources: SourceTexts): Dataset {
     const urls = distinct(rows.map((r) => r.linkedin_url), normalizeLinkedinUrl);
     const dataQualityFlags = [...flags];
     if (ids.length === 0) dataQualityFlags.push('attendee row has no hubspot_id');
-    if (names.length > 1) dataQualityFlags.push(`attendee records give different names: ${names.join(' / ')}`);
+    if (names.length > 1) dataQualityFlags.push(`${NAME_CONFLICT_FLAG}: ${names.join(' / ')}; confirm they are one person`);
     if (emails.length > 1) dataQualityFlags.push(`attendee records give different emails (left blank): ${emails.join(' / ')}`);
     if (emails.length === 0) dataQualityFlags.push('no email on attendee record');
     if (urls.length > 1) dataQualityFlags.push(`attendee records give different LinkedIn URLs: ${urls.join(' / ')}`);
@@ -231,7 +236,10 @@ export function buildDataset(sources: SourceTexts): Dataset {
       } else {
         profile = matches[0]!;
         const nameAgrees = names.some((n) => normalize(n) === normalize(profile!.fullName));
-        if (nameAgrees) {
+        if (names.length > 1) {
+          // Matching one of the names is not enough: the other record may be a different person.
+          profileStatus = 'conflict';
+        } else if (nameAgrees) {
           profileStatus = 'matched';
         } else {
           profileStatus = 'conflict';

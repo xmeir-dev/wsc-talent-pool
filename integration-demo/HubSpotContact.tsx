@@ -58,7 +58,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
   const p = c.profile;
   const firstEvent = a.events[0]?.attendance;
   const position = comeet.positionFor(jobId);
-  const status = position ? comeetStatusText(comeet.statusFor(c.email, position.uid)) : '--';
+  const status = position ? comeetStatusText(comeet.statusFor(c, position.uid)) : '--';
   const company = p?.currentCompany || c.attendances.at(-1)?.listedCompany || '';
 
   return (
@@ -159,7 +159,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
             entry={entry}
             jobId={jobId}
             onJobChange={onJobChange}
-            comeetRecord={position ? comeet.statusFor(c.email, position.uid) : null}
+            comeetRecord={position ? comeet.statusFor(c, position.uid) : null}
             onHandoff={() => setHandoffOpen(true)}
             onOpenComeet={onOpenComeet}
           />

@@ -109,9 +109,16 @@ export function ImportDialog({ sources, onClose, onImport }: Props) {
                 <strong>{file.name}</strong>: {p.rows.length} rows from {p.conferences.join(', ')}.
               </p>
               <p className="muted">
-                {p.created} new contacts · {p.merged} matched an existing contact (the event is added, no duplicate). All open
-                roles are re-scored after import.
+                {p.created} new contacts · {p.merged} added as an event to an existing contact (no duplicate). All open roles
+                are re-scored after import.
               </p>
+              {p.uncertain.length > 0 && (
+                <ul className="import-problems warn">
+                  {p.uncertain.map((x) => (
+                    <li key={x}>{x}</li>
+                  ))}
+                </ul>
+              )}
               <div className="hs-table-wrap import-table">
                 <table className="hs-table" aria-label="Rows to import">
                   <thead>

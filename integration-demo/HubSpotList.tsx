@@ -244,7 +244,7 @@ function RoleView({
             {shortlist.map((a) => {
               const c = a.candidate;
               const ref = referenceSummary(a);
-              const status = position ? comeetStatusText(comeet.statusFor(c.email, position.uid)) : '--';
+              const status = position ? comeetStatusText(comeet.statusFor(c, position.uid)) : '--';
               return (
                 <tr key={c.candidateKey} onClick={() => onOpen(c.candidateKey, jobId)}>
                   <Check />

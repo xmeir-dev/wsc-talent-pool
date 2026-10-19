@@ -10,6 +10,7 @@
  */
 
 import { assessEvent } from './conference';
+import { NAME_CONFLICT_FLAG } from './dataset';
 import { findPossibleReferences } from './history';
 import {
   MIN_YEARS_BY_SENIORITY,
@@ -202,7 +203,11 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
     reasons.push(`No usable LinkedIn profile (${candidate.profileStatus.replace('_', ' ')}); missing information is not proof of missing ability`);
   } else if (candidate.profileStatus === 'conflict') {
     recommendation = 'needs_review';
-    reasons.push('Profile may belong to someone else; confirm who this is before trusting this assessment');
+    reasons.push(
+      hasNameConflict(candidate)
+        ? 'Records sharing this LinkedIn URL give different names; confirm who this is before trusting this assessment'
+        : 'Profile may belong to someone else; confirm who this is before trusting this assessment',
+    );
   } else if (profile.skills.length === 0) {
     recommendation = 'needs_review';
     reasons.push('Profile lists no skills, so fit cannot be judged');
@@ -268,6 +273,10 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
   };
 }
 
+function hasNameConflict(candidate: Candidate): boolean {
+  return candidate.dataQualityFlags.some((f) => f.startsWith(NAME_CONFLICT_FLAG));
+}
+
 function nextStep(
   recommendation: Recommendation,
   candidate: Candidate,
@@ -284,7 +293,11 @@ function nextStep(
       ? 'Resolve which LinkedIn profile is this person, then re-run'
       : "Find this person's LinkedIn profile (or ask them for a CV), then re-run";
   }
-  if (candidate.profileStatus === 'conflict') return 'Confirm the attendee and the LinkedIn profile are the same person, then re-run';
+  if (candidate.profileStatus === 'conflict') {
+    return hasNameConflict(candidate)
+      ? 'Check with the contacts whether these records are the same person (fix or split them in HubSpot), then re-run'
+      : 'Confirm the attendee and the LinkedIn profile are the same person, then re-run';
+  }
   if (candidate.profile.skills.length === 0) return 'Get a CV or a fuller profile, then re-run';
   const unconfirmed = skills.filter((s) => s.kind === 'required' && s.match !== 'named').map((s) => s.skill);
   const steps: string[] = [];

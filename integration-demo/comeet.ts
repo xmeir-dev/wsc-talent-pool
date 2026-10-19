@@ -31,6 +31,8 @@ export interface ComeetCandidate {
   lastName: string;
   email: string;
   linkedinUrl: string;
+  /** The HubSpot contact this record came from; absent on records created outside this handoff. */
+  sourceContactId?: string;
   location: string;
   /** Matched required skills, shown as candidate tags. */
   tags: string[];
@@ -53,6 +55,7 @@ export interface HandoffPayload {
   lastName: string;
   email: string;
   linkedinUrl: string;
+  sourceContactId: string;
   location: string;
   tags: string[];
   status: 'Sourced';
@@ -66,6 +69,16 @@ export type HandoffResult =
   | { kind: 'existing'; candidate: ComeetCandidate }
   | { kind: 'unavailable'; message: string };
 
+/**
+ * Who a person is, for matching. A record matches on a non-empty email, LinkedIn URL or source contact ID;
+ * two blank values never match. A bare string is treated as an email.
+ */
+export interface PersonIdentity {
+  email: string;
+  linkedinUrl?: string;
+  sourceContactId?: string;
+}
+
 export type LookupResult = { kind: 'found'; candidate: ComeetCandidate | null } | { kind: 'unavailable'; message: string };
 
 export interface ComeetService {
@@ -73,9 +86,9 @@ export interface ComeetService {
   /** A new position opened in Comeet; in production its webhook starts an assessment for the role. */
   addPosition: (jobId: string, name: string) => ComeetPosition;
   /** What HubSpot shows as "Comeet status": the person's record in that position, if any. */
-  statusFor: (email: string, positionUid: string) => ComeetCandidate | null;
+  statusFor: (person: string | PersonIdentity, positionUid: string) => ComeetCandidate | null;
   positionFor: (jobId: string) => ComeetPosition | undefined;
-  find: (email: string, positionUid: string) => Promise<LookupResult>;
+  find: (person: string | PersonIdentity, positionUid: string) => Promise<LookupResult>;
   /** Idempotent: handing off the same person to the same position again returns the existing record. */
   handoff: (payload: HandoffPayload) => Promise<HandoffResult>;
   get: (uid: string) => ComeetCandidate | undefined;
@@ -96,6 +109,7 @@ export function buildHandoff(a: CandidateAssessment, job: Job, version: string, 
     ...splitNames(c.fullName),
     email: c.email,
     linkedinUrl: c.linkedinUrl,
+    sourceContactId: c.candidateKey,
     location: c.profile?.location ?? '',
     tags: a.skills.filter((s) => s.kind === 'required' && s.match !== 'none').map((s) => s.skill),
     status: 'Sourced',
@@ -120,6 +134,9 @@ function splitNames(fullName: string): { firstName: string; lastName: string } {
   return { firstName: firstname, lastName: lastname };
 }
 
+const normEmail = (v: string) => v.trim().toLowerCase();
+const normUrl = (v: string) => v.trim().toLowerCase().replace(/\/+$/, '');
+
 export interface SimulationOptions {
   /** Read on every call, so the demo's outage switch takes effect immediately. */
   isAvailable: () => boolean;
@@ -131,8 +148,20 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400 }: Simulation
   const positions = [...POSITIONS];
   let nextUid = 2001;
   const wait = () => new Promise((resolve) => setTimeout(resolve, delayMs));
-  const match = (email: string, positionUid: string) =>
-    [...records.values()].find((c) => c.positionUid === positionUid && c.email.toLowerCase() === email.toLowerCase()) ?? null;
+  const match = (person: string | PersonIdentity, positionUid: string) => {
+    const who = typeof person === 'string' ? { email: person } : person;
+    const inPosition = [...records.values()].filter((c) => c.positionUid === positionUid);
+    const by = (field: (c: PersonIdentity) => string | undefined, norm: (v: string) => string) => {
+      const value = norm(field(who) ?? '');
+      return value ? inPosition.find((c) => norm(field(c) ?? '') === value) : undefined;
+    };
+    return (
+      by((c) => c.email, normEmail) ??
+      by((c) => c.linkedinUrl, normUrl) ??
+      by((c) => c.sourceContactId, (v) => v.trim()) ??
+      null
+    );
+  };
 
   return {
     positions: () => positions,
@@ -141,19 +170,19 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400 }: Simulation
       positions.push(position);
       return position;
     },
-    statusFor: (email, positionUid) => match(email, positionUid),
+    statusFor: (person, positionUid) => match(person, positionUid),
     positionFor: (jobId) => positions.find((p) => p.jobId === jobId),
     get: (uid) => records.get(uid),
     list: (positionUid) => [...records.values()].filter((c) => c.positionUid === positionUid),
-    async find(email, positionUid) {
+    async find(person, positionUid) {
       await wait();
       if (!isAvailable()) return { kind: 'unavailable', message: UNAVAILABLE };
-      return { kind: 'found', candidate: match(email, positionUid) };
+      return { kind: 'found', candidate: match(person, positionUid) };
     },
     async handoff(p) {
       await wait();
       if (!isAvailable()) return { kind: 'unavailable', message: UNAVAILABLE };
-      const existing = match(p.email, p.positionUid);
+      const existing = match(p, p.positionUid);
       if (existing) return { kind: 'existing', candidate: existing };
       const candidate: ComeetCandidate = {
         uid: `CMT-${nextUid++}`,
@@ -163,6 +192,7 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400 }: Simulation
         lastName: p.lastName,
         email: p.email,
         linkedinUrl: p.linkedinUrl,
+        sourceContactId: p.sourceContactId,
         location: p.location,
         tags: p.tags,
         addedOn: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),

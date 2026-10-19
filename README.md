@@ -22,7 +22,7 @@ A clickable concept of the production experience, the morning after a conference
 
 ## Setup
 
-Needs Node.js 20 or newer. No accounts, keys or private packages.
+Needs Node.js 22.22.2 or a later 22.x, 24.15 or a later 24.x, or 26+ (the oldest versions every locked tool supports; tested on 22.22.2). With nvm, `nvm install` picks the tested version from `.nvmrc`. On an older Node, `npm ci` stops with an engine error instead of failing later. No accounts, keys or private packages.
 
 ```bash
 npm ci
@@ -45,7 +45,7 @@ Use `JOB001` (Senior ML Engineer) for the demo. Other IDs: `JOB002`, `JOB003`, `
 
 Each output row is one person for the chosen role: the recommendation (`shortlist`, `needs_review`, `not_recommended_for_role`), the skill counts behind it, matched skills and gaps, seniority evidence, WSC connections and possible references, every conference they attended, and the next step. Rules: [How candidates are ranked](docs/scoring.md). Columns: [Schema and flow](docs/schema-and-flow.md).
 
-The recruiter view (`view/`) lists all attendees, filtered by conference, job, location and outreach status (a single job shows its Shortlist and Needs review in rank order); the **At a glance** cards above the table toggle the conference and job filters, and each job links to Comeet. A row opens the person's profile, with one card per job they may fit. **Download CSV** downloads the attendee list as shown or, with a job chosen, the same file the CLI writes for that job (a test checks they match byte for byte).
+The recruiter view (`view/`) lists all attendees, filtered by conference, job, location and outreach status (a single job shows its Shortlist and Needs review in rank order); the **At a glance** cards above the table toggle the conference and job filters, and each job links to Comeet. A row opens the person's profile, with one card per job they may fit. **Download CSV** downloads the attendees shown, with every filter applied; with one job chosen it opens a menu: **Attendees shown (N)** or **Full JOB… assessment**, the same file the CLI writes for that job (a test checks they match byte for byte).
 
 Also in the view, with the made-up parts listed in [Assumptions](docs/assumptions.md):
 

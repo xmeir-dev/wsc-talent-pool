@@ -113,7 +113,7 @@ test('importing a spreadsheet adds contacts, merges a repeat attendee and re-sco
   const dialog = page.getByRole('dialog', { name: 'Import contacts' });
   await dialog.getByRole('button', { name: 'Use sample file' }).click();
   await expect(dialog).toContainText('5 rows from Sports Video AI Meetup');
-  await expect(dialog).toContainText('4 new contacts · 1 matched an existing contact');
+  await expect(dialog).toContainText('4 new contacts · 1 added as an event to an existing contact');
   await dialog.getByRole('button', { name: 'Import 5 contacts' }).click();
 
   await expect(page.getByText('79 records')).toBeVisible();
