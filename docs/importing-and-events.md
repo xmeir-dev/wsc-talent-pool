@@ -52,6 +52,6 @@ An imported list still lives in memory until the page reloads. See [how long an 
 
 ## Tests
 
-- `tests/csv-strict.test.ts`: the parser, both importers and the CLI on broken and valid files.
-- `tests/event-editions.test.ts`: edition keys, labels, filters and counts, later batches, retries and undated rows.
+- `tests/import-export/csv-strict.test.ts`: the parser, both importers and the CLI on broken and valid files.
+- `tests/import-export/event-editions.test.ts`: edition keys, labels, filters and counts, later batches, retries and undated rows.
 - `tests/browser/import-editions.spec.ts` and `tests/browser/integration-demo-import.spec.ts`: the same cases in a real browser, including that a failed import leaves the pool unchanged.

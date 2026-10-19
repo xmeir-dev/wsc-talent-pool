@@ -16,7 +16,7 @@
     "pipeline": "tsx cli/run-pipeline.ts",
     "pipeline:all": "tsx cli/run-pipeline.ts --all",
     "test": "vitest run",
-    "verify:xlsx": "XLSX_READER_REQUIRED=1 vitest run tests/xlsx-libreoffice.test.ts",
+    "verify:xlsx": "XLSX_READER_REQUIRED=1 vitest run tests/import-export/xlsx-libreoffice.test.ts",
     "test:e2e": "playwright test",
     "test:all": "vitest run && playwright test",
     "typecheck": "tsc --noEmit"

@@ -24,7 +24,7 @@ The Excel assessment has the same columns, people, order and decisions as the CS
 
 **Supported reader: LibreOffice Calc 26.8.1.1** (`soffice --version`: `LibreOffice 26.8.1.1 bf6ef2662401c7d6dce671ab4deb26ee0af3a7c1`), on macOS, run headless. **Tested format: the `.xlsx` files above**, made by the app's own export code.
 
-`tests/xlsx-libreoffice.test.ts` (also `npm run verify:xlsx`):
+`tests/import-export/xlsx-libreoffice.test.ts` (also `npm run verify:xlsx`):
 
 1. imports attendees whose name and company are `=1+2`, `+1+2`, `-1+2`, `@SUM(1,2)` and `\u0001=1+2` through the recruiter view's import, then makes the attendee and assessment Excel files with the real export functions;
 2. makes a second file whose name and company start with a space, tab, carriage return, line feed, vertical tab, U+0001 or a no-break space before `=1+2`;
