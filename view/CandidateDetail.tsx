@@ -144,6 +144,15 @@ function spellYears(spell: EmploymentSpell): string {
 const linkedinHref = (url: string) => (/^https?:\/\//.test(url) ? url : `https://${url}`);
 const upperFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
+/** A section heading with a hairline running to the right edge. */
+function SectionTitle({ children }: { children: ReactNode }) {
+  return (
+    <h2 className="d-section-title">
+      <span>{children}</span>
+    </h2>
+  );
+}
+
 /** The recruiter's note (or the AI line) as the page's lead, with who wrote it and where they met. */
 function Lead({ a }: { a: CandidateAssessment }) {
   const o = overviewFor(a.candidate);
@@ -151,28 +160,31 @@ function Lead({ a }: { a: CandidateAssessment }) {
   const met = a.candidate.attendances.find((at) => at.notes.trim());
   // A message from whoever wrote it: their avatar beside a speech bubble, who and where underneath.
   return (
-    <section className="d-lead">
-      {o.by ? (
-        <Avatar size="md" src={AVATAR[o.by.id]} fallback={initials(o.by.name)} aria-hidden="true" />
-      ) : (
-        <span className="d-lead-ai" aria-hidden="true">
-          <HugeiconsIcon icon={AiFileIcon} size={16} strokeWidth={1.75} />
-        </span>
-      )}
-      <div className="d-lead-body">
-        <p className="d-bubble">{o.text}</p>
-        <p className="d-byline">
-          {o.by ? (
-            <>
-              {o.by.name} at{' '}
-              <Hint tip={shortDate(o.by.date)} focusable={false}>
-                <span className="d-conf">{met?.conferenceName}</span>
-              </Hint>
-            </>
-          ) : (
-            o.origin
-          )}
-        </p>
+    <section>
+      <SectionTitle>Note</SectionTitle>
+      <div className="d-lead">
+        {o.by ? (
+          <Avatar size="md" src={AVATAR[o.by.id]} fallback={initials(o.by.name)} aria-hidden="true" />
+        ) : (
+          <span className="d-lead-ai" aria-hidden="true">
+            <HugeiconsIcon icon={AiFileIcon} size={16} strokeWidth={1.75} />
+          </span>
+        )}
+        <div className="d-lead-body">
+          <p className="d-bubble">{o.text}</p>
+          <p className="d-byline">
+            {o.by ? (
+              <>
+                {o.by.name} at{' '}
+                <Hint tip={shortDate(o.by.date)} focusable={false}>
+                  <span className="d-conf">{met?.conferenceName}</span>
+                </Hint>
+              </>
+            ) : (
+              o.origin
+            )}
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -300,7 +312,7 @@ export function CandidateDetail({ a, row, fits, onBack }: Props) {
       <Lead a={a} />
 
       <section>
-        <h2 className="d-section-title">Overview</h2>
+        <SectionTitle>Overview</SectionTitle>
         <div className="d-grid">
           {profile ? careerCard : metCard}
           <div className="d-col">
@@ -311,7 +323,7 @@ export function CandidateDetail({ a, row, fits, onBack }: Props) {
       </section>
 
       <section>
-        <h2 className="d-section-title">Fit to WSC roles</h2>
+        <SectionTitle>Fit to WSC roles</SectionTitle>
         {ordered.length > 0 ? (
           <div className="d-grid">
             {ordered.map(({ job, a: fit }) => (
