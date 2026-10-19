@@ -295,7 +295,7 @@ export function SyncStatus() {
           </div>
         )}
         <Button
-          variant="secondary"
+          variant="primary"
           className="sync-now"
           disabled={!connected || syncing}
           onClick={syncNow}
