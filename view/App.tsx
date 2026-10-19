@@ -152,7 +152,18 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   if (open && openAttendee) {
     return (
       <main className="content profile">
-        <CandidateDetail a={open.a} row={open.row} fits={openAttendee.relevantFor} onBack={back} />
+        <CandidateDetail
+          a={open.a}
+          row={open.row}
+          fits={openAttendee.relevantFor}
+          onBack={back}
+          onJob={(jobId) => {
+            // Back to the list, showing that job's candidates in its ranked order.
+            setJobIds([jobId]);
+            setSort(null);
+            back();
+          }}
+        />
       </main>
     );
   }

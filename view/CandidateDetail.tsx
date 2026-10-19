@@ -3,6 +3,7 @@ import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import {
   AiFileIcon,
   ArrowLeft01Icon,
+  ArrowRight01Icon,
   Briefcase01Icon,
   Calendar03Icon,
   Cancel01Icon,
@@ -31,6 +32,8 @@ interface Props {
   /** The jobs they may fit (shortlist or needs review), each with its own assessment. */
   fits: Attendee['relevantFor'];
   onBack: () => void;
+  /** Open the list filtered to this job. */
+  onJob: (jobId: string) => void;
 }
 
 type SkillState = 'has' | 'likely' | 'missing';
@@ -141,7 +144,7 @@ function SkillChips({ a, job }: { a: CandidateAssessment; job: Job }) {
 }
 
 /** One job they may fit: a TL;DR (shortlisted, or maybe relevant and why), skill points and years, then the job's skills. */
-function JobFit({ a, job, outcome }: { a: CandidateAssessment; job: Job; outcome: Relevant }) {
+function JobFit({ a, job, outcome, onJob }: { a: CandidateAssessment; job: Job; outcome: Relevant; onJob: (jobId: string) => void }) {
   const profile = a.candidate.profile;
   const checks = fitChecks(a, job);
   const shortlisted = outcome === 'shortlist';
@@ -157,7 +160,10 @@ function JobFit({ a, job, outcome }: { a: CandidateAssessment; job: Job; outcome
   return (
     <section className="d-card">
       <div className="d-label">
-        <span className="d-job">{job.title}</span>
+        <button type="button" className="d-job" onClick={() => onJob(job.jobId)} aria-label={`${job.title}: see all candidates`}>
+          {job.title}
+          <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
+        </button>
       </div>
       <ul className="d-fit-strip">
         <li>{verdictTip ? <Hint tip={verdictTip}>{verdict}</Hint> : verdict}</li>
@@ -243,7 +249,7 @@ function Lead({ a }: { a: CandidateAssessment }) {
 }
 
 /** One candidate's profile page: who, the recruiter's note, career and contacts, then every job they may fit. */
-export function CandidateDetail({ a, row, fits, onBack }: Props) {
+export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
   const c = a.candidate;
   const profile = c.profile;
   const conn = a.connections;
@@ -379,7 +385,7 @@ export function CandidateDetail({ a, row, fits, onBack }: Props) {
         {ordered.length > 0 ? (
           <div className="d-grid">
             {ordered.map(({ job, outcome, a: fit }) => (
-              <JobFit key={job.jobId} a={fit} job={job} outcome={outcome} />
+              <JobFit key={job.jobId} a={fit} job={job} outcome={outcome} onJob={onJob} />
             ))}
           </div>
         ) : (

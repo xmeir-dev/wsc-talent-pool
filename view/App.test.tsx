@@ -298,6 +298,17 @@ describe('recruiter view: profile', () => {
     expect(screen.getAllByLabelText('Python: Must-have, has it')).toHaveLength(2);
   });
 
+  it("a job card's title opens the list filtered to that job", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await showAll(user);
+    await user.click(within(screen.getByRole('row', { name: /Ingrid Svensson/ })).getByText('Ingrid Svensson'));
+    await screen.findByRole('heading', { level: 1, name: 'Ingrid Svensson' });
+    await user.click(screen.getByRole('button', { name: 'Backend Engineer: see all candidates' }));
+    await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
+    expect(value('Job')).toBe('Backend Engineer');
+  });
+
   it('labels missing information as unknown, not as a negative finding', async () => {
     const user = userEvent.setup();
     render(<App sources={loadSources(FIXTURE_DIR)} />);

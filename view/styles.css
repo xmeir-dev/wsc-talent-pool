@@ -793,9 +793,35 @@ ul {
 
 /* A job they may fit: title in the band, the three checks, then the job's skills. */
 .d-job {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
   font-size: 14px;
   font-weight: 500;
   color: var(--ml-text);
+  cursor: pointer;
+}
+.d-job svg {
+  color: var(--ml-text-faint);
+  transition: transform 150ms var(--ml-ease-out, ease-out), color 150ms ease-out;
+}
+.d-job:hover svg {
+  color: var(--ml-text);
+  transform: translateX(2px);
+}
+.d-job:focus-visible {
+  outline: 2px solid var(--ml-text);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .d-job svg {
+    transition: none;
+  }
 }
 /* TL;DR, points and years in one strip right under the title band, edge to edge. */
 .d-fit-strip {
