@@ -202,7 +202,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
                     </div>
                     <p className="muted">
                       Listed as {item.e.attendance.listedTitle || 'no title'}, {item.e.attendance.listedCompany || 'no company'} ·{' '}
-                      {RELEVANCE_LABEL[item.e.relevance]} to this role
+                      Relevance to event topic ({item.e.attendance.conferenceDomain}): {RELEVANCE_LABEL[item.e.relevance]}
                     </p>
                     {item.e.attendance.notes && <p>"{item.e.attendance.notes}"</p>}
                   </li>

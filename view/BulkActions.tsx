@@ -281,7 +281,7 @@ export function BulkActions({
             {preview && (
               <>
                 <p className="muted bulk-note">
-                  Each invite is written for that person and their job. Preview for {preview.people[0]!.fullName}:
+                  Each person goes to the first open job, in job order, that shortlists them, or else the first that has them as needs review. Preview for {preview.people[0]!.fullName}:
                 </p>
                 <textarea
                   className="ask-text"

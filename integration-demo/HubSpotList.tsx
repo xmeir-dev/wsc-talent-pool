@@ -16,7 +16,7 @@ interface Props {
   store: AssessmentStore;
   sources: SourceTexts;
   comeet: ComeetService;
-  /** 'all' or a job ID: that role's saved shortlist view. */
+  /** 'all' or a role's saved view on one group (see roleView). */
   view: string;
   onView: (view: string) => void;
   onOpen: (candidateKey: string, jobId: string) => void;
@@ -25,15 +25,30 @@ interface Props {
 
 const PAGE = 25;
 
+export type RoleGroup = 'shortlist' | 'needs_review';
+const GROUPS: { id: RoleGroup; label: string }[] = [
+  { id: 'shortlist', label: 'Shortlist' },
+  { id: 'needs_review', label: 'Needs review' },
+];
+
+/** A role's saved view on one group: the job ID alone is its shortlist, `JOB001:needs_review` its review queue. */
+export function roleView(jobId: string, group: RoleGroup): string {
+  return group === 'shortlist' ? jobId : `${jobId}:${group}`;
+}
+
+function parseView(view: string): { jobId: string; group: RoleGroup } {
+  const suffix = ':needs_review';
+  return view.endsWith(suffix) ? { jobId: view.slice(0, -suffix.length), group: 'needs_review' } : { jobId: view, group: 'shortlist' };
+}
+
 /** HubSpot's contacts index. Saved views, rows and Import work; the rest is the host's chrome. */
 export function HubSpotList({ store, sources, comeet, view, onView, onOpen, onImport }: Props) {
   const [importing, setImporting] = useState(false);
   const jobs = store.dataset.jobs;
-  const viewName = (jobId: string) => `${store.result(jobId).job.title} — shortlist`;
-  const total =
-    view === 'all'
-      ? store.dataset.candidates.length
-      : store.result(view).candidates.filter((a) => a.recommendation === 'shortlist').length;
+  const role = view === 'all' ? null : parseView(view);
+  const total = role
+    ? store.result(role.jobId).candidates.filter((a) => a.recommendation === role.group).length
+    : store.dataset.candidates.length;
 
   return (
     <main className="hs-index">
@@ -58,13 +73,13 @@ export function HubSpotList({ store, sources, comeet, view, onView, onOpen, onIm
       </div>
 
       <div className="hs-viewtabs" role="tablist" aria-label="Saved views">
-        {[{ id: 'all', name: 'All contacts' }, ...jobs.map((j) => ({ id: j.jobId, name: viewName(j.jobId) }))].map((v) => (
+        {[{ id: 'all', name: 'All contacts' }, ...jobs.map((j) => ({ id: j.jobId, name: j.title }))].map((v) => (
           <button
             key={v.id}
             type="button"
             role="tab"
-            aria-selected={view === v.id}
-            className={`hs-viewtab${view === v.id ? ' is-active' : ''}`}
+            aria-selected={(role?.jobId ?? 'all') === v.id}
+            className={`hs-viewtab${(role?.jobId ?? 'all') === v.id ? ' is-active' : ''}`}
             onClick={() => onView(v.id)}
           >
             {v.name}
@@ -76,7 +91,23 @@ export function HubSpotList({ store, sources, comeet, view, onView, onOpen, onIm
       </div>
 
       <div className="hs-board">
-        <div className="hs-filters" aria-hidden="true">
+        <div className="hs-filters">
+          {role && (
+            <div className="hs-groups" role="group" aria-label="Talent match">
+              {GROUPS.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  aria-pressed={role.group === g.id}
+                  className={`hs-group${role.group === g.id ? ' is-active' : ''}`}
+                  onClick={() => onView(roleView(role.jobId, g.id))}
+                >
+                  {g.label} ({store.result(role.jobId).candidates.filter((a) => a.recommendation === g.id).length})
+                </button>
+              ))}
+            </div>
+          )}
+          <span className="hs-fake" aria-hidden="true">
           <span className="hs-tablesearch">
             Search name, phone, email
             <Icon icon={Search01Icon} size={16} />
@@ -91,13 +122,14 @@ export function HubSpotList({ store, sources, comeet, view, onView, onOpen, onIm
             Lead status <Icon icon={ArrowDown01Icon} size={14} />
           </span>
           <span className="hs-filter hs-filter-adv">
-            <Icon icon={FilterIcon} size={14} /> Advanced filters{view === 'all' ? '' : ' (2)'}
+            <Icon icon={FilterIcon} size={14} /> Advanced filters{role ? ' (2)' : ''}
+          </span>
           </span>
         </div>
-        {view === 'all' ? (
-          <AllContacts key="all" store={store} onOpen={onOpen} />
+        {role ? (
+          <RoleView key={view} store={store} comeet={comeet} jobId={role.jobId} group={role.group} onOpen={onOpen} />
         ) : (
-          <RoleView key={view} store={store} comeet={comeet} jobId={view} name={viewName(view)} onOpen={onOpen} />
+          <AllContacts key="all" store={store} onOpen={onOpen} />
         )}
       </div>
 
@@ -203,49 +235,47 @@ function RoleView({
   store,
   comeet,
   jobId,
-  name,
+  group,
   onOpen,
 }: {
   store: AssessmentStore;
   comeet: ComeetService;
   jobId: string;
-  name: string;
+  group: RoleGroup;
   onOpen: Props['onOpen'];
 }) {
   const result = store.result(jobId);
-  const shortlist = result.candidates.filter((a) => a.recommendation === 'shortlist');
+  const people = result.candidates.filter((a) => a.recommendation === group);
+  const ranked = group === 'shortlist';
   const position = comeet.positionFor(jobId);
   const entries = useActivity();
-  if (shortlist.length === 0) {
+  if (people.length === 0) {
     return (
       <div className="hs-empty">
         <p className="hs-empty-title">No contacts match this view.</p>
-        <p className="muted">
-          No one meets every shortlist condition for {result.job.title}. Needs review: {result.counts.needs_review}.
-        </p>
       </div>
     );
   }
   return (
     <>
       <div className="hs-table-wrap">
-        <table className="hs-table" aria-label={name}>
+        <table className="hs-table" aria-label={`${result.job.title} — ${ranked ? 'shortlist' : 'needs review'}`}>
           <thead>
             <tr>
               <th scope="col" className="hs-col-check">
                 <span className="hs-check" aria-hidden="true" />
               </th>
               <th scope="col">Name</th>
-              <th scope="col">Talent match rank</th>
+              {ranked && <th scope="col">Talent match rank</th>}
               <th scope="col">Talent match</th>
-              <th scope="col">Main fit reason</th>
+              <th scope="col">{ranked ? 'Main fit reason' : 'Reason'}</th>
               <th scope="col">WSC connections</th>
               <th scope="col">Outreach</th>
               <th scope="col">Comeet status</th>
             </tr>
           </thead>
           <tbody>
-            {shortlist.map((a) => {
+            {people.map((a) => {
               const c = a.candidate;
               const ref = referenceSummary(a);
               const status = position ? comeetStatusText(comeet.statusFor(c, position.uid)) : '--';
@@ -253,7 +283,7 @@ function RoleView({
                 <tr key={c.candidateKey} onClick={() => onOpen(c.candidateKey, jobId)}>
                   <Check />
                   <NameCell name={c.fullName} onOpen={() => onOpen(c.candidateKey, jobId)} />
-                  <td className="hs-rank">{a.shortlistRank}</td>
+                  {ranked && <td className="hs-rank">{a.shortlistRank}</td>}
                   <td>{OUTCOME_LABEL[a.recommendation]}</td>
                   <td className="hs-wrap">{fitReason(a)}</td>
                   <td className={ref.unknown ? 'unknown' : undefined}>{ref.text}</td>

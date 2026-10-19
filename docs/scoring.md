@@ -96,7 +96,7 @@ These are two separate columns, and neither affects the outcome:
 
 ## Conference relevance
 
-Each event a person attended is marked relevant, adjacent, or not relevant, based on whether their skills and industry match the conference's topic. This sorts the talent pool. It never removes anyone from job matching: a strong ML engineer met at a DevOps conference is still assessed for the ML role.
+Each event a person attended is marked relevant, adjacent, or not relevant, based on whether their skills and industry match the conference's topic. It describes the person's fit with the event, not with any job, and never removes anyone from job matching: a strong ML engineer met at a DevOps conference is still assessed for the ML role. It appears in the `event_assessments` column of each output CSV and, in the integration demo, on each **Event attendance** activity of a HubSpot contact ("Relevance to event topic (…)"); the recruiter view lists the conferences attended without it.
 
 ## Messy data
 

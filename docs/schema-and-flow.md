@@ -8,7 +8,7 @@
 |---|---|
 | 1. Select role | `job_id` + `job_openings.csv` → load the role's requirements. An unknown `job_id` stops with the list of valid IDs. |
 | 2. Combine evidence | Check each file has its required columns. Attendees + LinkedIn profiles, matched by normalized profile URL; connections + employees, matched by employee ID; candidate and employee work histories compared for shared employers → candidate records with source evidence. |
-| 3. Assess conference relevance | Skills, industry, and `conference_domain` → relevance and explanation for each event. This organizes the pool; it does not exclude someone from job matching. |
+| 3. Assess conference relevance | Skills, industry, and `conference_domain` → relevance and explanation for each event: fit with the event's topic, not with a job. It does not sort the pool or exclude anyone from job matching; it is reported in `event_assessments` and on the integration demo's HubSpot event activities. |
 | 4. Assess job fit | Candidate evidence + role requirements → skill counts, recommendation, reasons, gaps, and next check, using the [scoring rules](scoring.md). |
 | 5. Rank and export | Recommendations → `output/candidates_<job_id>.csv`. All four jobs are included. Identical inputs and rules produce identical files. |
 

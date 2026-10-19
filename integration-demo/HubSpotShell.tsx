@@ -12,21 +12,23 @@ import {
   ShoppingBag01Icon,
 } from '@hugeicons/core-free-icons';
 import { useEffect, useRef, useState } from 'react';
+import { roleView } from './HubSpotList';
 import { Icon } from './Icon';
 
 export interface Notice {
   id: string;
   title: string;
   body: string;
-  /** One line per role; each opens that role's saved shortlist view. */
-  lines: { jobId: string; text: string }[];
+  /** One line per role; each count opens that role's view on that group. */
+  lines: { jobId: string; title: string; shortlist: number; needsReview: number }[];
 }
 
 interface Props {
   notices: Notice[];
   unread: number;
   onReadAll: () => void;
-  onOpenView: (jobId: string) => void;
+  /** Opens a saved view (see roleView). */
+  onOpenView: (view: string) => void;
   children: React.ReactNode;
 }
 
@@ -119,16 +121,28 @@ export function HubSpotShell({ notices, unread, onReadAll, onOpenView, children 
                 <ul className="hs-notice-lines">
                   {n.lines.map((l) => (
                     <li key={l.jobId}>
-                      <button
-                        type="button"
-                        className="hs-link"
-                        onClick={() => {
-                          onOpenView(l.jobId);
-                          setOpen(false);
-                        }}
-                      >
-                        {l.text}
-                      </button>
+                      {l.title}:{' '}
+                      {(
+                        [
+                          ['shortlist', l.shortlist, 'shortlist'],
+                          ['needs_review', l.needsReview, 'needs review'],
+                        ] as const
+                      ).map(([outcome, count, label], i) => (
+                        <span key={outcome}>
+                          {i > 0 && ' · '}
+                          <button
+                            type="button"
+                            className="hs-link"
+                            aria-label={`${l.title}: ${count} ${label}`}
+                            onClick={() => {
+                              onOpenView(roleView(l.jobId, outcome));
+                              setOpen(false);
+                            }}
+                          >
+                            {count} {label}
+                          </button>
+                        </span>
+                      ))}
                     </li>
                   ))}
                 </ul>

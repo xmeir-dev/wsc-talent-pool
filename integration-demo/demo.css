@@ -457,6 +457,41 @@ svg {
   text-decoration: underline;
 }
 
+/* The host's decorative filters; the group switch next to them is the live control. */
+.hs-fake {
+  display: contents;
+}
+
+.hs-groups {
+  display: inline-flex;
+}
+
+.hs-group {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--hs-border);
+  background: #fff;
+  color: var(--hs-muted);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.hs-group:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.hs-group:last-child {
+  border-left: 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.hs-group.is-active {
+  background: #ebebeb;
+  color: var(--hs-text);
+  font-weight: 600;
+}
+
 .hs-table-wrap {
   overflow-x: auto;
 }
