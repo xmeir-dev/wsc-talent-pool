@@ -253,11 +253,7 @@ describe('recruiter view: profile', () => {
     await user.keyboard('{Enter}');
     expect(await screen.findByRole('heading', { level: 1, name: 'Chiara Russo' })).toBeTruthy();
     expect(screen.queryByRole('table')).toBeNull();
-    expect(screen.getByRole('combobox', { name: 'Assessed for' }).textContent).toMatch(/^JOB001 ·/);
     const main = screen.getByRole('main');
-    expect(main.textContent).toContain('tied');
-    expect(main.textContent).toContain('Required skills');
-    expect(main.textContent).toContain('Nice to have');
     expect(main.textContent).toContain('Career7 years');
     await user.click(screen.getByRole('button', { name: 'Back' }));
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
@@ -273,35 +269,33 @@ describe('recruiter view: profile', () => {
     expect(heading()).toBe('12 of 75 attendees');
   });
 
-  it('with no job chosen, opens on the best job and can switch to any of the four', async () => {
+  it('shows a card for every job they may fit, each with its checks and its skills', async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(within(screen.getByRole('row', { name: /Alex Turner/ })).getByText('Alex Turner'));
-    await screen.findByRole('heading', { level: 1, name: 'Alex Turner' });
-    const picker = () => screen.getByRole('combobox', { name: 'Assessed for' });
-    expect(picker().textContent).toMatch(/^JOB003 ·/);
-    expect(screen.getByRole('main').textContent).toContain('Needs review');
-
-    await user.click(picker());
-    expect(screen.getAllByRole('option')).toHaveLength(4);
-    // Escape closes the picker without leaving the profile.
-    await user.keyboard('{Escape}');
-    expect(screen.getByRole('heading', { level: 1, name: 'Alex Turner' })).toBeTruthy();
-
-    await user.click(picker());
-    await user.click(screen.getByRole('option', { name: /^JOB001 ·/ }));
-    expect(picker().textContent).toMatch(/^JOB001 ·/);
-    expect(screen.getByRole('main').textContent).toContain('Not recommended for this role');
-  });
-
-  it('with several jobs chosen, opens on the best of those jobs', async () => {
-    const user = userEvent.setup();
-    render(<App />);
-    // Ingrid Svensson's best job overall is JOB004 (shortlist); among JOB001 and JOB002 it is JOB002 (needs review).
-    await pick(user, 'Job', /^Senior ML Engineer/, /^Backend Engineer/);
+    // Ingrid Svensson: shortlisted for Data Engineer, needs review for Backend Engineer, not a fit for the other two.
+    await showAll(user);
     await user.click(within(screen.getByRole('row', { name: /Ingrid Svensson/ })).getByText('Ingrid Svensson'));
     await screen.findByRole('heading', { level: 1, name: 'Ingrid Svensson' });
-    expect(screen.getByRole('combobox', { name: 'Assessed for' }).textContent).toMatch(/^JOB002 ·/);
+    const jobs = [...document.querySelectorAll('.d-job')].map((e) => e.textContent);
+    expect(jobs).toEqual(['Data Engineer', 'Backend Engineer']);
+    const cards = [...document.querySelectorAll('.d-job')].map((e) => e.closest('section')!);
+    const chips = (card: Element) =>
+      [...card.querySelectorAll('.d-chip')].map((c) => `${c.textContent} ${c.className.replace('d-chip ', '')}`);
+    expect(chips(cards[0]!)).toEqual([
+      'Python is-has is-required',
+      'Spark is-has is-required',
+      'dbt is-has is-required',
+      'SQL is-has is-required',
+      'AWS is-missing is-required',
+      'Airflow is-missing is-required',
+      'Sports domain knowledge is-missing is-nice',
+      'Kafka is-has is-nice',
+      'Terraform is-missing is-nice',
+    ]);
+    expect(cards[1]!.textContent).toContain('4 of 12 points (needs 8)');
+    // "Python or Go": Python meets it, so Go is not shown as a missing must-have.
+    expect(screen.getByLabelText('Go: Required, missing')).toBeTruthy();
+    expect(screen.getAllByLabelText('Python: Must-have, has it')).toHaveLength(2);
   });
 
   it('labels missing information as unknown, not as a negative finding', async () => {

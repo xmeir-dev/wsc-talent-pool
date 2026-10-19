@@ -5,39 +5,39 @@ import {
   ArrowLeft01Icon,
   Briefcase01Icon,
   Calendar03Icon,
-  CancelCircleIcon,
-  CheckListIcon,
-  CheckmarkCircle02Icon,
+  Cancel01Icon,
   HelpCircleIcon,
   Linkedin01Icon,
   Mail01Icon,
   StarIcon,
+  Tick02Icon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
 import { Avatar, Button, Hint } from '@meir-labs/ui-kit';
-import type { CandidateAssessment, EmploymentSpell, Job, OutputRow, PossibleReference, SkillMatch } from '../pipeline';
+import { policyFor, type CandidateAssessment, type EmploymentSpell, type Job, type OutputRow, type PossibleReference, type SkillMatch } from '../pipeline';
+import type { Attendee } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
 import { AVATAR, initials } from './avatars';
 import { CHECK_ICON } from './CandidateTable';
 import { CountryFlag } from './Location';
 import { overviewFor } from './Overview';
-import { currentRole, fitChecks, OUTCOME_LABEL, shortDate, years } from './format';
+import { currentRole, fitChecks, shortDate, years } from './format';
 
 interface Props {
+  /** One job's assessment, for the person-level facts (career, connections, events), which every job shares. */
   a: CandidateAssessment;
   row: OutputRow;
-  job: Job;
-  /** The job picker: the profile is one job's assessment. */
-  jobPicker?: ReactNode;
+  /** The jobs they may fit (shortlist or needs review), each with its own assessment. */
+  fits: Attendee['relevantFor'];
   onBack: () => void;
 }
 
 type SkillState = 'has' | 'likely' | 'missing';
 
 const STATE_ICON: Record<SkillState, IconSvgElement> = {
-  has: CheckmarkCircle02Icon,
+  has: Tick02Icon,
   likely: HelpCircleIcon,
-  missing: CancelCircleIcon,
+  missing: Cancel01Icon,
 };
 
 function skillState(s: SkillMatch): SkillState {
@@ -46,9 +46,14 @@ function skillState(s: SkillMatch): SkillState {
   return 'likely';
 }
 
-/** Why an orange skill is orange: the profile skill it was read from. */
-function likelyTip(s: SkillMatch): string {
-  return s.match === 'inferred' ? `Likely: profile lists ${s.evidence}` : `Related skill on profile: ${s.evidence}`;
+const STATE_WORDS: Record<SkillState, string> = { has: 'has it', likely: 'likely', missing: 'missing' };
+
+/** What the hover says: the kind of skill, then whether they have it (and, for a likely match, why). */
+function skillTip(s: SkillMatch, must: boolean): string {
+  const kind = must ? 'Must-have' : s.kind === 'required' ? 'Required' : 'Nice to have';
+  const state = skillState(s);
+  if (state !== 'likely') return `${kind}, ${STATE_WORDS[state]}`;
+  return `${kind}, likely: ${s.match === 'inferred' ? 'profile lists' : 'related skill on profile:'} ${s.evidence}`;
 }
 
 function Label({ icon, children, meta }: { icon: IconSvgElement; children: ReactNode; meta?: ReactNode }) {
@@ -63,28 +68,66 @@ function Label({ icon, children, meta }: { icon: IconSvgElement; children: React
   );
 }
 
-function SkillList({ skills }: { skills: SkillMatch[] }) {
+/**
+ * The job's skills as one row of chips, required first. Four looks: required and has it (green), nice to have and
+ * has it (green outline), required and missing (red), nice to have and missing (grey dashed). Must-haves carry a star.
+ */
+function SkillChips({ a, job }: { a: CandidateAssessment; job: Job }) {
+  // A must-have with alternatives ("Python or Go") is met by any one; the others are then ordinary required skills.
+  const unmet = new Set(a.missingEssentials);
+  const musts = new Set(
+    policyFor(job).policy.essentials.flatMap((e) =>
+      e.anyOf.filter((skill) => unmet.has(e.label) || a.skills.some((s) => s.skill === skill && s.match !== 'none')),
+    ),
+  );
+  const ordered = [...a.skills.filter((s) => s.kind === 'required'), ...a.skills.filter((s) => s.kind === 'nice_to_have')];
   return (
-    <ul className="d-skills">
-      {skills.map((s) => {
+    <ul className="d-chips">
+      {ordered.map((s) => {
         const state = skillState(s);
-        const icon = (
-          <HugeiconsIcon icon={STATE_ICON[state]} size={16} strokeWidth={1.75} aria-label={state} className={`s-${state}`} />
-        );
+        const must = musts.has(s.skill);
+        const tip = skillTip(s, must);
         return (
-          <li key={s.skill} className={state === 'missing' ? 'is-missing' : undefined}>
-            <span>{s.skill}</span>
-            {state === 'likely' ? (
-              <Hint tip={likelyTip(s)} className="d-hint">
-                {icon}
-              </Hint>
-            ) : (
-              icon
-            )}
+          <li key={s.skill}>
+            <Hint tip={tip} focusable={false}>
+              <span className={`d-chip is-${state} is-${s.kind === 'required' ? 'required' : 'nice'}`} aria-label={`${s.skill}: ${tip}`}>
+                <HugeiconsIcon icon={must ? StarIcon : STATE_ICON[state]} size={14} strokeWidth={1.75} aria-hidden="true" />
+                {s.skill}
+              </span>
+            </Hint>
           </li>
         );
       })}
     </ul>
+  );
+}
+
+/** One job they may fit: the three shortlist checks, then the job's skills against theirs. */
+function JobFit({ a, job }: { a: CandidateAssessment; job: Job }) {
+  const profile = a.candidate.profile;
+  return (
+    <section className="d-card">
+      <div className="d-label">
+        <span className="d-job">{job.title}</span>
+      </div>
+      <ul className="d-fit-checks">
+        {fitChecks(a, job).map((k) => (
+          <li key={k.key}>
+            <Hint tip={k.name} focusable={false}>
+              <span className={`fit-check${k.ok ? ' is-ok' : ''}`} role="img" aria-label={`${k.name}: ${k.ok ? 'passed' : 'not passed'}`}>
+                <HugeiconsIcon icon={CHECK_ICON[k.key]} size={14} strokeWidth={1.75} aria-hidden="true" />
+              </span>
+            </Hint>
+            <span>{upperFirst(k.detail)}</span>
+          </li>
+        ))}
+      </ul>
+      {profile && profile.skills.length > 0 ? (
+        <SkillChips a={a} job={job} />
+      ) : (
+        <p className="unknown">Unknown: no usable LinkedIn profile. Missing information is not a negative finding.</p>
+      )}
+    </section>
   );
 }
 
@@ -131,19 +174,16 @@ function Lead({ a }: { a: CandidateAssessment }) {
   );
 }
 
-/** One candidate's profile page for the selected role: who, the recruiter's note, the three shortlist checks, then the evidence. */
-export function CandidateDetail({ a, row, job, jobPicker, onBack }: Props) {
+/** One candidate's profile page: who, the recruiter's note, career and contacts, then every job they may fit. */
+export function CandidateDetail({ a, row, fits, onBack }: Props) {
   const c = a.candidate;
   const profile = c.profile;
-  const required = a.skills.filter((s) => s.kind === 'required');
-  const nice = a.skills.filter((s) => s.kind === 'nice_to_have');
-  const has = (list: SkillMatch[]) => list.filter((s) => s.match === 'named').length;
   const conn = a.connections;
   const people = connectionPeople(a);
-  const ctx = {
-    candidate: c,
-    job: a.recommendation === 'not_recommended_for_role' ? null : { job, outcome: a.recommendation },
-  };
+  // Shortlisted jobs first; the best one is what a connection gets asked about.
+  const ordered = [...fits].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1));
+  const best = ordered[0];
+  const ctx = { candidate: c, job: best ? { job: best.job, outcome: best.outcome } : null };
   const connectionCount = people.length + conn.unresolvedIds.length;
 
   const careerCard = profile && (
@@ -255,67 +295,29 @@ export function CandidateDetail({ a, row, job, jobPicker, onBack }: Props) {
 
       <Lead a={a} />
 
-      <div className="d-grid">
-        {profile ? careerCard : metCard}
-        <div className="d-col">
-          {profile && metCard}
-          {connCard}
+      <section>
+        <h2 className="d-section-title">Overview</h2>
+        <div className="d-grid">
+          {profile ? careerCard : metCard}
+          <div className="d-col">
+            {profile && metCard}
+            {connCard}
+          </div>
         </div>
-      </div>
-
-      <section className="d-fit">
-        <div className="d-fit-head">
-          {jobPicker}
-          <span className="muted">
-            {a.shortlistRank !== null ? `#${a.shortlistRank} on the shortlist` : OUTCOME_LABEL[a.recommendation]}
-            {a.tieNote && (
-              <>
-                {', '}
-                <Hint tip={a.tieNote}>
-                  <span className="d-tied">tied</span>
-                </Hint>
-              </>
-            )}
-          </span>
-        </div>
-        <ul className="d-checks">
-          {fitChecks(a, job).map((k) => (
-            <li key={k.key} className={k.ok ? 'is-ok' : undefined}>
-              <span className={`fit-check d-check${k.ok ? ' is-ok' : ''}`} role="img" aria-label={k.ok ? 'Passed' : 'Not passed'}>
-                <HugeiconsIcon icon={CHECK_ICON[k.key]} size={16} strokeWidth={1.75} aria-hidden="true" />
-              </span>
-              <span className="d-label-name">{k.name}</span>
-              <span className="d-check-detail">{upperFirst(k.detail)}</span>
-            </li>
-          ))}
-        </ul>
       </section>
 
-      <div className="d-grid">
-        {!profile ? (
-          <section className="d-card">
-            <Label icon={CheckListIcon}>Required skills</Label>
-            <p className="unknown">Unknown: no usable LinkedIn profile. Missing information is not a negative finding.</p>
-          </section>
+      <section>
+        <h2 className="d-section-title">Fit to WSC roles</h2>
+        {ordered.length > 0 ? (
+          <div className="d-grid">
+            {ordered.map(({ job, a: fit }) => (
+              <JobFit key={job.jobId} a={fit} job={job} />
+            ))}
+          </div>
         ) : (
-          <>
-            <section className="d-card">
-              <Label icon={CheckListIcon} meta={`${has(required)} of ${required.length}`}>
-                Required skills
-              </Label>
-              <SkillList skills={required} />
-            </section>
-            {nice.length > 0 && (
-              <section className="d-card">
-                <Label icon={StarIcon} meta={`${has(nice)} of ${nice.length}`}>
-                  Nice to have
-                </Label>
-                <SkillList skills={nice} />
-              </section>
-            )}
-          </>
+          <p className="muted">Not a fit for any open job</p>
         )}
-      </div>
+      </section>
 
       {a.dataQualityFlags.length > 0 && (
         <ul className="d-flags">

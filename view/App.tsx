@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Download04Icon, Briefcase01Icon, Calendar03Icon, Location01Icon } from '@hugeicons/core-free-icons';
-import { Button, Callout, EmptyState, PaginationFooter, Select, usePagination, type SortState } from '@meir-labs/ui-kit';
+import { Button, Callout, EmptyState, PaginationFooter, usePagination, type SortState } from '@meir-labs/ui-kit';
 import { buildDataset, DataValidationError, type Dataset, type SourceTexts } from '../pipeline';
 import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
 import { CandidateDetail } from './CandidateDetail';
@@ -11,7 +11,7 @@ import { bundledSources } from './data';
 import offices from '../data/wsc_offices.json';
 import { downloadFile, exportCsv } from './download';
 import { FilterMenu, type FilterOption } from './FilterMenu';
-import { conferenceShort, jobLabel, jobShort } from './format';
+import { conferenceShort, jobShort } from './format';
 
 function keyFromHash(): string | null {
   const m = /^#\/candidate\/(.+)$/.exec(window.location.hash);
@@ -57,7 +57,6 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   const [countries, setCountries] = useState<string[]>([]);
   const [sort, setSort] = useState<SortState | null>(null);
   const [openKey, setOpenKeyState] = useState<string | null>(keyFromHash);
-  const [profileJob, setProfileJob] = useState<string | null>(null);
 
   // One table, same columns, whatever the filter. Exactly one job: that job's ranked order until a header is clicked.
   const job = jobIds.length === 1 ? jobIds[0]! : null;
@@ -90,9 +89,9 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   }, [pool]);
   const total = pool.attendees.length;
 
-  const isKnown = openKey !== null && pool.items.get(pool.jobs[0]!.jobId)!.has(openKey);
-  const viewJob = isKnown ? (profileJob ?? job ?? bestJobId(pool, openKey, jobIds)) : null;
-  const open = isKnown && viewJob ? pool.items.get(viewJob)!.get(openKey)! : undefined;
+  const openAttendee = openKey === null ? undefined : pool.attendees.find((p) => p.candidate.candidateKey === openKey);
+  // Person-level facts (career, connections, events) are the same in every job's assessment; take the best job's.
+  const open = openAttendee && pool.items.get(bestJobId(pool, openAttendee.candidate.candidateKey))!.get(openAttendee.candidate.candidateKey)!;
 
   // The profile is its own page: #/candidate/<key>, so the browser back button works too.
   const pushed = useRef(false);
@@ -100,7 +99,6 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   useEffect(() => {
     const onHash = () => {
       setOpenKeyState(keyFromHash());
-      setProfileJob(null);
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -113,7 +111,6 @@ function Workspace({ dataset }: { dataset: Dataset }) {
       pushed.current = true;
       window.location.hash = `/candidate/${encodeURIComponent(key)}`;
       setOpenKeyState(key);
-      setProfileJob(null);
     },
     [pool],
   );
@@ -125,7 +122,6 @@ function Workspace({ dataset }: { dataset: Dataset }) {
     } else {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
       setOpenKeyState(null);
-      setProfileJob(null);
     }
   }, []);
 
@@ -153,30 +149,10 @@ function Workspace({ dataset }: { dataset: Dataset }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [profileOpen, back]);
 
-  if (open && viewJob) {
+  if (open && openAttendee) {
     return (
       <main className="content profile">
-        <CandidateDetail
-          a={open.a}
-          row={open.row}
-          job={pool.jobs.find((j) => j.jobId === viewJob)!}
-          onBack={back}
-          jobPicker={
-            <div className="assessed-for">
-              <span className="d-label-name">Assessed for</span>
-              <Select value={viewJob} onValueChange={setProfileJob}>
-                <Select.Trigger aria-label="Assessed for" />
-                <Select.Content>
-                  {pool.jobs.map((j) => (
-                    <Select.Item key={j.jobId} value={j.jobId}>
-                      {jobLabel(j)}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select>
-            </div>
-          }
-        />
+        <CandidateDetail a={open.a} row={open.row} fits={openAttendee.relevantFor} onBack={back} />
       </main>
     );
   }

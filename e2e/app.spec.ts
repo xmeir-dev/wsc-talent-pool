@@ -29,13 +29,6 @@ async function pick(page: Page, name: 'Conference' | 'Job', ...chips: RegExp[]) 
   await expect(menu(page, name)).toHaveCount(0);
 }
 
-/** The profile's job picker. */
-async function assessFor(page: Page, option: RegExp) {
-  await page.getByRole('combobox', { name: 'Assessed for' }).click();
-  await page.getByRole('option', { name: option }).click();
-  await expect(page.getByRole('listbox')).toHaveCount(0);
-}
-
 test('the list opens on all attendees; conference and job filters narrow it', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
@@ -139,9 +132,8 @@ test('a row opens a profile page; Back, Escape and the browser back button retur
   await expect(heading).toBeVisible();
   await expect(page).toHaveURL(/#\/candidate\//);
   await expect(page.getByRole('table')).toHaveCount(0);
-  await expect(page.getByRole('combobox', { name: 'Assessed for' })).toContainText('JOB001');
   const main = page.getByRole('main');
-  await expect(main).toContainText('Required skills');
+  await expect(main.locator('.d-job')).toContainText(['Senior ML Engineer']);
   await expect(main).toContainText('Worked with Maya Levi');
 
   await page.getByRole('button', { name: 'Back' }).click();
@@ -164,16 +156,15 @@ test('a row opens a profile page; Back, Escape and the browser back button retur
   expect(errors).toEqual([]);
 });
 
-test('with no job chosen, a profile opens on the best job and switches jobs', async ({ page }) => {
+test('a profile shows every job they may fit, whatever the list filter', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
-  await page.getByRole('row', { name: /Alex Turner/ }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Alex Turner' })).toBeVisible();
-  await expect(page.getByRole('combobox', { name: 'Assessed for' })).toContainText('JOB003');
-  await assessFor(page, /^JOB001 ·/);
-  await expect(page.getByRole('main')).toContainText('Not recommended for this role');
+  await pick(page, 'Job', /^Senior ML Engineer/, /^Backend Engineer/);
+  await page.getByRole('row', { name: /Ingrid Svensson/ }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Ingrid Svensson' })).toBeVisible();
+  await expect(page.locator('.d-job')).toHaveText(['Data Engineer', 'Backend Engineer']);
   await page.getByRole('button', { name: 'Back' }).click();
-  await expect(title(page)).toHaveText('All 75 attendees');
+  await expect(title(page)).toHaveText(/of 75 attendees/);
   expect(errors).toEqual([]);
 });
 
