@@ -25,5 +25,5 @@ These are proposed sources; availability and access need confirming with WSC.
 
 - **Work inside existing tools.** Prefer HubSpot and Comeet; add a dashboard only for an essential task they cannot support well.
 - **Assess fit separately from source.** A referral, former WSC relationship or layoff does not itself establish qualification or interest. Preserve where the information came from and when it was recorded.
-- **Keep one person with history per role.** Combine sources without duplicate outreach; preserve declines, active recruitment and contact restrictions. See [contact tracking](contact-tracking-plan.md).
+- **Keep one person with history per role.** Combine sources without duplicate outreach; preserve declines, active recruitment and contact restrictions. See [contact tracking](additional-info/contact-tracking-plan.md).
 - **Confirm current information and respect contact preferences.** Missing availability stays unknown. Apply the existing [data and privacy assumptions](assumptions.md#privacy).
