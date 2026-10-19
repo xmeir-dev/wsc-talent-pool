@@ -1,6 +1,7 @@
 import { ArrowDown01Icon, MoreHorizontalIcon } from '@hugeicons/core-free-icons';
 import { connectionNote, connectionPeople, matchLabel, OUTCOME_LABEL } from '../view/format';
 import type { AssessmentStore, StoredAssessment } from './assessments';
+import { useActivityState } from '../view/actionStore';
 import { handoffCheck, type ComeetCandidate } from './comeet';
 import { comeetStatusText } from './comeetStatus';
 import { Icon } from './Icon';
@@ -43,7 +44,9 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord
   const conn = a.connections;
   const people = connectionPeople(a, store.dataset.employees);
   const outcome = OUTCOME_LABEL[a.recommendation];
-  const check = comeetRecord ? {} : handoffCheck(a.candidate.candidateKey, jobId, store.dataset.jobs);
+  const activity = useActivityState();
+  // The same rule the service enforces on confirm: identity and active process block; a decline is shown.
+  const check = comeetRecord ? {} : handoffCheck(a.candidate, jobId, store.dataset.jobs, activity);
 
   return (
     <section className="hs-card tm" aria-labelledby="tm-title">

@@ -7,16 +7,16 @@ import { connectionPeople } from './AskConnection';
 import { buildPool } from './attendees';
 import { BulkActions } from './BulkActions';
 import { bundledSources } from './data';
-import { record, resetActivity } from './activity';
+import { recordActions, resetActivity } from './actionStore';
 
 const dataset = buildDataset(bundledSources);
 const pool = buildPool(dataset);
 const person = (name: string) => pool.attendees.find((p) => p.candidate.fullName === name)!;
 const jobs = dataset.jobs;
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
-  resetActivity();
+  await resetActivity();
 });
 
 async function open(label: 'Ask WSC connections' | 'Invite to jobs', names: string[]) {
@@ -44,7 +44,7 @@ describe('bulk Invite to jobs', () => {
   it('keeps hard blocks as they are', async () => {
     const noah = person('Noah Anderson');
     const best = [...noah.relevantFor].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1))[0]!;
-    record({ kind: 'invite', candidateKey: noah.candidate.candidateKey, jobId: best.job.jobId, jobTitle: best.job.title, channel: 'comeet', state: 'sent' });
+    await recordActions([{ kind: 'invite', person: noah.candidate, job: best.job, otherJobs: [], channel: 'comeet', state: 'sent' }]);
     const panel = await open('Invite to jobs', ['Noah Anderson', 'Priya Anand']);
     expect(within(panel).getByText('1 blocked:')).toBeTruthy();
     expect(within(panel).getByText(new RegExp(`^Noah Anderson: Already contacted for ${best.job.title}`))).toBeTruthy();
@@ -57,10 +57,10 @@ describe('bulk Ask WSC connections', () => {
     const noah = person('Noah Anderson');
     const colleagues = connectionPeople(noah.any.a).map((c) => c.employee);
     expect(colleagues).toHaveLength(2);
-    record(
-      ...colleagues.map((e) => ({
+    await recordActions(
+      colleagues.map((e) => ({
         kind: 'reference' as const,
-        candidateKey: noah.candidate.candidateKey,
+        person: noah.candidate,
         employeeId: e.employeeId,
         employeeName: e.fullName,
         channel: 'slack' as const,
@@ -80,10 +80,10 @@ describe('bulk Ask WSC connections', () => {
   it('explains it when everyone selected was already asked', async () => {
     const noah = person('Noah Anderson');
     const colleagues = connectionPeople(noah.any.a).map((c) => c.employee);
-    record(
-      ...colleagues.map((e) => ({
+    await recordActions(
+      colleagues.map((e) => ({
         kind: 'reference' as const,
-        candidateKey: noah.candidate.candidateKey,
+        person: noah.candidate,
         employeeId: e.employeeId,
         employeeName: e.fullName,
         channel: 'slack' as const,

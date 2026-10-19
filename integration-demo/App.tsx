@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { buildDataset, type SourceTexts } from '../pipeline';
+import { activitySnapshot } from '../view/actionStore';
 import { bundledSources } from '../view/data';
 import { buildAssessmentStore, type AssessmentStore } from './assessments';
 import { createSimulatedComeet, type ComeetService } from './comeet';
@@ -46,9 +47,12 @@ export function App({ sources: initialSources = bundledSources, delayMs }: Props
   const [sources, setSources] = useState(initialSources);
   const store = useMemo(() => buildAssessmentStore(buildDataset(sources)), [sources]);
   const [session, setSession] = useState(0);
+  // The service reads the current pool (imports included) and history on every check, as a real backend would.
+  const latest = useRef(store);
+  latest.current = store;
   // A fresh simulated Comeet per demo session; Reset demo discards everything handed off.
   const comeet: ComeetService = useMemo(
-    () => createSimulatedComeet({ isAvailable: () => true, delayMs, people: store.dataset.candidates }),
+    () => createSimulatedComeet({ isAvailable: () => true, delayMs, people: () => latest.current.dataset.candidates, history: activitySnapshot }),
     [session, delayMs],
   );
   const firstPosition = comeet.positions()[0]!.uid;

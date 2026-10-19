@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { buildAssessmentStore } from '../integration-demo/assessments';
 import { buildHandoff, createSimulatedComeet } from '../integration-demo/comeet';
 import { lastContacted, outreachStatus, timeline } from '../integration-demo/hubspotActivity';
-import { loadedEntries, SEEDED, type Entry } from '../view/activity';
+import { SEEDED, type Entry } from '../view/activity';
+import { activitySnapshot } from '../view/actionStore';
 import { connectionPeople, connectionNote, overlapTag } from '../view/format';
 import { byName, realDataset } from './helpers';
 
@@ -56,9 +57,9 @@ describe('Last contacted follows only communication the candidate received', () 
     const store = buildAssessmentStore(realDataset());
     const comeet = createSimulatedComeet({ isAvailable: () => true, delayMs: 0 });
     const a = byName(store.result('JOB001'), 'Priya Anand');
-    const r = await comeet.handoff(buildHandoff(a, store.result('JOB001').job, store.version, comeet.positionFor('JOB001')!));
+    const r = await comeet.handoff(buildHandoff(a, store.result('JOB001').job, store.version, comeet.positionFor('JOB001')!, SEEDED));
     expect(r.kind).toBe('created');
-    expect(lastContacted(loadedEntries(), a.candidate.candidateKey)).toBeNull();
+    expect(lastContacted(activitySnapshot().entries, a.candidate.candidateKey)).toBeNull();
   });
 });
 

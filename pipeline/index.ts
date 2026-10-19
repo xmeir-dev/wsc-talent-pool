@@ -49,3 +49,17 @@ export { parseCsv, toCsv } from './csv';
 export * as rules from './rules';
 export { ASSESSMENT_VERSION } from './rules';
 export type * from './types';
+export {
+  ATTENDANCE_ID_PATTERN,
+  assertUnique,
+  attendanceIdFor,
+  identityBlock,
+  indexByPersonId,
+  isRegisteredPersonId,
+  mayOwnLegacyKey,
+  PERSON_ID_PATTERN,
+  personIdFor,
+  type AnchorKind,
+  type IdentityStatus,
+  type PersonIdentity,
+} from './identity';

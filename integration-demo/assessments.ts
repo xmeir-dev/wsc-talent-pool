@@ -4,7 +4,7 @@
  * losing any of them (in production, the assessment store described in docs/design.md).
  */
 
-import { assessJob, toOutputRows, type CandidateAssessment, type Dataset, type JobAssessment, type OutputRow } from '../pipeline';
+import { assertUnique, assessJob, toOutputRows, type CandidateAssessment, type Dataset, type JobAssessment, type OutputRow } from '../pipeline';
 
 export interface StoredAssessment {
   a: CandidateAssessment;
@@ -28,6 +28,7 @@ export function buildAssessmentStore(dataset: Dataset): AssessmentStore {
     const result = assessJob(dataset, job.jobId);
     results.set(job.jobId, result);
     const rows = toOutputRows(result);
+    assertUnique(result.candidates.map((a) => a.candidate.candidateKey), 'person IDs');
     result.candidates.forEach((a, i) => {
       entries.set(storeKey(a.candidate.candidateKey, job.jobId, result.assessmentVersion), { a, row: rows[i]!, result });
     });

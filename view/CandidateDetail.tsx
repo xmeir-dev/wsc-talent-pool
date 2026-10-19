@@ -31,7 +31,9 @@ import { AVATAR, initials } from './avatars';
 import comeetHistory from '../data/demo_comeet.json';
 import comeetIcon from './assets/comeet.png';
 import hubspotIcon from './assets/hubspot.png';
-import { current, comeetFor, describe, historyUnreadable, personFlags, record, referenceSummary, roleStatus, shortDay, STATE_LABEL, STATUS_LABEL, useActivity, type Entry } from './activity';
+import { actionGate, current, comeetFor, describe, heldFor, personFlags, referenceSummary, roleStatus, shortDay, STATE_LABEL, STATUS_LABEL, storedAsSomeoneElse, type Entry } from './activity';
+import { identityBlock } from '../pipeline';
+import { recordActions, reviewHeld, reviewStoredPerson, useActivityState } from './actionStore';
 import { InviteToJob } from './InviteToJob';
 import { CountryFlag } from './Location';
 import { overviewFor } from './Overview';
@@ -444,8 +446,13 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
   );
   const hubspotId = c.attendances.map((at) => at.hubspotId).find(Boolean);
   const applications = COMEET[c.candidateKey] ?? [];
-  const entries = useActivity();
+  const activity = useActivityState();
+  const { entries } = activity;
   const comeet = comeetFor(c.candidateKey);
+  // Identity and saved-history review: anything here blocks outreach until it is settled.
+  const gate = actionGate(activity, c);
+  const held = heldFor(activity, c);
+  const someoneElse = storedAsSomeoneElse(activity, c);
   const history = current(entries)
     .filter((e) => e.candidateKey === c.candidateKey)
     .reverse();
@@ -514,7 +521,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
       <Label icon={Calendar03Icon}>{a.events.length === 1 ? 'Conference attended' : 'Conferences attended'}</Label>
       <ul className="d-rows">
         {a.events.map((e) => (
-          <li key={e.attendance.hubspotId}>
+          <li key={e.attendance.attendanceId}>
             <span>{e.attendance.conferenceName}</span>
             <span className="muted">{shortDate(e.attendance.conferenceDate)}</span>
           </li>
@@ -557,15 +564,17 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
                             type="button"
                             className="d-mark-sent"
                             onClick={() =>
-                              record({
-                                kind: 'reference',
-                                candidateKey: c.candidateKey,
-                                employeeId: asked.employeeId,
-                                employeeName: asked.employeeName,
-                                channel: asked.channel,
-                                state: 'confirmed',
-                                supersedes: asked.id,
-                              })
+                              void recordActions([
+                                {
+                                  kind: 'reference',
+                                  person: c,
+                                  employeeId: asked.employeeId,
+                                  employeeName: asked.employeeName,
+                                  channel: asked.channel,
+                                  state: 'confirmed',
+                                  supersedes: asked.id,
+                                },
+                              ])
                             }
                           >
                             Mark sent
@@ -595,7 +604,37 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
   const activityCard = (
     <section className="d-card">
       <Label icon={Clock01Icon}>Activity</Label>
-      {historyUnreadable && <p className="unknown">Some saved history couldn't be read.</p>}
+      {activity.unreadable && <p className="unknown">Some saved history couldn't be read.</p>}
+      {identityBlock(c.identity) && <p className="check-note is-block">{gate}</p>}
+      {someoneElse && (
+        <div className="check-note is-block d-review">
+          <p>Saved history under this contact was recorded for {someoneElse.fullName}.</p>
+          <button type="button" className="d-mark-sent" onClick={() => void reviewStoredPerson(c, true)}>
+            Same person
+          </button>
+          <button type="button" className="d-mark-sent" onClick={() => void reviewStoredPerson(c, false)}>
+            Different person
+          </button>
+        </div>
+      )}
+      {held.length > 0 && (
+        <div className="check-note is-block d-review">
+          <p>Saved before this version, under a key that more than one person could have had. Outreach waits until each is reviewed.</p>
+          <ul>
+            {held.map((h) => (
+              <li key={h.id}>
+                {describe(h.entry)} · {shortDay(h.entry.at)}
+                <button type="button" className="d-mark-sent" onClick={() => void reviewHeld(h.id, c, true)}>
+                  {c.fullName.split(' ')[0]}'s
+                </button>
+                <button type="button" className="d-mark-sent" onClick={() => void reviewHeld(h.id, c, false)}>
+                  Not {c.fullName.split(' ')[0]}'s
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {flags.doNotContact && <p className="check-note is-block">Asked not to be contacted.</p>}
       {flags.inProcess && (
         <p className="check-note is-block">

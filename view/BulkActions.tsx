@@ -8,12 +8,18 @@ import { connectionPeople } from './AskConnection';
 import { inviteMessage } from './InviteToJob';
 import comeetIcon from './assets/comeet.png';
 import { DemoBadge } from './DemoBadge';
-import { checkInvite, checkReference, comeetFor, personFlags, record, useActivity } from './activity';
+import { actionGate, comeetFor, inviteCheck, personFlags, referenceCheck } from './activity';
+import { recordActions, useActivityState, type ActionResult } from './actionStore';
 import { AVATAR, initials } from './avatars';
 
 const firstName = (name: string) => name.split(' ')[0] ?? name;
 const joinNames = (ns: string[]) => (ns.length <= 2 ? ns.join(' and ') : `${ns.slice(0, -1).join(', ')} and ${ns.at(-1)!}`);
 const names = (cs: Candidate[]) => joinNames(cs.map((c) => c.fullName));
+/** Actions another tab made unnecessary since the preview: said, never counted as sent. */
+const skippedNote = (results: ActionResult[]) => {
+  const skipped = results.filter((r) => !r.ok).length;
+  return skipped ? ` ${skipped} not sent: already done in another tab or now blocked.` : '';
+};
 
 /** One request per colleague, covering everyone selected who they know. */
 function askMessage(employee: Employee, people: Candidate[]): string {
@@ -80,7 +86,8 @@ export function BulkActions({
 }) {
   const [status, setStatus] = useState<string | null>(null);
   // Each person goes to their own best job (shortlisted first); people with no fitting job or no email are skipped.
-  const entries = useActivity();
+  const activity = useActivityState();
+  const { entries } = activity;
   const plan = useMemo(() => {
     const byJob = new Map<string, { job: Job; people: Candidate[] }>();
     let noJob = 0;
@@ -91,13 +98,11 @@ export function BulkActions({
     const warned: { name: string; reason: string }[] = [];
     for (const p of selected) {
       const best = [...p.relevantFor].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1))[0];
-      const key = p.candidate.candidateKey;
       const check =
         best &&
-        checkInvite(
-          entries,
-          comeetFor(key),
-          key,
+        inviteCheck(
+          activity,
+          p.candidate,
           { jobId: best.job.jobId, title: best.job.title },
           p.relevantFor.map((r) => ({ jobId: r.job.jobId, title: r.job.title })),
         );
@@ -112,8 +117,9 @@ export function BulkActions({
       }
     }
     const groups = jobs.flatMap((j) => byJob.get(j.jobId) ?? []);
-    return { groups, total: groups.reduce((n, g) => n + g.people.length, 0), noJob, noEmail, blocked, warned };
-  }, [selected, jobs, entries]);
+    const others = new Map(selected.map((p) => [p.candidate.candidateKey, p.relevantFor.map((r) => ({ jobId: r.job.jobId, title: r.job.title }))]));
+    return { groups, others, total: groups.reduce((n, g) => n + g.people.length, 0), noJob, noEmail, blocked, warned };
+  }, [selected, jobs, activity]);
 
   // Colleague → the selected people they know.
   const asks = useMemo(() => {
@@ -123,15 +129,16 @@ export function BulkActions({
     let unconnected = 0;
     for (const p of selected) {
       const key = p.candidate.candidateKey;
+      const gate = actionGate(activity, p.candidate);
       const colleagues = connectionPeople(p.any.a);
       if (!colleagues.length) unconnected++;
       const asked: string[] = [];
       let personBlock: string | undefined;
       for (const { employee } of colleagues) {
         // A colleague is asked about a person once; a blocked pair is left out.
-        const block = checkReference(entries, comeetFor(key), key, employee.employeeId, employee.fullName).block;
+        const block = referenceCheck(activity, p.candidate, employee.employeeId, employee.fullName).block;
         if (block) {
-          if (personFlags(entries, comeetFor(key), key).doNotContact) personBlock = block;
+          if (gate || personFlags(entries, comeetFor(key), key).doNotContact) personBlock = block;
           else asked.push(employee.fullName);
           continue;
         }
@@ -144,7 +151,7 @@ export function BulkActions({
         leftOut.push({ name: p.candidate.fullName, reason: `${asked.length === 1 ? 'request' : 'requests'} to ${joinNames(asked)} already sent` });
     }
     return Object.assign([...by.values()].sort((x, y) => y.people.length - x.people.length), { leftOut, unconnected });
-  }, [selected, entries]);
+  }, [selected, activity, entries]);
   const leftOutNote = asks.leftOut.length > 0 && (
     <div className="check-note">
       <p className="bulk-note">Left out:</p>
@@ -187,12 +194,12 @@ export function BulkActions({
                   size="sm"
                   variant="primary"
                   leftIcon={<HugeiconsIcon icon={SlackIcon} size={16} aria-hidden="true" />}
-                  onClick={() => {
-                    record(
-                      ...asks.flatMap(({ employee, people }) =>
+                  onClick={async () => {
+                    const results = await recordActions(
+                      asks.flatMap(({ employee, people }) =>
                         people.map((c) => ({
                           kind: 'reference' as const,
-                          candidateKey: c.candidateKey,
+                          person: c,
                           employeeId: employee.employeeId,
                           employeeName: employee.fullName,
                           channel: 'slack' as const,
@@ -200,7 +207,7 @@ export function BulkActions({
                         })),
                       ),
                     );
-                    setStatus(`Sent · Simulated: ${asks.length} Slack ${asks.length === 1 ? 'message' : 'messages'}, one per colleague.`);
+                    setStatus(`Sent · Simulated: ${asks.length} Slack ${asks.length === 1 ? 'message' : 'messages'}, one per colleague.${skippedNote(results)}`);
                     close();
                   }}
                 >
@@ -291,20 +298,21 @@ export function BulkActions({
                 variant="primary"
                 disabled={!plan.total}
                 leftIcon={<img src={comeetIcon} alt="" width={16} height={16} />}
-                onClick={() => {
-                  record(
-                    ...plan.groups.flatMap(({ job, people }) =>
+                onClick={async () => {
+                  const results = await recordActions(
+                    plan.groups.flatMap(({ job, people }) =>
                       people.map((c) => ({
                         kind: 'invite' as const,
-                        candidateKey: c.candidateKey,
-                        jobId: job.jobId,
-                        jobTitle: job.title,
+                        person: c,
+                        job: { jobId: job.jobId, title: job.title },
+                        otherJobs: plan.others.get(c.candidateKey) ?? [],
                         channel: 'comeet' as const,
                         state: 'sent' as const,
                       })),
                     ),
                   );
-                  setStatus(`Sent · Simulated: ${plan.total} ${plan.total === 1 ? 'invite' : 'invites'} through Comeet.`);
+                  const sent = results.filter((r) => r.ok).length;
+                  setStatus(`Sent · Simulated: ${sent} ${sent === 1 ? 'invite' : 'invites'} through Comeet.${skippedNote(results)}`);
                   close();
                 }}
               >

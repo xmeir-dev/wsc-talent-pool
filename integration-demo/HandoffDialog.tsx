@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { StoredAssessment } from './assessments';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
-import { buildHandoff, type ComeetCandidate, type ComeetService } from './comeet';
+import { refreshActivity, useActivityState } from '../view/actionStore';
+import { buildHandoff, handoffCheck, type ComeetCandidate, type ComeetService } from './comeet';
 import { Icon } from './Icon';
 
 interface Props {
@@ -33,7 +34,9 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
 
   const { a, result } = entry;
   const position = comeet.positionFor(a.jobId);
-  const payload = position ? buildHandoff(a, result.job, version, position) : null;
+  const activity = useActivityState();
+  // The note carries the recorded history as it is now; Confirm rebuilds it from a fresh read.
+  const payload = position ? buildHandoff(a, result.job, version, position, activity.entries) : null;
 
   // Not a native modal dialog: that would make the demo strip (outage switch, reset) inert while open.
   useEffect(() => {
@@ -67,10 +70,18 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
   }, [attempt]);
 
   const confirm = async () => {
-    if (!payload || sending.current) return;
+    if (!payload || !position || sending.current) return;
     sending.current = true;
     setState({ step: 'sending' });
-    const r = await comeet.handoff(payload);
+    // The preview may be stale: re-read the history and re-check before sending; the service checks again too.
+    const fresh = await refreshActivity();
+    const block = handoffCheck(a.candidate, a.jobId, comeet.positions().map((p) => ({ jobId: p.jobId, title: p.name })), fresh).block;
+    if (block) {
+      sending.current = false;
+      setState({ step: 'stopped', message: block });
+      return;
+    }
+    const r = await comeet.handoff(buildHandoff(a, result.job, version, position, fresh.entries));
     sending.current = false;
     if (r.kind === 'unavailable') setState({ step: 'unavailable', message: r.message });
     else if (r.kind === 'conflict' || r.kind === 'blocked') setState({ step: 'stopped', message: r.message });
@@ -121,6 +132,8 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
               <dd>{payload.customFields.possibleReferences}</dd>
               <dt>Assessment</dt>
               <dd>{payload.customFields.assessment}</dd>
+              <dt>Note</dt>
+              <dd data-testid="handoff-note">{payload.note}</dd>
             </dl>
 
             <div className="handoff-status" role="status">

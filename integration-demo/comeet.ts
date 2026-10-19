@@ -5,7 +5,7 @@
  */
 
 import { splitName, type Candidate, type CandidateAssessment, type Job } from '../pipeline';
-import { checkInvite, comeetFor, type Check } from '../view/activity';
+import { checkHandoff, comeetFor, handoffNote, SEEDED, type Check, type Entry, type HistoryState } from '../view/activity';
 import { OUTCOME_LABEL, referenceLine } from '../view/format';
 import { POSITIONS, seedCandidates } from './fixtures';
 
@@ -102,15 +102,21 @@ export interface ComeetService {
   get: (uid: string) => ComeetCandidate | undefined;
   /** Everyone in one position, oldest first. */
   list: (positionUid: string) => ComeetCandidate[];
-  /** handoffCheck() against this service's positions. */
+  /** handoffCheck() against this service's positions and the current pool and history. */
   check: (candidateKey: string, jobId: string) => Check;
 }
 
 const UNAVAILABLE = 'Comeet did not respond. Nothing was created.';
 
-export function buildHandoff(a: CandidateAssessment, job: Job, version: string, position: ComeetPosition): HandoffPayload {
+/**
+ * The handoff exactly as it will be sent. `history` is the recorded outreach (seeded plus this browser's): the note
+ * carries what it says, and says "No contact recorded" when it says nothing. An unresolved identity sends no tags,
+ * so skills from a profile that may be someone else's never reach the ATS (the handoff is blocked anyway).
+ */
+export function buildHandoff(a: CandidateAssessment, job: Job, version: string, position: ComeetPosition, history: readonly Entry[]): HandoffPayload {
   const c = a.candidate;
   const hasProfile = c.profile !== null;
+  const confirmed = c.identity.status === 'resolved';
   const rank = a.shortlistRank !== null ? ` · #${a.shortlistRank}` : '';
   const refs = a.possibleReferences.map((r) => `${r.employeeName}: ${referenceLine(r)}`);
   return {
@@ -122,7 +128,7 @@ export function buildHandoff(a: CandidateAssessment, job: Job, version: string, 
     sourceContactId: c.candidateKey,
     location: c.profile?.location ?? '',
     // Only skills named on the profile become tags; related or likely ones stay qualified in evidence and gaps.
-    tags: a.skills.filter((s) => s.kind === 'required' && s.match === 'named').map((s) => s.skill),
+    tags: confirmed ? a.skills.filter((s) => s.kind === 'required' && s.match === 'named').map((s) => s.skill) : [],
     status: 'Sourced',
     source: 'Conference talent pool (HubSpot)',
     customFields: {
@@ -136,7 +142,7 @@ export function buildHandoff(a: CandidateAssessment, job: Job, version: string, 
         : 'Unknown: no work history',
       assessment: `${job.jobId} ${job.title} · ${version}`,
     },
-    note: `Handed over from HubSpot for ${job.title}. Not contacted yet; the owning recruiter decides on outreach.`,
+    note: handoffNote(history, comeetFor(c.candidateKey), c.candidateKey, job.title),
   };
 }
 
@@ -152,8 +158,14 @@ export interface SimulationOptions {
   /** Read on every call, so the demo's outage switch takes effect immediately. */
   isAvailable: () => boolean;
   delayMs?: number;
-  /** The contact pool. Anyone with a record in data/demo_comeet.json for an open position is seeded into it. */
-  people?: readonly Candidate[];
+  /**
+   * The contact pool, read on every check so imports count. Anyone in it with a record in data/demo_comeet.json
+   * for an open position is seeded. When given, a handoff for someone not in it, or whose identity is
+   * unresolved, is refused by the service itself, not only by the button.
+   */
+  people?: readonly Candidate[] | (() => readonly Candidate[]);
+  /** The recorded outreach and saved-history review state, read on every check. Defaults to the seeded examples. */
+  history?: () => HistoryState;
 }
 
 type Field = 'email' | 'linkedinUrl' | 'sourceContactId';
@@ -164,19 +176,28 @@ const FIELDS: { field: Field; norm: (v: string) => string; label: string; other:
 ];
 type Match = { kind: 'match'; candidate: ComeetCandidate } | { kind: 'conflict'; message: string } | null;
 
+const SEEDED_HISTORY: HistoryState = { entries: SEEDED, people: new Map(), held: [] };
+
 /**
- * May this person be handed off for this role? Exactly the recruiter view's invite rule (checkInvite in
- * view/activity.ts) on the shared Comeet history (data/demo_comeet.json): an active process blocks every role,
- * an uncontacted lead does not, and a past rejection for another role warns.
+ * May this person be handed off for this role? checkHandoff in view/activity.ts on the shared Comeet history
+ * (data/demo_comeet.json) and the recorded outreach: an unresolved identity or an active process for any role
+ * blocks; an uncontacted lead does not; a decline or earlier contact for this role is shown, not blocking,
+ * because adding someone to the ATS sends nothing (the decline still blocks another invite).
  */
-export function handoffCheck(candidateKey: string, jobId: string, jobs: readonly { jobId: string; title: string }[]): Check {
+export function handoffCheck(
+  person: Candidate,
+  jobId: string,
+  jobs: readonly { jobId: string; title: string }[],
+  history: HistoryState = SEEDED_HISTORY,
+): Check {
   const job = jobs.find((j) => j.jobId === jobId);
-  return job ? checkInvite([], comeetFor(candidateKey), candidateKey, job, jobs) : {};
+  return job ? checkHandoff(history, person, job, jobs) : {};
 }
 
-export function createSimulatedComeet({ isAvailable, delayMs = 400, people = [] }: SimulationOptions): ComeetService {
+export function createSimulatedComeet({ isAvailable, delayMs = 400, people, history = () => SEEDED_HISTORY }: SimulationOptions): ComeetService {
   const positions = [...POSITIONS];
-  const records = new Map(seedCandidates(people, positions).map((c) => [c.uid, c]));
+  const pool = () => (typeof people === 'function' ? people() : (people ?? []));
+  const records = new Map(seedCandidates(pool(), positions).map((c) => [c.uid, c]));
   let nextUid = 2001;
   const wait = () => new Promise((resolve) => setTimeout(resolve, delayMs));
   /**
@@ -201,16 +222,41 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400, people = [] 
     }
     return null;
   };
+  /**
+   * Who this is across every position, before the destination is looked at: a record in any position that shares
+   * one identifier but disagrees on another is a conflict. So an email-only alias of someone in process for
+   * another role cannot become a fresh candidate by arriving with a new contact ID.
+   */
+  const resolve = (person: string | PersonIdentity, positionUid: string): Match => {
+    const who: PersonIdentity = typeof person === 'string' ? { email: person } : person;
+    for (const key of FIELDS) {
+      const value = key.norm(who[key.field] ?? '');
+      if (!value) continue;
+      for (const found of records.values()) {
+        if (key.norm(found[key.field] ?? '') !== value) continue;
+        const clash = FIELDS.find((f) => {
+          const mine = f.norm(who[f.field] ?? '');
+          const theirs = f.norm(found[f.field] ?? '');
+          return mine !== '' && theirs !== '' && mine !== theirs;
+        });
+        if (clash) return { kind: 'conflict', message: `Needs review: ${key.label} belongs to an existing Comeet candidate with ${clash.other}.` };
+      }
+    }
+    return match(who, positionUid);
+  };
   const recordFor = (person: string | PersonIdentity, positionUid: string) => {
     const m = match(person, positionUid);
     return m?.kind === 'match' ? m.candidate : null;
   };
-  const check = (candidateKey: string, jobId: string): Check =>
-    handoffCheck(
-      candidateKey,
-      jobId,
-      positions.map((p) => ({ jobId: p.jobId, title: p.name })),
-    );
+  const check = (candidateKey: string, jobId: string): Check => {
+    const jobs = positions.map((p) => ({ jobId: p.jobId, title: p.name }));
+    const person = pool().find((c) => c.candidateKey === candidateKey);
+    if (person) return handoffCheck(person, jobId, jobs, history());
+    // Without a pool (unit tests of the matching alone) only the Comeet rules apply; with one, an unknown contact is refused.
+    if (people !== undefined) return { block: 'This contact is not in the talent pool. Nothing was created.' };
+    const job = jobs.find((j) => j.jobId === jobId);
+    return job ? checkHandoff(history(), unknownPerson(candidateKey), job, jobs) : {};
+  };
 
   return {
     positions: () => positions,
@@ -227,13 +273,14 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400, people = [] 
     async find(person, positionUid) {
       await wait();
       if (!isAvailable()) return { kind: 'unavailable', message: UNAVAILABLE };
-      const m = match(person, positionUid);
+      const m = resolve(person, positionUid);
       return m?.kind === 'conflict' ? m : { kind: 'found', candidate: m?.candidate ?? null };
     },
     async handoff(p) {
       await wait();
       if (!isAvailable()) return { kind: 'unavailable', message: UNAVAILABLE };
-      const m = match(p, p.positionUid);
+      // Re-checked here, at confirm time: the preview may be stale (an import, another tab, another handoff).
+      const m = resolve(p, p.positionUid);
       if (m?.kind === 'conflict') return m;
       if (m) return { kind: 'existing', candidate: m.candidate };
       const jobId = positions.find((x) => x.uid === p.positionUid)?.jobId ?? '';
@@ -262,5 +309,21 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400, people = [] 
       records.set(candidate.uid, candidate);
       return { kind: 'created', candidate };
     },
+  };
+}
+
+/** A contact the service cannot look up (tests without a pool): resolved by its own ID, with no other evidence. */
+function unknownPerson(candidateKey: string): Candidate {
+  return {
+    candidateKey,
+    identity: { anchor: `source_id:${candidateKey}`, kind: 'source_id', status: 'resolved', relatedPersonIds: [], reasons: [] },
+    sourceContactIds: [],
+    fullName: '',
+    email: '',
+    linkedinUrl: '',
+    attendances: [],
+    profileStatus: 'missing_url',
+    profile: null,
+    dataQualityFlags: [],
   };
 }

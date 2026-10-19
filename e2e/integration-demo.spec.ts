@@ -218,6 +218,65 @@ test('the shared Comeet history blocks an active process, not an uncontacted lea
   expect(errors).toEqual([]);
 });
 
+test('F9: the handoff carries the recorded history; a decline is shown, not hidden and not blocking', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Close notifications' }).click();
+  await page.getByRole('tab', { name: 'Data Engineer — shortlist' }).click();
+  await page.getByRole('table', { name: 'Data Engineer — shortlist' }).getByRole('button', { name: 'Noah Anderson' }).click();
+  await card(page).getByRole('combobox', { name: 'Role' }).selectOption('JOB002');
+  await expect(card(page).getByTestId('tm-warn')).toHaveText('Declined Backend Engineer on 8 Oct.');
+  await card(page).getByRole('button', { name: 'Add to Comeet' }).click();
+  await expect(handoff(page).getByTestId('handoff-note')).toHaveText(
+    'Handed over from HubSpot for Backend Engineer. Contact history: Invited to Backend Engineer on 5 Oct 2026 by Gal Ofer (simulated); ' +
+      'Declined Backend Engineer on 8 Oct 2026 by Gal Ofer (simulated). The owning recruiter decides on outreach.',
+  );
+  await handoff(page).getByRole('button', { name: 'Confirm' }).click();
+  await expect(handoff(page)).toContainText('Added to Backend Engineer as Sourced.');
+  await handoff(page).getByRole('button', { name: 'Open in Comeet' }).click();
+  await expect(page.getByText('Declined Backend Engineer on 8 Oct 2026 by Gal Ofer (simulated)', { exact: false })).toBeVisible();
+
+  // Someone with nothing recorded: no invented history either way.
+  await toApp(page, 'HubSpot');
+  await openContact(page, 'Lucas Evans');
+  await card(page).getByRole('button', { name: 'Add to Comeet' }).click();
+  await expect(handoff(page).getByTestId('handoff-note')).toHaveText(
+    'Handed over from HubSpot for Senior ML Engineer. No contact recorded. The owning recruiter decides on outreach.',
+  );
+  expect(errors).toEqual([]);
+});
+
+test("F3: an email-only import of Ryan cannot be handed off past his active process", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Close notifications' }).click();
+  await page.getByRole('button', { name: 'Import' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Import contacts' });
+  await dialog.locator('input[type=file]').setInputFiles({
+    name: 'ryan.csv',
+    mimeType: 'text/csv',
+    buffer: Buffer.from('full_name,email,conference_name,conference_date\nRyan Patel,ryan.patel@dazn.com,Synthetic review event,2026-10-19\n'),
+  });
+  await expect(dialog).toContainText('possible duplicate');
+  await dialog.getByRole('button', { name: /^Import 1 contact/ }).click();
+  // Newest first: the imported record leads the contact list.
+  await page.getByRole('tab', { name: 'All contacts' }).click();
+  await page.getByRole('table', { name: 'All contacts' }).getByRole('button', { name: 'Ryan Patel' }).first().click();
+  await expect(page.getByRole('region', { name: 'About this contact' })).toContainText('HS076');
+  await card(page).getByRole('combobox', { name: 'Role' }).selectOption('JOB001');
+  await expect(card(page).getByTestId('tm-blocked')).toContainText('Possible duplicate');
+  await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toHaveCount(0);
+
+  // The original Ryan stays held too, from his Data Engineer view.
+  await page.getByRole('button', { name: 'Contacts' }).click();
+  await page.getByRole('tab', { name: 'Data Engineer — shortlist' }).click();
+  await page.getByRole('table', { name: 'Data Engineer — shortlist' }).getByRole('button', { name: 'Ryan Patel' }).click();
+  await card(page).getByRole('combobox', { name: 'Role' }).selectOption('JOB001');
+  await expect(card(page).getByTestId('tm-blocked')).toBeVisible();
+  await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
 test('Reset demo clears handoffs', async ({ page }) => {
   const errors = watchErrors(page);
   await openContact(page, 'James Thornton');

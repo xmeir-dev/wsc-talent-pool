@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildAssessmentStore } from '../integration-demo/assessments';
 import { buildHandoff, createSimulatedComeet, type ComeetService } from '../integration-demo/comeet';
 import type { CandidateAssessment } from '../pipeline';
+import { SEEDED } from '../view/activity';
 import { realDataset } from './helpers';
 
 const store = buildAssessmentStore(realDataset());
@@ -11,7 +12,7 @@ const [first, second] = store.result(JOB).candidates;
 
 function payloadFor(comeet: ComeetService, a: CandidateAssessment, override: { email?: string; linkedinUrl?: string }) {
   const candidate = { ...a.candidate, ...override };
-  return buildHandoff({ ...a, candidate }, store.result(JOB).job, store.version, comeet.positionFor(JOB)!);
+  return buildHandoff({ ...a, candidate }, store.result(JOB).job, store.version, comeet.positionFor(JOB)!, SEEDED);
 }
 
 function fresh() {

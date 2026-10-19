@@ -1,6 +1,6 @@
 import { ArrowDown01Icon, FilterIcon, Search01Icon } from '@hugeicons/core-free-icons';
 import { useState } from 'react';
-import { useActivity } from '../view/activity';
+import { useActivity } from '../view/actionStore';
 import type { SourceTexts } from '../pipeline';
 import { fitReason, OUTCOME_LABEL, referenceSummary } from '../view/format';
 import type { AssessmentStore } from './assessments';

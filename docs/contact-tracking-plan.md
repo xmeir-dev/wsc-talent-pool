@@ -22,7 +22,7 @@ Why it matters:
 | --- | --- |
 | Track outcomes per person **and role** | Status is per person × role. Person-wide warnings (Do not contact, Already interviewing) sit on top. Reference requests are tracked separately from contacting the candidate. |
 | Only record "sent" when sending is confirmed | Every action has a state: Prepared, Sent, Failed, Confirmed by recruiter, or Simulated. Copying a message or opening email is Prepared, never Sent. Adding someone to Comeet is not treated as an invitation. |
-| Repeat protection beyond a 30-day rule | Blocking rules apply to single and bulk actions: Do not contact, already in a process, same role already contacted, same colleague already asked about the same person. Production adds a server-side check for two recruiters acting at once. |
+| Repeat protection beyond a 30-day rule | Blocking rules apply to single and bulk actions: Do not contact, already in a process, same role already contacted, same colleague already asked about the same person. The demo checks them again inside one storage transaction, so two tabs cannot both send or erase each other's history; production runs the same check server-side for two recruiters acting at once ([identity and history](identity-and-history.md)). |
 | Use Comeet's existing tracking | Comeet leads already carry a role, an outreach status (Not Contacted, Contacted, Responded) and a process status ([lead schema](https://developers.comeet.com/reference/lead-schema)). Production uses them instead of rebuilding them. |
 | A Comeet lead isn't necessarily interviewing (second review) | A new lead comes back as "In progress" + "Not Contacted" ([create a lead](https://developers.comeet.com/reference/create-a-lead)). Only an active candidacy, or a lead already contacted, counts as Already in process; an uncontacted lead does not block the first approach. |
 | Simulated is a label, not a state (second review) | Demo actions are "Sent · Simulated" or "Prepared · Simulated", so they trigger the same repeat protection as real ones. |
@@ -77,6 +77,9 @@ Checked for every single and bulk action. A bulk action skips blocked people and
 | Same colleague already asked about the same person (Sent or Confirmed) | A repeat request |
 | Recent contact for another role (window to agree, e.g. 30 days) | Warns, does not block |
 | Rejected in Comeet for another role ("Rejected after phone screen for Senior Product Manager - Sports Data in Comeet · Mar 2025."); a withdrawal is not a rejection | Warns, does not block; the same rule in the integration demo's handoff |
+| Identity not resolved (possible duplicate, conflicting records, nothing to identify them by) | Every invite, reference request and handoff until the data is fixed |
+
+**Invite versus handoff.** Adding someone to Comeet sends nothing, so its rule differs: an active process or an unresolved identity blocks it, but a decline or earlier contact for the role does not. Those stay visible on the card and are written into the handoff note from the recorded history ("No contact recorded" when there is none). A decline still blocks another invite to that role. Details: [identity and history](identity-and-history.md#invite-versus-handoff).
 
 Production: two recruiters can act at the same moment, so the check runs on the server, and one key per person × role × action makes a second identical action a no-op. Browser storage cannot show this; the demo only checks one browser's history.
 

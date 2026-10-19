@@ -7,13 +7,14 @@ import { loadSources } from '../cli/load-sources';
 import { buildHandoff, createSimulatedComeet, type ComeetService } from '../integration-demo/comeet';
 import { addRole, applyImport, previewImport, roleProblems } from '../integration-demo/sources';
 import { buildDataset } from '../pipeline';
+import { SEEDED } from '../view/activity';
 import { assessJob, byName, DATA_DIR, realDataset, ROOT } from './helpers';
 
 const store = buildAssessmentStore(realDataset());
 
 function handoffFor(comeet: ComeetService, name: string, jobId: string) {
   const a = byName(store.result(jobId), name);
-  return buildHandoff(a, store.result(jobId).job, store.version, comeet.positionFor(jobId)!);
+  return buildHandoff(a, store.result(jobId).job, store.version, comeet.positionFor(jobId)!, SEEDED);
 }
 
 describe('assessment store', () => {

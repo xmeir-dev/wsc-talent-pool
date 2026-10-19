@@ -22,7 +22,8 @@ import {
   type PossibleReference,
 } from '../pipeline';
 import type { Relevant } from './attendees';
-import { checkReference, comeetFor, record, useActivity } from './activity';
+import { referenceCheck } from './activity';
+import { recordActions, useActivityState } from './actionStore';
 import { AVATAR, initials } from './avatars';
 import { connectionPeople as sharedConnectionPeople, latestRef, type ConnectionPerson } from './format';
 import { bundledSources } from './data';
@@ -213,12 +214,13 @@ export function AskConnection({
     }
   };
   const email = `mailto:${employeeEmail(employee)}?subject=${encodeURIComponent(`Quick question about ${ctx.candidate.fullName}`)}&body=${encodeURIComponent(message)}`;
-  const entries = useActivity();
-  const key = ctx.candidate.candidateKey;
+  const activity = useActivityState();
+  const person = ctx.candidate;
   // A colleague is asked about a person once; copying or opening email only prepares a request.
-  const check = checkReference(entries, comeetFor(key), key, employee.employeeId, employee.fullName);
-  const prepare = (channel: 'copy' | 'email') =>
-    record({ kind: 'reference', candidateKey: key, employeeId: employee.employeeId, employeeName: employee.fullName, channel, state: 'prepared' });
+  const check = referenceCheck(activity, person, employee.employeeId, employee.fullName);
+  const ask = (channel: 'copy' | 'email' | 'slack', state: 'prepared' | 'sent') =>
+    recordActions([{ kind: 'reference', person, employeeId: employee.employeeId, employeeName: employee.fullName, channel, state }]).then(([r]) => r!);
+  const prepare = (channel: 'copy' | 'email') => void ask(channel, 'prepared');
 
   return (
     <Popover
@@ -334,9 +336,10 @@ export function AskConnection({
             variant="primary"
             leftIcon={<HugeiconsIcon icon={SlackIcon} size={16} aria-hidden="true" />}
             disabled={!!check.block}
-            onClick={() => {
-              record({ kind: 'reference', candidateKey: key, employeeId: employee.employeeId, employeeName: employee.fullName, channel: 'slack', state: 'sent' });
-              setStatus(`Sent · Simulated: the Slack app would message ${theirFirst}.`);
+            onClick={async () => {
+              // Checked again in the store's transaction, so a request another tab just sent is not repeated.
+              const r = await ask('slack', 'sent');
+              setStatus(r.ok ? `Sent · Simulated: the Slack app would message ${theirFirst}.` : `Not sent: ${r.reason}`);
             }}
           >
             Send in Slack

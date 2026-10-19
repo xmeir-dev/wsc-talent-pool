@@ -1,5 +1,7 @@
 /** Shared types for the candidate-ranking pipeline. */
 
+import type { PersonIdentity } from './identity';
+
 // ---------- Source records (as supplied in data/) ----------
 
 export interface AttendeeRecord {
@@ -110,6 +112,9 @@ export interface Profile {
 }
 
 export interface Attendance {
+  /** This attendance row's own ID (A-<16 hex>, see identity.ts). Not the person's ID, not the source contact ID. */
+  attendanceId: string;
+  /** The source contact ID on this row, as supplied; may repeat or be blank. */
   hubspotId: string;
   conferenceName: string;
   conferenceDomain: string;
@@ -123,7 +128,10 @@ export interface Attendance {
 
 /** One person, with every attendance record and (when resolvable) one LinkedIn profile. */
 export interface Candidate {
+  /** The durable person ID (identity.ts): C-<source ID> for supplied people, else P-<16 hex>. Owns all saved history. */
   candidateKey: string;
+  /** How the person was identified, and whether that identity is safe to act on. */
+  identity: PersonIdentity;
   sourceContactIds: string[];
   fullName: string;
   email: string;

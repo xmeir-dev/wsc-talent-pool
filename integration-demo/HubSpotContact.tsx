@@ -12,7 +12,7 @@ import {
   Task01Icon,
 } from '@hugeicons/core-free-icons';
 import { useEffect, useRef, useState } from 'react';
-import { useActivity } from '../view/activity';
+import { useActivity } from '../view/actionStore';
 import { RELEVANCE_LABEL } from '../view/format';
 import type { AssessmentStore } from './assessments';
 import type { ComeetService } from './comeet';
@@ -67,7 +67,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
   const logged = timeline(activity, candidateKey);
   const items = [
     ...logged.map((x) => ({ key: x.id, date: x.date, x })),
-    ...a.events.map((e) => ({ key: e.attendance.hubspotId, date: e.attendance.conferenceDate, e })),
+    ...a.events.map((e) => ({ key: e.attendance.attendanceId, date: e.attendance.conferenceDate, e })),
   ].sort((m, n) => n.date.localeCompare(m.date));
 
   return (
