@@ -125,53 +125,63 @@ ul {
   padding: 0;
   list-style: none;
 }
-.pool-row {
+.pool-item {
+  position: relative;
   display: flex;
-  justify-content: space-between;
-  gap: var(--ml-space-md);
-  width: 100%;
+  align-items: center;
+  gap: 6px;
   padding: 7px 12px;
-  border: 0;
   border-radius: 8px;
   box-shadow: inset 0 0 0 1px var(--ml-border-subtle);
+  font-size: 13px;
+  transition: background 150ms ease-out, box-shadow 150ms ease-out;
+}
+.pool-item:hover {
+  background: var(--ml-bg-surface);
+}
+.pool-item:has(.pool-row[aria-pressed='true']) {
+  box-shadow: inset 0 0 0 1px var(--ml-text-muted);
+}
+.pool-row {
+  padding: 0;
+  border: 0;
   background: none;
   font: inherit;
-  font-size: 13px;
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background 150ms ease-out, box-shadow 150ms ease-out;
 }
-.pool-row:hover {
-  background: var(--ml-bg-surface);
-}
-.pool-row[aria-pressed='true'] {
-  box-shadow: inset 0 0 0 1px var(--ml-text-muted);
-}
-.pool-list li.has-link {
-  position: relative;
-}
-.has-link .pool-row {
-  padding-right: 40px;
-}
-/* The Comeet icon sits inside the row's border, after the count, but is its own link. */
-.pool-link {
+.pool-row::before {
+  content: '';
   position: absolute;
-  top: 50%;
-  right: 8px;
+  inset: 0;
+  border-radius: 8px;
+}
+.pool-row:focus-visible {
+  outline: none;
+}
+.pool-item:has(.pool-row:focus-visible) {
+  outline: 2px solid var(--ml-text-muted);
+  outline-offset: 1px;
+}
+/* The Comeet icon right after the job name; its own link, above the row's click area. */
+.pool-link {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
   opacity: 0.75;
-  transition: opacity 150ms ease-out, background 150ms ease-out;
+  transition: opacity 150ms ease-out;
 }
 .pool-link:hover,
 .pool-link:focus-visible {
   opacity: 1;
-  background: var(--ml-bg-surface);
+}
+.pool-value {
+  margin-left: auto;
+  padding-left: var(--ml-space-md);
 }
 .pool-sub {
   margin-left: 8px;
@@ -468,10 +478,10 @@ ul {
   align-items: center;
   gap: 8px;
   max-width: 100%;
-  /* Same shape as the WSC connection tags: 24px tall, fully round, round icons 1px in from the edge. */
+  /* Same shape as the WSC connection tags: 24px tall, fully round, 20px round icons 2px in from the edge. */
   box-sizing: border-box;
   min-height: 24px;
-  padding: 1px 1px 1px 10px;
+  padding: 1px 2px 1px 10px;
   border-radius: 9999px;
   box-shadow: inset 0 0 0 1px var(--ml-border);
   background: var(--ml-bg-surface);
@@ -495,8 +505,8 @@ ul {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   box-shadow: inset 0 0 0 1px var(--ml-border);
   background: var(--ml-bg-card);
@@ -517,7 +527,13 @@ ul {
 }
 .conn-tag {
   gap: 6px;
+  padding-top: 2px;
+  padding-bottom: 2px;
   padding-left: 2px;
+}
+/* A 20px avatar in the 24px tag leaves 2px all round, so the avatar never touches the outline. */
+.conn-tag .ml-avatar {
+  box-sizing: border-box;
 }
 .conn-tags {
   display: flex;
