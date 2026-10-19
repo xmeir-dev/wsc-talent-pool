@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadSources } from '../../cli/load-sources';
 import { cleanForTerminal, formatReport } from '../../cli/report';
-import { assessJob, assessmentToCsv, buildDataset, outputFileName, type CandidateAssessment } from '../../pipeline';
+import { assessJob, assessmentToCsv, buildDataset, outputFileName, outputXlsxFileName, parseCsv, toCsv, type CandidateAssessment } from '../../pipeline';
 import { DATA_DIR, FIXTURE_DIR, ROOT } from '../helpers';
 
 const ESC = String.fromCharCode(27);
@@ -207,6 +207,49 @@ describe('invalid commands fail before writing anything', () => {
     expect(run.stderr).toMatch(/Cannot write to output folder .*a-file[/\\]sub: /);
     expect(run.stderr).not.toMatch(/\n\s+at /);
     expect(run.stdout).toBe('');
+  }, 60_000);
+});
+
+describe('source job IDs cannot redirect or silently replace exports', () => {
+  function withJobs(name: string, change: (rows: Record<string, string>[]) => void): string {
+    const dir = join(work, name);
+    cpSync(DATA_DIR, dir, { recursive: true });
+    const filename = join(dir, 'job_openings.csv');
+    const { header, records } = parseCsv(readFileSync(filename, 'utf8'));
+    change(records);
+    writeFileSync(filename, toCsv(header, records));
+    return dir;
+  }
+
+  it.each([false, true])('rejects traversal before any output is written (all=%s)', (all) => {
+    const id = 'x/../../outside-output';
+    const dir = withJobs(`unsafe-${all}`, (rows) => { rows[1]!.job_id = id; });
+    const out = join(work, `unsafe-output-${all}`);
+    const victim = join(work, 'outside-output.csv');
+    const sentinel = 'Existing file must survive';
+    writeFileSync(victim, sentinel);
+    const run = cli([all ? '--all' : id, '--data', dir, '--out', out]);
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain('job_id');
+    expect(run.stderr).toContain('path separators');
+    expect(run.stdout).toBe('');
+    expect(existsSync(out)).toBe(false);
+    expect(readFileSync(victim, 'utf8')).toBe(sentinel);
+  }, 60_000);
+
+  it.each(['x/../../outside', 'x\\..\\outside', 'bad\u0000id', 'bad\nid', ''])('rejects unsafe IDs for both export formats: %j', (id) => {
+    expect(() => outputFileName(id)).toThrow(/job_id/);
+    expect(() => outputXlsxFileName(id)).toThrow(/job_id/);
+  });
+
+  it('rejects case-ambiguous job IDs instead of assessing the first role twice', () => {
+    const dir = withJobs('case-ambiguous', (rows) => { rows[1]!.job_id = rows[0]!.job_id!.toLowerCase(); });
+    const out = join(work, 'case-ambiguous-output');
+    const run = cli(['--all', '--data', dir, '--out', out]);
+    expect(run.status).toBe(1);
+    expect(run.stderr).toContain('differs only by letter case');
+    expect(run.stdout).toBe('');
+    expect(existsSync(out)).toBe(false);
   }, 60_000);
 });
 

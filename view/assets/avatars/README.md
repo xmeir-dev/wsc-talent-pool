@@ -1,2 +1,5 @@
-Made-up illustrated avatars for the 15 WSC employees in `data/wsc_employees.csv` (WSC*.svg) and the four made-up recruiters in `data/demo/recruiters.json` (REC*.svg).
-Generated with DiceBear 9.4.2, style "Notionists" by Zoish (CC0 1.0), seeded by ID. They are not photos of anyone.
+# Fictional avatars
+
+These illustrations represent the 15 WSC employees (`WSC*.svg`) and four recruiters (`REC*.svg`) in the demo data. They are not photos of real people.
+
+Generated with DiceBear 9.4.2, “Notionists” by Zoish, seeded by ID. License: CC0 1.0.

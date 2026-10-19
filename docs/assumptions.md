@@ -1,113 +1,93 @@
 # Assumptions
 
-The [written assignment](../assignment/index.html) defines the scope; the [discovery call](additional-info/discovery-call-context.md) supplies context. Build against synthetic CSVs, with HubSpot-ready output. The brief makes a recruiter view optional; one is included. Live connections and outreach are outside this exercise.
+**This is a working assessment tool using synthetic files. Connections, sends and recruiting history shown in the demos are simulated.** The [assignment](../assignment/index.html) defines the scope; the [discovery call](additional-info/discovery-call-context.md) provides context.
 
 ## Where recruiters work
 
-**Use the tools recruiters already work in.** Prefer showing recommendations and next actions inside HubSpot and Comeet, using their existing lists, records and supported extensions. The standalone recruiter view is the take-home deliverable and a working place to go through the pool (Shir noted on the call that a separate tool is fine while Comeet can't be extended); its results are designed to flow into HubSpot and Comeet, and the [integration demo](../integration-demo/README.md) shows that production experience inside both tools.
+The standalone view is the deliverable; Shir accepted a separate tool while Comeet cannot be extended. Production should place results and actions in HubSpot and Comeet. [Proposed design](design.md#production-version).
 
-**Plans are assumed.** WSC left the plans to this design (Shir, 2026-10-19), so the production design assumes Comeet Enterprise (API and custom fields) and, for the interactive contact card, HubSpot Enterprise. If WSC is on lower plans, the fallback keeps results on HubSpot properties and lists. See [platform requirements](design.md#production-version).
+Plans are assumed, not verified: Comeet Enterprise for API access and custom fields; HubSpot Enterprise for the proposed app card. Shir left plan selection to the design on 2026-10-19. Lower-plan options need validation.
 
-**Recruiting stays apart from sales and marketing** ([design](design.md#production-version)). Assumed, to confirm with WSC:
+**Recruiting stays apart from sales and marketing** ([design](design.md#production-version)). To confirm with WSC:
 
 - The recruiter responsible for a Comeet position owns the people handed off for it; the HubSpot Contact owner is left alone. Whether Comeet assigns the position's lead recruiter automatically, or the integration must set it, is unverified.
-- Contacts known only as talent are non-marketing contacts, and recruiting activity is not sales progress. Who decides that a talent contact also has a commercial relationship (and so stays a marketing contact) is for WSC's marketing team.
-- The demo's Comeet screens follow Comeet's public API and screenshots; the Candidates and Prospects tab layout should be matched to WSC's own Comeet setup.
+- Talent-only contacts are non-marketing contacts, and recruiting activity is not sales progress. WSC's marketing team decides when a talent contact also has a commercial relationship and so stays a marketing contact.
+- The demo's Comeet screens follow Comeet's public API and screenshots; the Candidates and Prospects tab layout should be matched to WSC's own setup.
 
 ## Selection rules
 
-- **A focused shortlist.** Promising candidates with insufficient evidence go into `needs_review`. Missing information is not proof of missing ability.
-- **Expertise first.** Assess skills, responsibilities, and relevant seniority. Conference relevance and job fit are separate; attendance and job titles alone do not establish either.
-- **Allow supporting gaps.** For JOB001, senior ML and computer-vision evidence matter; missing AWS evidence alone does not exclude someone. Keep every unconfirmed requirement visible, including Object Detection.
-- **Industry only breaks ties for JOB001.** Sports/media experience can lift someone above an equal candidate, but is not required. Other roles retain their own requirements, such as JOB003's Sports Analytics skill.
-- **Connections only break close ties.** On the call Shir asked that a connection give "bonus points, just like in Comeet" for referrals. Here it is deliberately a tie-breaker and a reference lead, not points: a connection is not evidence of skill, and a referral in Comeet is a colleague vouching, while a LinkedIn connection or shared employer is not. So a connection never lifts a clearly weaker candidate above a stronger one; it shows on every row and profile, and **Ask** turns it into a real reference request. More connections do not automatically mean more value.
-- **Clear mismatches are kept, not dropped.** People with no evidence of a role's core discipline are marked `not_recommended_for_role` for that role and remain available for others.
+- **Skills first.** Listed skills and total years drive fit. Titles and attendance do not establish qualification; event relevance is separate from job fit.
+- **Keep gaps visible.** Missing AWS alone does not exclude someone from JOB001. Other requirements, including Object Detection, remain visible for confirmation.
+- **Connections break ties.** Shir requested “bonus points, just like in Comeet.” This design uses connections only after qualification evidence ties. More connections add no advantage; a connection is not an endorsement.
+- **Industry has a limited role.** Sports/media evidence breaks qualification ties for JOB001. Other roles retain their own requirements, including Sports Analytics for JOB003.
+- **Keep everyone in the pool.** Missing or conflicting profiles go to review. A profile without a listed core-discipline match can be marked not recommended for that role, even when useful adjacent experience exists. See [known classification gaps](scoring.md#limits).
 
 ## Data and operating limits
 
-All 75 supplied attendees match a profile: **42 list WSC employee connections and 33 list none**. Unconnected contacts include broadcast specialists, so assess industry and job fit independently of connections. The real files contain no missing profiles, duplicates, repeat attendees, conflicts or unknown employee IDs, so that handling is proven with synthetic test fixtures: unmatched attendees are retained for review, and conflicting identities are flagged instead of guessed.
+All 75 supplied attendees match profiles: 42 list WSC connections and 33 do not. Missing profiles, repeat attendees, duplicates, conflicting identities and unknown employee IDs are covered by synthetic fixtures, not examples in the supplied files.
 
-Profile freshness, application history, previous rejection, job interest, and permission to contact are unknown. Total experience is not specialty experience; employment-history lists cannot safely be paired by position.
+Profile freshness, actual application history, previous rejection, job interest and permission to contact are unknown. Total years include internships and are not specialty experience. Separate employment-history lists cannot safely be paired by position.
 
-Roles have no location in the data, so location does not affect the score; recruiters can filter by where attendees are based. In production each Comeet role would carry its office or country and work mode; someone outside it would be flagged to confirm relocation or remote work, never rejected automatically, since WSC's remote and relocation rules are still to confirm. The Location filter lists countries with a WSC office first (`data/demo/wsc_offices.json`, from WSC's own site, checked 2026-10-19; Spain appears only on the careers page, so it may be remote hires rather than an office). See [Made up for the recruiter view](#made-up-for-the-recruiter-view) for everything the view shows that the files don't contain.
+Roles have no location, so location does not affect scores. Recruiters can filter attendees by country. In production each Comeet role would carry its office or country and work mode; someone outside it would be flagged to confirm relocation or remote work, never rejected automatically, since WSC's remote and relocation rules are still to confirm. Office-country ordering uses WSC’s website, checked 2026-10-19; Spain appears only on the careers page and may represent remote hiring.
 
 ## Made up for the recruiter view
 
-None of this feeds the ranking. Each item is made up because the supplied files don't contain it, and each says what production uses instead.
+Demo notes, history and actions do not change the supplied-data ranking. Importing sample attendees adds new evidence and changes results.
 
-**Content**
+| Demo addition | What it means |
+|---|---|
+| AI summaries, recruiters, avatars | Summaries use supplied profile fields and are labelled. Recruiter names are invented; avatars are generated illustrations. Files: `data/demo/ai_summaries.json`, `recruiters.json`. |
+| Comeet history | `data/demo/comeet.json`: Alex Turner and James Thornton have past rejections; Ryan Patel is in process; Scarlett Green is an uncontacted lead. Both views use these examples. |
+| Sample meetup | Three returning and five new attendees, with mock profiles. Importing it adds Lior Ben-David and Maya Levin to the Senior PM shortlist. Files: `data/demo/samples/`. |
+| Links and email addresses | Employee emails assume `first.last@wsc-sports.com`. Comeet and HubSpot addresses are placeholders; supplied `HS…` IDs are not live HubSpot record IDs. **Look up** searches Comeet by email. |
 
-- **AI summaries.** Attendees with no recruiter note get a one-line summary written by an AI model from their LinkedIn fields (`data/demo/ai_summaries.json`), labelled "AI summary" on screen.
-- **Recruiters and avatars.** The files don't say who wrote a conference note, so each conference has an invented recruiter (`data/demo/recruiters.json`). Employee and recruiter avatars are generated illustrations.
-- **Comeet history.** Four people have made-up Comeet records (`data/demo/comeet.json`): Alex Turner (rejected for Senior PM), Ryan Patel (in process for Data Engineer), James Thornton (rejected for an older role) and Scarlett Green (an uncontacted lead). The integration demo seeds its simulated Comeet from the same file and applies the same contact rules. Production reads them from the Comeet Recruiting API, matched by email.
-- **Sample meetup.** `data/demo/samples/wsc_product_meetup.csv` is a made-up WSC product meetup: three returning attendees and five new people, whose LinkedIn profiles come in `wsc_product_meetup_profiles.csv` (standing in for the profile lookup production runs). Adding it fills the empty Senior PM shortlist with Lior Ben-David and Maya Levin, which is Shir's "product meetup, then a product role opens" story from the call.
+**Actions:** Send invite and Send in Slack record simulated sends. Copy and Email prepare requests only; Mark sent records confirmation. Bulk invites choose each person’s best-fit role; reference requests group people by colleague. A refused action says **Not sent** (or **Not recorded** for a copy or email), and bulk results count only what was recorded. WSC’s Slack use was confirmed on 2026-10-19.
 
-**Links and addresses**
+Browser history is shared across tabs and retained per person and role. Seeded cases include Noah declining Backend Engineer but remaining eligible for Data Engineer; Ryan’s active process blocking contact; Alex’s copied, unsent reference request; and Scarlett’s uncontacted lead status. [Contact rules](additional-info/contact-tracking-plan.md) · [Identity and saved history](additional-info/identity-and-history.md).
 
-- **Employee emails** use an assumed `first.last@wsc-sports.com` pattern; the data has none.
-- **Comeet and HubSpot links** (the Comeet icon on each job, the Contact card) use assumed addresses: the snapshot has no Comeet position IDs, and its `HS…` IDs are source IDs, not HubSpot record IDs. **Look up** searches Comeet by email.
+**Imports:** Add conference accepts a file, sample or publicly readable Google Form responses sheet. It cannot read a private form. Imported attendees disappear on reload.
 
-**Actions (simulated: nothing is sent or connected)**
-
-- **Ask a WSC connection.** **Send in Slack** records the request as sent (WSC uses Slack, confirmed 2026-10-19; production sends it as a direct message from a Slack app). **Copy** and **Email** only prepare it, because neither proves anything was sent.
-- **Invite to job** drafts an invite from the recruiter who met the person; **Send invite** records it. In production the person is added to that position in Comeet, and it counts as sent only once a message is confirmed.
-- **Bulk actions.** Ticking rows shows a bar above and below the table: **Ask WSC connections** sends one request per colleague, and **Invite to jobs** sends each person to their own best-fit job, skipping and listing anyone the rules block.
-- **Outreach history** ([contact tracking plan](additional-info/contact-tracking-plan.md)) is kept in this browser only, in a store that is safe with several tabs open and tied to each person's durable ID ([identity and history](additional-info/identity-and-history.md)). Each role's status shows inside its job chip in the table, the profile has an **Activity** card, and the same rules block unwanted or repeated contact everywhere. Seeded examples: Noah Anderson declined Backend Engineer (still invitable for Data Engineer, with a warning), Ryan Patel is in process in Comeet (blocked), a reference request about Alex Turner was copied but never sent (**Mark sent** confirms it), and Scarlett Green is an uncontacted lead (not blocked).
-
-**Sources**
-
-- **Add conference** adds one event's attendee list to the pool in the browser, from a file, a link to a Google Form's responses sheet (it must be viewable by anyone with the link; the form itself can't be read without signing in), or the sample. It lasts until the page is reloaded. In production, forms in the shared "Event sign-ups" folder send sign-ups to HubSpot directly ([which forms sync](#how-conference-lists-arrive)).
-- **Connect accounts** in the header opens **Your accounts**: HubSpot, Comeet, Google Forms and Slack, each **Not connected** at first, with real setup steps and links (checked against each tool's docs on 2026-10-19) and the fields each needs. Nothing typed there is stored or sent; **Connect** and **Sync now** only show what would happen. In production, new jobs and sign-ups arrive on their own once connected, with a nightly check, and **Sync now** forces one.
+**Connections:** Your accounts shows setup instructions checked on 2026-10-19 ([what each needs](#connecting-the-tools)). Entered keys are neither stored nor sent. Connect and Sync now only demonstrate the proposed steps.
 
 ## How conference lists arrive
 
-**The organizer's attendee list is the best source:** it covers everyone registered, not only people who stopped by. It matches the supplied `conference_attendees.csv`.
+**Proposed capture:** use the organizer’s permitted attendee list, rather than only booth contacts. The discovery call described scattered event spreadsheets; Shir confirmed Google Forms on 2026-10-19.
 
-**For conferences WSC hosts, WSC is the organizer.** Today each recruiter builds a sign-up form per event and it fills a separate spreadsheet (from the 2026-10-15 call), so lists are scattered and rarely revisited. The fix is one shared sign-up form connected to HubSpot, reused for every event with the event name as a field. Each sign-up becomes a HubSpot contact tagged with the event and is assessed automatically, with no spreadsheet. WSC uses Google Forms (confirmed by Shir, 2026-10-19), so the shared form stays a Google Form. Google Forms has no built-in HubSpot connection, so the integration service passes each response to HubSpot as it arrives. Past spreadsheets are imported once.
+For WSC events, reuse one form with an event field. An integration service reads forms and responses from an approved “Event sign-ups” Drive folder, including newly added forms; unrelated forms stay out. This requires Google authorization, not a built-in Forms-to-HubSpot connection. Import historical sheets once.
 
-**Which Google Forms sync.** Not every form at WSC belongs in the pool, so the rule is a shared Google Drive folder, "Event sign-ups". Forms live in Drive like any document; every form in that folder syncs, new ones are picked up on their own, and HR surveys or team polls elsewhere are ignored. With one shared form there is only one form in the folder; if recruiters keep a form per event, they save each one there. Connecting needs a one-time Google sign-in by an admin that allows reading that folder and its form responses. The **Add conference** panel points to this with a quiet "How to connect this automatically" line; adding a file or sheet link by hand stays as the fallback.
-
-**For outside conferences,** organizers often share only attendees who opted in, sometimes only with sponsors, and sometimes without email or LinkedIn URL; thinner rows land in `needs_review`. Whether attendees agreed to be contacted about jobs is confirmed before a list is sent in. Options for getting these lists into HubSpot without a manual upload, all run by the same integration service:
-
-1. **A dedicated email address (preferred),** for example `talent-lists@wsc-sports.com`. The organizer or anyone at WSC forwards the spreadsheet; the service imports it, runs the matching and replies with a summary ("Imported 120 people from Sports Video AI Meetup").
-2. **A shared folder** (Google Drive or SharePoint, "Conference lists"). A new file starts the same import. Outside organizers usually cannot write to it, so someone at WSC copies the file in.
-3. **The event platform's own HubSpot integration,** where the organizer uses one and agrees to share, usually for sponsors. Attendees arrive with no file.
-
-**Fallbacks:** HubSpot's Import button for one-off files, and WSC's sign-up form at the booth for events that will not share a list. A file missing required columns, or with broken CSV structure, imports nothing and the sender is told what is wrong and where, as the demo's import does ([importing and events](additional-info/importing-and-events.md)).
+For external events, confirm recruiting use is permitted; lists may cover only consenting attendees or lack identifying fields. Preferred arrival is a dedicated recruiting-list inbox; shared folders and organizer-supported event-platform connections are alternatives. Manual HubSpot import and a booth sign-up form remain fallbacks. Broken CSVs or missing columns import nothing and report the problem. [Import rules](additional-info/importing-and-events.md).
 
 ## People already in Comeet
 
-Comeet status is unknown in this exercise: the `comeet_status` column is reserved and always reads `unknown`. In production it is read, not guessed: Comeet's Recruiting API returns each candidate's `status`, `current_steps`, `position_uid` and `time_last_status_changed`. Comeet sends webhooks for positions and hires but not for status changes, so the integration polls it (for example every 15 minutes, plus the nightly check). The profile's Comeet row shows how it would look, using made-up records for four people (`data/demo/comeet.json`). In production, before anyone is contacted:
+The output’s `comeet_status` remains `unknown`; on-screen history is fictional. Production would poll Comeet status, process step, position and last-change date because no candidate-status webhook is documented.
 
-- **Match on email** against Comeet candidates and employees.
-- **In an active process** for any role: link the HubSpot contact to the Comeet candidate and do not contact them again from the talent pool; the owning recruiter decides.
-- **Rejected within the last 6 months**: move to `needs_review` with the rejection reason and date shown, so a recruiter decides whether this role is different enough to reach out.
-- **Hired or a current employee**: exclude from the talent pool.
+Before contact, the proposed rules are:
 
-The 6-month window is an assumption to agree with the recruiting team.
+- Match email against candidates and employees; resolve ambiguity first.
+- Block talent-pool contact during any active process; defer to its recruiter.
+- Send rejections within 6 months to review, showing the reason and date.
+- Exclude hired people and current employees.
+
+The rejection window requires recruiting-team agreement. A production invite counts as sent only after message confirmation.
 
 ## Privacy
 
-These are the privacy rules the [design document](design.md#at-scale) relies on:
+Production assumptions, requiring WSC’s review:
 
-- **Lawful basis and notice at capture.** The registration form (WSC's own, or the outside organizer's) says what is shared and why, and records consent or the legitimate-interest basis.
-- **Consented or licensed sources only.** Data from the attendee list or given by the candidate, a licensed enrichment vendor whose terms permit recruiting use, or a recruiter reading a profile by hand. No LinkedIn scraping.
-- **Retention.** Contacts not engaged within 12 months are deleted or asked to re-confirm (the period is an assumption to confirm with legal); access, correction and deletion requests are honoured across HubSpot, the assessment store and Comeet.
-- **Restricted, logged access.** Only the recruiting team sees candidate data, and views and exports are logged.
+- Explain recruiting use at capture and record consent or another lawful basis.
+- Use permitted attendee data, licensed sources or manual review; no LinkedIn scraping.
+- Delete or reconfirm unengaged contacts after 12 months, subject to legal approval. Honor access, correction and deletion across HubSpot, Comeet and the assessment store.
+- Restrict access to recruiting and log views and exports.
 
-**Refresh cadence:** reassess relevant open roles when new contacts arrive and when a role opens or its requirements change. **Trigger:** in this take-home a recruiter starts each run on the supplied snapshot. In production the triggers are automatic (a new HubSpot contact, a Comeet position change), as described in the [design document](design.md#production-version); the [integration demo](../integration-demo/README.md) simulates them.
+The take-home runs manually. Production would reassess changed contacts, profiles and roles, with a nightly check and manual refresh. [Triggers](design.md#production-version).
 
 ## How candidates are ranked
 
-The full rules are in [How candidates are ranked](scoring.md): each role's must-haves and core discipline, skill equivalents, the 60% required-skills bar, minimum years by seniority, and the tie rule. **The bar, the minimum years, the must-haves and the equivalents are stated assumptions for this exercise, not validated hiring standards.** They should be confirmed with hiring managers and tested against past hiring decisions.
+The 60% skills threshold, minimum years, must-haves and skill equivalents are exercise assumptions, not validated hiring standards. Confirm them with hiring managers and past decisions. [Rules and limits](scoring.md).
 
-Further assumptions behind them:
+A missing skill is unconfirmed, not proven absent. Total years are retained, with intern/junior history flagged for checking. Shared employers and overlapping dates suggest possible references, not proof that people worked together.
 
-- Skills listed on the profile are the evidence; a skill not listed is unconfirmed, not absent.
-- Total years come from the profile and include internships; they are shown, not corrected, and anyone with intern or junior roles is flagged "confirm non-intern years".
-- Possible references are matched from employer names and years only, so they are leads to check.
-- Conference relevance uses skills and industry, not job titles.
-- A new role is matched on criteria a recruiter has confirmed. The suggestions come from the job description (scripted in the demo, an LLM in production) and are only proposals; the provisional default is kept for a `job_openings.csv` row without criteria ([scoring](scoring.md#the-shortlist-checks)).
+A new role is matched on criteria a recruiter has confirmed. The suggestions come from the job description (scripted in the demo, an LLM in production) and are only proposals; a `job_openings.csv` row without criteria keeps the provisional default ([scoring](scoring.md#the-shortlist-checks)).
 
 ## Connecting the tools
 

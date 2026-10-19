@@ -1,108 +1,91 @@
 # WSC Talent Pool
 
-Take-home task for the AI Solution Manager role at WSC Sports: turn conference attendees into a ranked, explained candidate list for an open role, ready to import into HubSpot.
+**Find whom to approach when a role opens.** This tool brings conference contacts into one pool, recommends people for each role, explains the evidence and gaps, and shows WSC colleagues who may know them.
 
-## Deliverables
+Built for WSC's [AI Solution Manager assignment](assignment/index.html). All supplied candidate data is synthetic. Account connections and outreach are simulated.
 
-| Deliverable | Where |
+## Start here
+
+| Your question | Read |
 |---|---|
-| Pipeline code | `pipeline/` |
-| Output for JOB001 (Senior ML Engineer), plus JOB002–JOB004 | `output/` |
-| Schema and flow | `docs/schema-and-flow.md` |
-| How candidates are ranked | `docs/scoring.md` |
-| Design document | `docs/design.md` |
-| Assumptions | `docs/assumptions.md` |
-| Executive summary (optional) | `docs/executive-summary.md` |
-| Recruiter view (bonus) | `view/` |
-| HubSpot → Comeet integration demo (bonus, simulated) | `integration-demo/` |
+| What does this solve? | [Executive summary](docs/executive-summary.md) |
+| Why these candidates? | [Ranking rules and limits](docs/scoring.md) |
+| How would WSC use it? | [Design](docs/design.md) |
+| What is assumed or made up? | [Assumptions](docs/assumptions.md) |
+| How does the data move? | [Schema and flow](docs/schema-and-flow.md) |
 
-## Follow-on integration demo
+For **JOB001, Senior ML Engineer**, the current rules produce **6 shortlisted, 6 needing review and 63 not recommended for that role**. Everyone remains in the pool. These are rule outputs, not validated hiring decisions; see the [known scoring limitation](docs/scoring.md#limits).
 
-A clickable concept of the production experience, the morning after a conference: a HubSpot notification leads to per-role Shortlist and Needs review views; a Talent match card on each contact hands people into Comeet as Sourced prospects owned by the role's recruiter, without touching the HubSpot contact owner or marketing status; Comeet status comes back to HubSpot; spreadsheet imports are re-scored; and a new Comeet position gets criteria suggested from its job description (scripted, labelled simulated) that the recruiter confirms before the pool is scored. [Walkthrough](integration-demo/README.md). Synthetic data and simulated services; not connected to either product. What it takes on the real platforms: [platform requirements](docs/design.md#production-version).
+## Try the recruiter view
 
-## Setup
-
-Needs Node.js 22.22.2 or a later 22.x, 24.15 or a later 24.x, or 26+ (the oldest versions every locked tool supports; tested on 22.22.2). With nvm, `nvm install` picks the tested version from `.nvmrc`. On an older Node, `npm ci` stops with an engine error instead of failing later. No accounts, keys or private packages.
+Use **Node.js 22.22.2** (`nvm install` selects it). Also supported: later 22.x, 24.15+ within 24.x, or 26+. No accounts or keys needed.
 
 ```bash
 npm ci
+npm run dev
 ```
 
-## Run
+Open **http://localhost:5173**.
+
+1. Choose **Senior ML Engineer** in the **Job** filter. Review the shortlist and people needing a closer look.
+2. Open a person to see skills, gaps, work history and possible WSC references. Each profile has its own link; a broken link shows the attendee list.
+3. Use **Download** for Excel, or select **CRM import CSV** for the full role assessment.
+4. Try **Add conference → sample meetup**. Returning attendees stay one person; new contacts make the product-role pool more useful. Adding the same list again adds nothing.
+5. Try an invite or reference request. These record simulated activity; nothing is sent. If the history store refuses an action, the view says **Not sent** or **Not recorded** and counts only what was recorded.
+
+**Demo limits:** added conferences last until reload. Outreach history persists in this browser and is shared across its tabs. **Connect accounts** shows proposed setup steps. Use Excel for spreadsheet viewing; the CRM CSV preserves source text and can contain spreadsheet formulas. [Export details](docs/additional-info/export-formats.md).
+
+## Run the pipeline
 
 ```bash
-npm run dev                  # recruiter view at http://localhost:5173 (runs the pipeline in the browser on data/)
-npm run pipeline -- JOB001   # writes output/candidates_JOB001.csv and prints the shortlist and review queue
-npm run pipeline:all         # every job in data/job_openings.csv
-npm run pipeline -- --help   # usage; writes nothing
-npm test                     # rule, edge-case, view, export and command-line tests (synthetic fixtures in tests/fixtures/)
-npm run verify:xlsx          # open/save/reopen the Excel downloads in LibreOffice (npm test skips this when it is not installed)
+npm run pipeline -- JOB001
+npm run pipeline:all
+npm run pipeline -- --help
+```
+
+The first command writes `output/candidates_JOB001.csv` and prints each shortlisted and review candidate with the reasons and next step. All assessed people appear in the CSV. JOB002–JOB004 are also included.
+
+To choose folders:
+
+```bash
+npm run pipeline -- JOB001 --data "my data" --out "my output"
+```
+
+Defaults are the project's `data/` and `output/`. Existing output files with the same name are overwritten. Help writes nothing; invalid arguments stop before writing. Exit codes: `0` success, `1` data/file/job problem, `2` invalid command.
+
+## See the integration concept
+
+```bash
+npm run demo:integrations
+```
+
+Open the address printed in the terminal. It shows the morning after a conference inside HubSpot and Comeet:
+
+- A notification leads to each role's **Shortlist** and **Needs review** views.
+- A **Talent match** card on a contact hands the person into Comeet as a Sourced prospect for the role's recruiter. The HubSpot contact owner and marketing status stay untouched.
+- Comeet status comes back to HubSpot, and spreadsheet imports are re-scored.
+- A new Comeet position gets criteria suggested from its job description (scripted, labelled simulated). The recruiter confirms them before the pool is scored.
+
+This is a separate simulation with synthetic data, not connected to either product. [Walkthrough](integration-demo/README.md) · [platform requirements](docs/design.md#production-version).
+
+## Check the submission
+
+```bash
+npm test                       # rules, edge cases, exports, CLI and view
 npm run typecheck
-npm run demo:integrations    # HubSpot → Comeet integration concept (simulated)
-npm run build                # static build of the view into dist/ (npm run preview to serve it)
-npm run test:all             # npm test + Playwright browser tests (first time: npx playwright install chromium)
+npm run build                  # recruiter view; npm run preview serves it
+npx playwright install chromium # first browser-test setup
+npm run test:all                # unit and browser checks; builds both demos
 ```
 
-Use `JOB001` (Senior ML Engineer) for the demo. Other IDs: `JOB002`, `JOB003`, `JOB004`.
+`npm run verify:xlsx` checks the Excel files in LibreOffice. It requires LibreOffice; the regular test suite skips that check when it is unavailable.
 
-### Command line
+## Where things live
 
-```bash
-npm run pipeline -- JOB001                                   # one job
-npm run pipeline -- --all                                    # every job
-npm run pipeline -- JOB001 --data ./data --out ./output      # explicit folders (quote paths with spaces)
-npm run pipeline -- --help                                   # usage; reads and writes no files
-```
-
-The terminal report shows the job, the totals, then every **shortlisted** and **Needs review** person in the same order as the CSV (tied people share a rank). Rejected people appear only as a count; they are in the CSV. Each person shows their role, required skills confirmed on the profile, related or inferred skills (labelled, never counted as confirmed), gaps, experience, possible WSC references and the next step; anything missing reads "Not available". A job with no shortlist, like JOB003, still lists everyone who needs review. The report is plain text, so `npm run pipeline -- JOB001 > report.txt` works.
-
-```text
-JOB003  Senior Product Manager - Sports Data
-0 shortlisted, 5 need review, 70 not recommended for this role (75 people)
-
-SHORTLIST (0)
-  No one meets every shortlist condition; see Needs review below.
-
-NEEDS REVIEW (5)
-
-  - Alex Turner
-    Role: Product Manager - Data at Olympic Channel
-    Required skills: 2 of 4 confirmed on the profile (shortlist needs 3)
-      Confirmed: Product Management; Stakeholder Management
-      Related only: Sports Analytics (related skill: Sports Broadcasting); API Products (related skill: Data Products)
-    Gaps: Sports Analytics: only a related skill (Sports Broadcasting); API Products: only a related skill (Data Products)
-    ...
-    Next step: Look for evidence of Sports Analytics (CV, portfolio or a call) before deciding
-```
-
-Defaults are `./data` for `--data` and `./output` for `--out` (created if missing). An existing `candidates_<job_id>.csv` there is overwritten. Mistakes (unknown option, a missing value, an option given twice, two job IDs, a job ID with `--all`) stop with exit status 2 before anything is written; an unknown job lists the valid IDs, and a missing file or unwritable folder gives a one-line message (exit status 1). The report never changes the CSV, which stays byte-for-byte the same.
-
-Each output row is one person for the chosen role: the recommendation (`shortlist`, `needs_review`, `not_recommended_for_role`), the skill counts behind it, matched skills and gaps, seniority evidence, WSC connections and possible references, every conference they attended, and the next step. Rules: [How candidates are ranked](docs/scoring.md). Columns: [Schema and flow](docs/schema-and-flow.md).
-
-The recruiter view (`view/`) lists all attendees, filtered by conference, job, location and outreach status (a single job shows its Shortlist and Needs review in rank order); the **At a glance** cards above the table toggle the conference and job filters, and each job links to Comeet. A row opens the person's profile, with one card per job they may fit. **Download** saves the attendees shown, with every filter applied, as an Excel file (`.xlsx`) whose cells are typed: text stays text, so a name like `=1+2` cannot become a formula. With one job chosen it opens a menu: **Attendees shown (N), Excel**, **Full JOB… assessment (N), Excel**, or **CRM import CSV, full JOB… assessment**. The CRM CSV is the same file the CLI writes for that job (a test checks they match byte for byte): the same normalized values as the assessment (surrounding whitespace trimmed on import), not sanitized for formulas, for CRM import. Formats, and the spreadsheet program they were checked in: [Export formats](docs/additional-info/export-formats.md).
-
-Also in the view, with the made-up parts listed in [Assumptions](docs/assumptions.md):
-
-- **Add conference** (header) adds an event's attendee list from a file, a Google Form's responses sheet, or a sample meetup; the sample fills the empty Senior PM shortlist, Shir's "product meetup, then a product role opens" example. A quiet line explains how forms sync automatically instead. The whole list is checked first: a broken file (for example a quote that is never closed) adds no one and says which line. Another edition of a known conference (SportsTech 2026 after 2024) is its own event in the filters, and adding the same list again changes nothing ([importing and events](docs/additional-info/importing-and-events.md)).
-- **Connect accounts** in the header opens **Your accounts**: HubSpot, Comeet, Google Forms and Slack, each **Not connected** at first, with **Connect** (the setup steps plus the keys or sign-in that tool needs), step-by-step **How to connect** instructions, and **Sync now**.
-- Hovering a job chip shows **Invite** where an invite is allowed. Ticking rows opens a bar, above and below the table, to **Invite to jobs** (each person to their own best-fit job, one personalised invite each, sent through Comeet) or **Ask WSC connections** (one request per colleague, covering everyone selected they know).
-- A job chip with an outreach status turns into a small card with the status underneath (for example "Declined · 8 Oct"), and the **Status** filter narrows by it. The history is simulated and kept in the browser, safe across tabs; invites or reference requests that would repeat, or reach someone declined, already in process or not yet reliably identified, are blocked ([plan](docs/additional-info/contact-tracking-plan.md), [identity and history](docs/additional-info/identity-and-history.md)).
-- Each profile has a **Contact** card (email, LinkedIn, HubSpot, Comeet with past applications), an **Activity** card (outreach history, plus a flag when someone is in process), **Invite to job**, each job card's status for that role, and **Ask** on each WSC connection (a drafted reference request; under the colleague it shows whether they were already asked, with **Mark sent** for a copied request).
-
-The assessment logic in `pipeline/` is plain TypeScript with no file or network access, so a browser view can import it directly (`import { buildDataset, assessJob, assessmentToCsv } from './pipeline'`). The Node command in `cli/` only reads the CSVs and writes the result.
-
-## Repo contents
-
-- `assignment/` — the task brief as provided (open `assignment/index.html`)
-- `data/` — the four CSVs WSC provided (synthetic)
-- `data/demo/` — files added for the demos, none of which feeds the ranking: made-up Comeet history, recruiters and AI summaries, WSC office locations, a sample meetup list (`samples/`), and `person_ids.json`, which keeps each supplied attendee's published ID stable
-- `pipeline/` — assessment rules (`rules.ts`), scoring, ranking, strict CSV reading, event editions, CSV and Excel output
-- `cli/` — the `npm run pipeline` command: argument handling (`args.ts`), the terminal report (`report.ts`), and the entry point (`run-pipeline.ts`)
-- `view/` — the recruiter view (React + Vite, plain CSS)
-- `tests/` — Vitest tests and synthetic fixtures; `tests/browser/` holds the Playwright browser tests
-- `integration-demo/` — the simulated HubSpot → Comeet concept
-- `docs/additional-info/` — extra material beyond the required docs, including:
-- `docs/additional-info/identity-and-history.md` — person IDs, import lifetime, saved history across tabs, and invite versus handoff rules
-- `docs/additional-info/importing-and-events.md` — strict CSV checks, event editions, repeated rows and retries
-- `docs/additional-info/export-formats.md` — the Excel download versus the unsanitized CRM CSV, and the spreadsheet check
-- `docs/additional-info/discovery-call-context.md` — context from the discovery call the task came out of
+| Folder | Contents |
+|---|---|
+| `assignment/`, `data/` | Original brief and four supplied CSVs |
+| `pipeline/`, `cli/` | Shared assessment logic and command-line runner |
+| `output/` | Included results for all four roles |
+| `view/`, `integration-demo/`, `data/demo/` | Recruiter view, integration simulation and labelled demo fixtures |
+| `docs/`, `tests/` | Design, rules, assumptions, supporting detail and checks |

@@ -254,6 +254,14 @@ describe('recruiter view: list', () => {
 });
 
 describe('recruiter view: profile', () => {
+  it.each(['%', '%E0%A4%A', 'unknown-person'])('falls back to the attendee list for an invalid candidate link: %s', (key) => {
+    window.history.replaceState(null, '', `/#/candidate/${key}`);
+    render(<App />);
+    expect(heading()).toBe('All 75 attendees');
+    expect(rows()).toHaveLength(12);
+    expect(screen.getByRole('button', { name: 'Download' })).toBeTruthy();
+  });
+
   it('opens from the keyboard; Back and Escape return to the row with the filters kept', async () => {
     const user = userEvent.setup();
     render(<App />);

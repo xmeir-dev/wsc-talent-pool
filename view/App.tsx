@@ -25,7 +25,13 @@ const BY_RELEVANT_JOB: SortState = { columnId: 'relevant', direction: 'asc' };
 
 function keyFromHash(): string | null {
   const m = /^#\/candidate\/(.+)$/.exec(window.location.hash);
-  return m ? decodeURIComponent(m[1]!) : null;
+  if (!m) return null;
+  try {
+    return decodeURIComponent(m[1]!);
+  } catch {
+    // A broken shared link should show the list, just like an unknown candidate.
+    return null;
+  }
 }
 
 type Loaded = { ok: true; dataset: Dataset } | { ok: false; problems: string[] };
