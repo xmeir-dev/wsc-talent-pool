@@ -167,7 +167,6 @@ export function NewConference({
           )}
         </label>
         {/* Covers every route in: file, sample and link. */}
-        <p className="new-conf-note muted">Imported rows stay until you reload the page.</p>
         {/* Quiet pointer to the automatic route: forms in the shared folder sync on their own. */}
         <button type="button" className="new-conf-auto" aria-expanded={showAuto} onClick={() => setShowAuto((v) => !v)}>
           How to connect this automatically
