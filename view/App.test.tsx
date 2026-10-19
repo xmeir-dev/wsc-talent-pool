@@ -119,7 +119,7 @@ describe('recruiter view: list', () => {
     expect([...noah.querySelectorAll('.jobs .fit')].map((p) => p.textContent)).toEqual([
       'Data Engineer: Shortlist',
       // The seeded example: Noah declined Backend Engineer (simulated outreach), shown inside that role's chip.
-      'Backend Engineer: Needs review, Declined',
+      'Backend Engineer: Needs review, Declined · 8 Oct',
     ]);
     expect(adaora.textContent).not.toContain('JOB001');
     // Conference as a short chip; the full name and date are in its hover.

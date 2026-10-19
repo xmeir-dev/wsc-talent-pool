@@ -1,14 +1,14 @@
 import { isValidElement, type MouseEvent, type ReactElement, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import { Briefcase04Icon, Calendar03Icon, Cancel01Icon, CheckmarkBadge01Icon, HelpCircleIcon, Tick02Icon, UserIcon } from '@hugeicons/core-free-icons';
-import { STATUS_LABEL, statusIn, useActivity, type RoleState } from './activity';
+import { statusLine, useActivity } from './activity';
 import { DataTable, Hint, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
 import { CountryFlag } from './Location';
 import { WscMark } from './WscMark';
-import { conferenceShort, fitChecks, shortDate, TABLE_OUTCOME_LABEL } from './format';
+import { conferenceShort, fitChecks, jobShort, shortDate, TABLE_OUTCOME_LABEL } from './format';
 
 interface Shared {
   onOpen: (key: string) => void;
@@ -101,7 +101,7 @@ function Conferences({ attendances }: { attendances: Attendee['candidate']['atte
 }
 
 /** One pill per job, shortlist first: the title, tinted green (shortlisted) or amber (maybe relevant), with the reason on hover. */
-function RelevantFor({ list, statusOf }: { list: Attendee['relevantFor']; statusOf: (job: { jobId: string; title: string }) => RoleState }) {
+function RelevantFor({ list, statusOf }: { list: Attendee['relevantFor']; statusOf: (job: { jobId: string; title: string }) => ReturnType<typeof statusLine> }) {
   if (list.length === 0) return empty;
   const ordered = [...list].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1));
   return (
@@ -123,21 +123,25 @@ function RelevantFor({ list, statusOf }: { list: Attendee['relevantFor']; status
             </span>
           </span>
         );
-        // Outreach status for this role, as a small pill inside the chip in place of the fit icon; "Not contacted" stays unsaid.
-        const s = statusOf({ jobId: job.jobId, title: job.title });
+        // With an outreach status, the chip becomes a small card: the job on top, the status in a band below.
+        const status = statusOf({ jobId: job.jobId, title: job.title });
+        const title = (
+          <span className="fit-top">
+            <span className="fit-title">
+              {jobShort(job)}
+              <span className="ml-visually-hidden">{`: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
+            </span>
+            <HugeiconsIcon icon={shortlisted ? CheckmarkBadge01Icon : HelpCircleIcon} size={14} strokeWidth={1.75} aria-hidden="true" />
+          </span>
+        );
         return (
           <Hint key={job.jobId} tip={why} focusable={false}>
-            <span className={`fit ${shortlisted ? 'is-shortlist' : 'is-review'}`}>
-              <span className="fit-title">
-                {job.title}
-                <span className="ml-visually-hidden">{`: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
-              </span>
-              {s.status === 'not_contacted' ? (
-                <HugeiconsIcon icon={shortlisted ? CheckmarkBadge01Icon : HelpCircleIcon} size={14} strokeWidth={1.75} aria-hidden="true" />
-              ) : (
-                <span className="fit-status" title={s.simulated ? 'Simulated' : undefined}>
+            <span className={`fit ${shortlisted ? 'is-shortlist' : 'is-review'}${status ? ' has-band' : ''}`}>
+              {title}
+              {status && (
+                <span className="fit-band" title={status.simulated ? 'Simulated' : undefined}>
                   <span className="ml-visually-hidden">, </span>
-                  {STATUS_LABEL[s.status]}
+                  {status.text}
                 </span>
               )}
             </span>
@@ -158,7 +162,6 @@ export function AttendeeTable({
   footer,
   selected,
   onSelect,
-  jobs,
 }: Shared & {
   attendees: Attendee[];
   sort: SortState | null;
@@ -167,11 +170,9 @@ export function AttendeeTable({
   /** Ticked rows (candidate keys), kept across pages. */
   selected: string[];
   onSelect: (next: string[]) => void;
-  /** Open roles, for each chip's outreach status. */
-  jobs: { jobId: string; title: string }[];
 }) {
   const entries = useActivity();
-  const statusOf = (key: string) => (job: { jobId: string; title: string }) => statusIn(entries, key, jobs, job.jobId);
+  const statusOf = (key: string) => (job: { jobId: string; title: string }) => statusLine(entries, key, job);
   const pageKeys = new Set(attendees.map((a) => a.candidate.candidateKey));
   const tickedHere = selected.filter((k) => pageKeys.has(k)).length;
   // With some rows ticked (the header shows a dash), the header box clears the selection instead of ticking every row.

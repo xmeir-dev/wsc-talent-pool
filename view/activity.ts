@@ -252,3 +252,16 @@ export function statusIn(
   const job = jobId ? jobs.find((j) => j.jobId === jobId) : undefined;
   return job ? { ...roleStatus(entries, comeet, candidateKey, job), job } : overallStatus(entries, comeet, candidateKey, jobs);
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthYear = (iso: string) => `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
+/** The status in words for a table chip's band, or null when nothing has happened for this role. */
+export function statusLine(entries: readonly Entry[], candidateKey: string, job: { jobId: string; title: string }): { text: string; simulated: boolean } | null {
+  const comeet = comeetFor(candidateKey);
+  const s = roleStatus(entries, comeet, candidateKey, job);
+  if (s.status === 'not_contacted') return null;
+  const rec = comeet.find((r) => r.job === job.title);
+  if (rec && (s.status === 'in_process' || s.status === 'comeet_lead' || s.status === 'comeet_closed'))
+    return { text: `${rec.outcome} · ${monthYear(rec.date)}`, simulated: false };
+  return { text: `${STATUS_LABEL[s.status]} · ${s.at ? shortDay(s.at) : ''}`.replace(/ · $/, ''), simulated: !!s.simulated };
+}

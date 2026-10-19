@@ -1447,19 +1447,43 @@ ul {
   display: contents;
 }
 
-/* A role's outreach status: a small white pill inside its job chip, where the fit icon was. */
-.fit .fit-status {
+/* A role with an outreach status: the chip becomes a small card, job on top, status in a band below. */
+.fit-top {
   display: inline-flex;
   align-items: center;
-  height: 18px;
-  margin-right: -4px;
-  padding: 0 7px;
-  border-radius: 999px;
+  gap: 6px;
+  min-width: 0;
+}
+.fit.has-band {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+/* The band's white would cover the chip's inset outline, so draw the outline on top. */
+.fit.has-band {
+  position: relative;
+}
+.fit.has-band::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--fit-line);
+  pointer-events: none;
+}
+.fit.has-band .fit-top {
+  padding: 2px 8px 2px 10px;
+}
+.fit-band {
+  padding: 2px 10px 3px;
+  border-top: 1px solid var(--fit-line);
   background: var(--ml-bg-card);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--ml-text-muted);
-  white-space: nowrap;
 }
 
 /* Under a WSC connection: whether they were already asked about this person. */

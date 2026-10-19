@@ -296,7 +296,6 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         onSort={setSort}
         selected={picked}
         onSelect={setPicked}
-        jobs={jobList}
       />
       <BulkActions
         selected={pool.attendees.filter((p) => picked.includes(p.candidate.candidateKey))}
