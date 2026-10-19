@@ -14,7 +14,7 @@ Missing information is not proof of missing ability. Anyone without a usable Lin
 
 ## How skills are counted
 
-Only the skills listed on the profile count, compared as whole names, ignoring case and extra spaces ("pytorch" = "PyTorch"; "PyTorch Lightning" is not "PyTorch"). A job skill always matches its own name first; the aliases below are extra. A skill repeated in a job's required list, or in its nice-to-have list, counts once ("Python; python ; Python" is one requirement), so repeating it cannot raise anyone's count. The same holds for an accepted alias: "Go; Golang" and "Golang; Go" are one requirement, scored exactly like "Go" alone, whichever spelling comes first. Each job skill gets one of three answers:
+Only the skills listed on the profile count, compared as whole names, ignoring case and extra spaces ("pytorch" = "PyTorch"; "PyTorch Lightning" is not "PyTorch"). A job skill always matches its own name first; the aliases below are extra. A skill repeated in a job's required list, or in its nice-to-have list, counts once ("Python; python ; Python" is one requirement), so repeating it cannot raise anyone's count. The same holds for a spelling variant: "Go; Golang" and "Golang; Go" are one requirement, scored exactly like "Go" alone, whichever spelling comes first. Each job skill gets one of three answers:
 
 | What the profile shows | Shown as | Counts toward the shortlist? |
 |---|---|---|
@@ -77,7 +77,12 @@ Every equivalence the code uses. A job skill not in this table counts only when 
 | Sports domain knowledge | Sports, Sports Data, Sports Analytics, Football Analytics, Real-time Sports Data, Sports Data Feeds | | |
 | Product Management, Stakeholder Management, Kafka, Spark, dbt, Airflow, FFmpeg, Redis, Terraform | Their own name only | | |
 
-Every job skill also matches its own name (e.g. a profile listing "OTT platforms" has OTT platforms). The "On profile" column lists the extra names. A job skill written as one of a skill's accepted names (e.g. "Golang", "OpenCV") is that skill and uses its whole row, so either spelling gives the same result. A name listed for two different skills (Football Analytics, under both Sports Analytics and Sports domain knowledge) is an alias of neither: as a job skill it matches its own name only. Any other job skill, including unusual text such as "constructor", matches its own name only.
+Every job skill also matches its own name (e.g. a profile listing "OTT platforms" has OTT platforms). The "On profile" column lists the extra names. The table works one way: it says which profile skills count as a job skill, not what a job asking for one of those names accepts.
+
+- **Spelling variants** are the only names that work both ways: Golang (Go) and REST API (REST APIs). A job requiring either spelling is scored as that skill, in any order.
+- **A narrower name** (SageMaker, OpenCV, HLS, Sports, Football Analytics and the other extra names above) required alone matches its own name only: a job asking for SageMaker needs SageMaker on the profile, not AWS.
+- **A narrower name next to its skill adds nothing** and is dropped, in either order: "Computer Vision; OpenCV" and "OpenCV; Computer Vision" are both one requirement, Computer Vision. A name listed under two skills folds into the first one in this table (Football Analytics into Sports Analytics); next to Sports domain knowledge it stays a requirement of its own. Two narrower names without their skill ("OpenCV; Sports CV") stay two requirements.
+- Any other job skill, including unusual text such as "constructor", matches its own name only.
 
 The less obvious ones: highlight and event detection in sports video usually means detecting players, the ball or actions, so it suggests object-detection work but must be confirmed. "Real-time Sports Data" is sports data work: related to Sports Analytics, not the same skill.
 

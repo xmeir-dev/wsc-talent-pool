@@ -1,12 +1,13 @@
 /**
- * F7: an accepted alias ("Golang" for Go) is the same requirement in any order, and scores exactly like the skill.
+ * F7: a spelling variant ("Golang" for Go) is the same requirement in any order, and scores exactly like the skill;
+ * a narrower name ("SageMaker" under AWS) required alone scores as it always did.
  * F6 and free-text skills: names that happen to be JavaScript object properties ("constructor", "__proto__") are
  * ordinary unknown text, never configured policy, and never crash.
  */
 import { describe, expect, it } from 'vitest';
 import { loadSources } from '../cli/load-sources';
 import { addRole } from '../integration-demo/sources';
-import { assessEvent, buildDataset, matchSkill, minYearsFor, policyFor, toCsv, type Job, type JobAssessment } from '../pipeline';
+import { assessEvent, buildDataset, matchSkill, minYearsFor, policyFor, rules, toCsv, type Job, type JobAssessment } from '../pipeline';
 import { conferenceShort } from '../view/format';
 import { overviewFor } from '../view/Overview';
 import { comeetFor } from '../view/activity';
@@ -36,7 +37,78 @@ function decisions(r: JobAssessment) {
 const names = (r: JobAssessment, rec: string) =>
   r.candidates.filter((a) => a.recommendation === rec).map((a) => a.candidate.fullName).sort();
 
-describe('F7: alias order never changes the decision', () => {
+/**
+ * A Mid role requiring one configured skill or one of its on-profile names, alone, on the supplied data:
+ * [name, shortlist, needs review, not recommended] as release 8d66d29 scored it. Spelling variants (Golang,
+ * REST API) are the only names that now score as their skill; every other name must not broaden.
+ */
+const RELEASE_8D66D29: [string, number, number, number][] = [
+  ['python', 43, 0, 32],
+  ['pytorch', 7, 0, 68],
+  ['computer vision', 10, 0, 65],
+  ['opencv', 1, 0, 74],
+  ['sports cv', 1, 0, 74],
+  ['object detection', 1, 0, 74],
+  ['yolo', 1, 0, 74],
+  ['aws', 32, 0, 43],
+  ['sagemaker', 1, 0, 74],
+  ['sports analytics', 7, 0, 68],
+  ['football analytics', 2, 0, 73],
+  ['performance analytics', 1, 0, 74],
+  ['real-time processing', 3, 0, 72],
+  ['real-time', 1, 0, 74],
+  ['docker', 2, 0, 73],
+  ['go', 5, 0, 70],
+  ['kafka', 10, 0, 65],
+  ['microservices', 3, 0, 72],
+  ['rest apis', 2, 0, 73],
+  ['ffmpeg', 4, 0, 71],
+  ['video streaming', 7, 0, 68],
+  ['live streaming', 5, 0, 70],
+  ['hls', 3, 0, 72],
+  ['redis', 0, 0, 75],
+  ['product management', 5, 0, 70],
+  ['api products', 0, 0, 75],
+  ['stakeholder management', 1, 0, 74],
+  ['ott platforms', 3, 0, 72],
+  ['ott', 3, 0, 72],
+  ['broadcast tech', 4, 0, 71],
+  ['broadcast apis', 1, 0, 74],
+  ['sports broadcasting', 2, 0, 73],
+  ['broadcast systems', 1, 0, 74],
+  ['sql', 19, 0, 56],
+  ['spark', 9, 0, 66],
+  ['dbt', 13, 0, 62],
+  ['airflow', 10, 0, 65],
+  ['sports domain knowledge', 19, 0, 56],
+  ['sports', 8, 0, 67],
+  ['sports data', 3, 0, 72],
+  ['real-time sports data', 1, 0, 74],
+  ['sports data feeds', 1, 0, 74],
+  ['terraform', 9, 0, 66],
+];
+
+describe('F7: spelling variants are one skill in any order; narrower names never broaden', () => {
+  it('every configured skill and on-profile name required alone scores as release 8d66d29 did', () => {
+    const named = Object.entries(rules.SKILL_EVIDENCE).flatMap(([key, rule]) => [key, ...rule.named]);
+    const expected = new Set(RELEASE_8D66D29.map(([n]) => n));
+    for (const name of named) if (!Object.hasOwn(rules.SKILL_SYNONYMS, name)) expect(expected, name).toContain(name);
+    for (const [name, shortlist, review, notRec] of RELEASE_8D66D29) {
+      expect([name, roleResult(name).counts], name).toEqual([
+        name,
+        { shortlist, needs_review: review, not_recommended_for_role: notRec },
+      ]);
+    }
+  });
+
+  it('the narrow tools the verifier named keep their release counts (SageMaker 1, OpenCV 1, HLS 3)', () => {
+    expect(roleResult('SageMaker').counts.shortlist).toBe(1);
+    expect(roleResult('OpenCV').counts.shortlist).toBe(1);
+    expect(roleResult('HLS').counts.shortlist).toBe(3);
+    const adaora = roleResult('SageMaker').candidates.find((a) => a.candidate.fullName.startsWith('Adaora'));
+    if (adaora) expect(adaora.recommendation).not.toBe('shortlist');
+  });
+
   it('Go, Golang and Golang, Go give the same shortlist, review and not-recommended sets as Go alone or Golang alone', () => {
     const goFirst = roleResult('Go, Golang');
     const golangFirst = roleResult('Golang, Go');
@@ -52,45 +124,54 @@ describe('F7: alias order never changes the decision', () => {
     }
   });
 
-  it('another alias pair: Computer Vision and OpenCV, in both orders, score exactly like Computer Vision alone', () => {
-    const base = decisions(roleResult('Python, Computer Vision'));
-    expect(decisions(roleResult('Python, Computer Vision, OpenCV'))).toEqual(base);
-    expect(decisions(roleResult('Python, OpenCV, Computer Vision'))).toEqual(base);
-    expect(decisions(roleResult('OpenCV, Python'))).toEqual(base);
+  it('every synonym pair gives the same decisions in both orders, and as either spelling alone', () => {
+    for (const [variant, key] of Object.entries(rules.SKILL_SYNONYMS)) {
+      const base = decisions(roleResult(key));
+      expect(decisions(roleResult(variant)), variant).toEqual(base);
+      expect(decisions(roleResult(`${key}, ${variant}`)), variant).toEqual(base);
+      expect(decisions(roleResult(`${variant}, ${key}`)), variant).toEqual(base);
+      expect(decisions(roleResult(`Python, ${variant}`)), variant).toEqual(decisions(roleResult(`${key}, Python`)));
+      // As nice-to-haves too.
+      expect(decisions(roleResult('Python', `${variant}, ${key}`)), variant).toEqual(decisions(roleResult('Python', key)));
+    }
   });
 
-  it('REST API and REST APIs are one skill in either order', () => {
-    const base = decisions(roleResult('REST APIs, Kafka'));
-    expect(decisions(roleResult('REST API, Kafka'))).toEqual(base);
-    expect(decisions(roleResult('REST API, REST APIs, Kafka'))).toEqual(base);
+  it('a narrower name next to its skill folds into the skill, in either order (as in release, skill first)', () => {
+    const cv = decisions(roleResult('Python, Computer Vision'));
+    expect(decisions(roleResult('Python, Computer Vision, OpenCV'))).toEqual(cv);
+    expect(decisions(roleResult('Python, OpenCV, Computer Vision'))).toEqual(cv);
+    expect(roleResult('OpenCV, Computer Vision').job.requiredSkills).toEqual(['Computer Vision']);
+    expect(decisions(roleResult('SageMaker, AWS'))).toEqual(decisions(roleResult('AWS')));
+    // Two narrower names without their skill are two requirements, each matching its own name.
+    expect(decisions(roleResult('OpenCV, Sports CV'))).toEqual(decisions(roleResult('Sports CV, OpenCV')));
+    expect(roleResult('Sports CV, OpenCV').job.requiredSkills).toHaveLength(2);
   });
 
-  it('nice-to-have aliases count the same in either order', () => {
-    const base = decisions(roleResult('Python', 'Go'));
-    expect(decisions(roleResult('Python', 'Golang'))).toEqual(base);
-    expect(decisions(roleResult('Python', 'Golang, Go'))).toEqual(base);
-    expect(base.people.some((p) => p.tally.niceToHave === 1)).toBe(true);
+  it('Football Analytics with Sports Analytics decides as release did, in either order', () => {
+    // Release 8d66d29, Sports Analytics first: one requirement, 7 shortlisted.
+    const sa = decisions(roleResult('Sports Analytics'));
+    expect(sa.counts).toEqual({ shortlist: 7, needs_review: 0, not_recommended_for_role: 68 });
+    expect(decisions(roleResult('Sports Analytics, Football Analytics'))).toEqual(sa);
+    expect(decisions(roleResult('Football Analytics, Sports Analytics'))).toEqual(sa);
+    // Alone it is itself; with Sports domain knowledge (not the skill it folds into) both stay, as in release.
+    expect(matchSkill(['Performance Analytics'], 'Football Analytics').match).toBe('none');
+    expect(roleResult('Sports domain knowledge, Football Analytics').job.requiredSkills).toHaveLength(2);
   });
 
-  it('an alias matches the skill and its other names; related evidence keeps its level', () => {
+  it('a synonym matches the skill; a narrower name matches only itself; related evidence keeps its level', () => {
     expect(matchSkill(['Go'], 'Golang')).toEqual({ match: 'named', evidence: 'Go' });
     expect(matchSkill(['golang'], 'Go')).toEqual({ match: 'named', evidence: 'golang' });
-    expect(matchSkill(['Computer Vision'], 'OpenCV').match).toBe('named');
-    expect(matchSkill(['Pose Estimation'], 'OpenCV').match).toBe('equivalent');
+    expect(matchSkill(['REST APIs'], 'REST API').match).toBe('named');
+    expect(matchSkill(['WebSockets'], 'REST API').match).toBe('equivalent');
+    expect(matchSkill(['AWS'], 'SageMaker').match).toBe('none');
+    expect(matchSkill(['SageMaker'], 'AWS').match).toBe('named');
+    expect(matchSkill(['Computer Vision'], 'OpenCV').match).toBe('none');
     expect(matchSkill(['Pose Estimation'], 'Computer Vision').match).toBe('equivalent');
     // F8: a configured skill still matches its own name first.
     expect(matchSkill(['OTT Platforms'], 'OTT platforms').match).toBe('named');
   });
 
-  it('a name listed under two different skills is not an alias of either', () => {
-    // Football Analytics counts as Sports Analytics and as Sports domain knowledge, so requiring it means itself.
-    expect(matchSkill(['Performance Analytics'], 'Football Analytics').match).toBe('none');
-    expect(matchSkill(['Football Analytics'], 'Football Analytics').match).toBe('named');
-    expect(roleResult('Sports Analytics, Football Analytics').job.requiredSkills).toEqual(['Sports Analytics', 'Football Analytics']);
-    expect(roleResult('Football Analytics, Sports Analytics').job.requiredSkills).toEqual(['Football Analytics', 'Sports Analytics']);
-  });
-
-  it('a supplied policy must-have is met by its alias spelling', () => {
+  it('a supplied policy must-have is met by its spelling variant', () => {
     // JOB002's must-have is "Python or Go"; the source lists Go as Golang and the person has only Go.
     const a = oneJob({ job_id: 'JOB002', seniority: 'Mid-Senior', required_skills: 'Golang;Kafka' }, att, { top_skills: 'Go;Kafka' })
       .candidates[0]!;
