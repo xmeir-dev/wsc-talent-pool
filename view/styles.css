@@ -208,7 +208,8 @@ ul {
   margin-top: 60px;
   text-align: center;
   font-size: 13px;
-  color: var(--ml-text-faint);
+  /* Fainter than the faint token: a sign-off, not content. */
+  color: color-mix(in srgb, var(--ml-text-faint) 65%, var(--ml-bg));
 }
 .page-foot a {
   color: inherit;
