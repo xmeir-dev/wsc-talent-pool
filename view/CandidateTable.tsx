@@ -9,7 +9,7 @@ import {
 import { DataTable, Hint, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee } from './attendees';
-import { AskConnection } from './AskConnection';
+import { AskConnection, connectionPeople } from './AskConnection';
 import { CountryFlag } from './Location';
 import { Overview } from './Overview';
 import { WscMark } from './WscMark';
@@ -48,18 +48,17 @@ const about = (c: CandidateAssessment['candidate']) => <Overview c={c} />;
 /** An empty cell gets a faint hairline instead of words. */
 const empty = <span className="empty-line" role="img" aria-label="None" />;
 
-/** Count, then up to two names as tags that open a drafted request for a recommendation; the rest go in a "+N" tag with the names on hover. */
+/** Count, then up to two names as tags that open a drafted request for a recommendation (former colleagues first, with where and when); the rest go in a "+N" tag with the names on hover. */
 const connections = ({ any, candidate, relevantFor }: Attendee) => {
   const c = any.a.connections;
   if (c.status === 'unknown') return quiet('Unknown', true);
-  const names = [...c.resolved.map((e) => e.fullName), ...c.unresolvedIds];
+  const people = connectionPeople(any.a);
+  const names = [...people.map((p) => p.employee.fullName), ...c.unresolvedIds];
   if (names.length === 0) return empty;
   const best = [...relevantFor].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1))[0];
   const ctx = { candidate, job: best ? { job: best.job, outcome: best.outcome } : null };
   const shown = [
-    ...c.resolved.map((e) => (
-      <AskConnection key={e.employeeId} employee={e} refs={any.a.possibleReferences.filter((r) => r.employeeId === e.employeeId)} ctx={ctx} />
-    )),
+    ...people.map((p) => <AskConnection key={p.employee.employeeId} employee={p.employee} refs={p.refs} ctx={ctx} />),
     ...c.unresolvedIds.map((id) => (
       <Tag key={id} size="sm" className="conn-tag">
         {id}

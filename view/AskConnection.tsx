@@ -2,9 +2,19 @@ import { useMemo, useState, type KeyboardEvent, type ReactNode, type SyntheticEv
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Cancel01Icon, Copy01Icon, Mail01Icon, SlackIcon } from '@hugeicons/core-free-icons';
 import { Avatar, Button, Popover, Tag } from '@meir-labs/ui-kit';
-import { sameEmployer, type Candidate, type Employee, type Job, type Period, type PossibleReference } from '../pipeline';
+import {
+  buildDataset,
+  sameEmployer,
+  type Candidate,
+  type CandidateAssessment,
+  type Employee,
+  type Job,
+  type Period,
+  type PossibleReference,
+} from '../pipeline';
 import type { Relevant } from './attendees';
 import { AVATAR, initials } from './avatars';
+import { bundledSources } from './data';
 import './ask-connection.css';
 
 const THIS_YEAR = 2026;
@@ -45,6 +55,39 @@ export function overlapFor(candidate: Candidate, employee: Employee, ref: Possib
     together: yearsOf(together),
   };
 }
+
+let roster: Map<string, Employee> | null = null;
+/** Former colleagues who are not listed connections are only known by ID from the reference match. */
+const employeesById = () => (roster ??= buildDataset(bundledSources).employees);
+
+/** The most recent shared employer is the likeliest to be remembered. */
+const latestRef = (refs: PossibleReference[]) => [...refs].sort((x, y) => y.overlapEnd - x.overlapEnd)[0];
+
+export interface ConnectionPerson {
+  employee: Employee;
+  refs: PossibleReference[];
+}
+
+/** Listed connections plus former colleagues who are not listed; former colleagues first, most recent overlap first. */
+export function connectionPeople(a: CandidateAssessment): ConnectionPerson[] {
+  const refsOf = (id: string) => a.possibleReferences.filter((r) => r.employeeId === id);
+  const listed = a.connections.resolved.map((employee) => ({ employee, refs: refsOf(employee.employeeId) }));
+  const listedIds = new Set(listed.map((p) => p.employee.employeeId));
+  const unlisted = [...new Set(a.possibleReferences.map((r) => r.employeeId))]
+    .filter((id) => !listedIds.has(id))
+    .flatMap((id) => {
+      const employee = employeesById().get(id);
+      return employee ? [{ employee, refs: refsOf(id) }] : [];
+    });
+  const people = [...listed, ...unlisted];
+  const end = (p: ConnectionPerson) => latestRef(p.refs)?.overlapEnd ?? -Infinity;
+  return [...people.filter((p) => p.refs.length > 0).sort((x, y) => end(y) - end(x)), ...people.filter((p) => p.refs.length === 0)];
+}
+
+const shortSpan = (r: PossibleReference) =>
+  r.overlapStart === r.overlapEnd
+    ? String(r.overlapStart)
+    : `${r.overlapStart}–${r.overlapEnd === Infinity ? 'now' : String(r.overlapEnd).slice(2)}`;
 
 const firstName = (name: string) => name.split(' ')[0] ?? name;
 const span = (p: Period) => (p.start === p.end ? String(p.start) : `${p.start}–${p.end}`);
@@ -138,8 +181,7 @@ export function AskConnection({
   const [open, setOpen] = useState(false);
   const theirFirst = firstName(employee.fullName);
   const myFirst = firstName(ctx.candidate.fullName);
-  // The most recent shared employer is the likeliest to be remembered.
-  const latest = useMemo(() => [...refs].sort((x, y) => y.overlapEnd - x.overlapEnd)[0], [refs]);
+  const latest = useMemo(() => latestRef(refs), [refs]);
   const overlap = useMemo(() => overlapFor(ctx.candidate, employee, latest), [ctx.candidate, employee, latest]);
   const qs = questions(myFirst, !!overlap);
   const [picked, setPicked] = useState([true, true, true, false]);
@@ -184,10 +226,20 @@ export function AskConnection({
         onKeyDown={keepKeys}
         aria-label={`Ask ${employee.fullName} about ${ctx.candidate.fullName}`}
       >
-        <Tag size="sm" className="conn-tag">
-          <Avatar size="xs" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
-          {employee.fullName}
-        </Tag>
+        {latest ? (
+          <span className="conn-tag2">
+            <Avatar size="sm" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
+            <span className="conn-tag2-name">{employee.fullName}</span>
+            <span className="conn-tag2-where">
+              {latest.company} {shortSpan(latest)}
+            </span>
+          </span>
+        ) : (
+          <Tag size="sm" className="conn-tag">
+            <Avatar size="xs" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
+            {employee.fullName}
+          </Tag>
+        )}
       </Popover.Trigger>
       <Popover.Content
         className="ask"
