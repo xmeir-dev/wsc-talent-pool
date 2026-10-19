@@ -184,7 +184,7 @@ export function NewConference({
         {showAuto && (
           <p className="new-conf-auto-text">
             Keep each event's sign-up form in the shared Google Drive folder "Event sign-ups" and connect Google Forms from the
-            sync menu. New sign-ups then arrive on their own, with no file to add. Other forms are ignored.
+            Connect accounts menu. New sign-ups then arrive on their own, with no file to add. Other forms are ignored.
           </p>
         )}
         {(busy || error) && (

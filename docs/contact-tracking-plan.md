@@ -34,12 +34,12 @@ Why it matters:
 | --- | --- | --- |
 | Main table | A role with a status turns its chip in the Relevant job column into a small card: the job on top, the status in a band below ("Rejected after phone screen · Mar 2025"); "Not contacted" is left unsaid | Scan a role's pool for who still needs a first touch |
 | Filter line | A **Status** filter next to Conference, Job and Location | "Shortlisted for Data Engineer and not contacted yet" in two clicks |
-| Profile page | An **Activity** card: each entry with its role, action state (Prepared, Sent, Failed, Confirmed, Simulated), who and when; a separate **Reference requests** list; person-wide flags at the top | Context before contacting someone |
+| Profile page | An **Activity** card: what happened and when, newest first, with Prepared or Failed noted, and person-wide flags (in process, do not contact) at the top. Under each WSC connection: whether they were already asked, with **Mark sent** for a copied request | Context before contacting someone |
 | Invite and Ask panels | A block, not a warning, when a rule applies: "Already interviewing for Data Engineer (Comeet)", "Asked not to be contacted", "Noa was already asked about Alex on 12 Oct" | No unwanted or repeated contact |
 
-Recruiters set outcomes per role by hand (Responded, Interested, Declined), and can mark a Prepared message as **Sent by me** once they have actually sent it. A person-wide **Do not contact** can be set from the profile.
+In the demo, outcomes come from the seeded examples, and **Mark sent** confirms a copied reference request. Production adds the rest: outcome buttons per role (Responded, Interested, Declined), **Mark sent** for invites prepared outside the app, and a person-wide **Do not contact** on the profile.
 
-Everything in the demo is labelled Simulated, next to the existing Demo sticker.
+Demo actions are stored with a Simulated label: the bulk panels and **Your accounts** carry a Demo sticker, and a status in the table says Simulated on hover.
 
 ## Data model
 
@@ -66,7 +66,7 @@ Corrections: entries are not edited in place. A correction is a new entry that s
 
 ## Rules before any contact
 
-Checked for every single and bulk action. A bulk action skips blocked people and lists why ("3 skipped: 2 already interviewing, 1 asked not to be contacted").
+Checked for every single and bulk action. A bulk action skips blocked people and lists each with the reason ("2 blocked: Ryan Patel: Already in process for Data Engineer in Comeet…; Noah Anderson: Declined Backend Engineer on 8 Oct.").
 
 | Rule | Blocks |
 | --- | --- |
@@ -106,25 +106,22 @@ Keep it to what demonstrates the thinking:
     - **Copied but not sent**: a reference request to a colleague that was copied, shown as Prepared, not counted as contact.
 4. The block messages in Invite, Ask and both bulk actions.
 
-Left for production: outcome buttons beyond Responded/Declined, Do not contact management, HubSpot and Comeet writes, concurrency protection.
+Left for production: outcome buttons, **Mark sent** for invites, Do not contact management, HubSpot and Comeet writes, concurrency protection.
 
-## Build steps and tests
+## What was built
 
 All in the recruiter view (`view/`); the pipeline and its CSV output do not change.
 
-1. **Activity store**: new `view/activity.ts` with entries in browser storage (falls back to memory when storage is blocked), seeded examples, and pure functions `roleStatus(person, role)`, `personFlags(person)` and `checkContact(action)` implementing the rules above.
-2. **Record actions with their state**: Invite, Ask in Slack and both bulk actions add "Sent · Simulated" entries; Copy and Email add "Prepared · Simulated"; a **Sent by me** control turns Prepared into Confirmed.
-3. **Blocks**: the rules table, in single and bulk actions, with the skip summary.
-4. **Table and filter**: Status column (per selected role) with the flag icon, and a Status filter.
-5. **Profile**: Activity card, Reference requests list, flags.
-6. **Docs**: assumptions (simulated history, one browser), design (HubSpot vs Comeet ownership), README.
+1. **Activity store** (`view/activity.ts`): entries in browser storage (memory when storage is blocked), the seeded examples, and pure functions: `roleStatus`, `statusIn`, `personFlags`, `checkInvite`, `checkReference`.
+2. **Actions record their state**: Invite, Ask in Slack and both bulk actions record "Sent" with the Simulated label; Copy and Email record "Prepared"; **Mark sent** turns a prepared reference request into "Confirmed".
+3. **Blocks** in single and bulk actions, with the blocked people and reasons listed.
+4. **Table**: each role's status inside its job chip, an **Invite** pill on hover where allowed, and a **Status** filter.
+5. **Profile**: the Activity card with flags, each job card's status, and the request state under each WSC connection.
 
-Tests:
+Tests (all passing: 141 unit, 19 browser):
 
-- Unit: role status per role (declined for one role, open for another); person flags, including an uncontacted Comeet lead not counting as in process; every block rule; Prepared not counted as contact; a repeated simulated send blocked; a correction superseding an earlier entry.
-- Unit: bulk skip summary counts.
-- Browser: the three seeded examples render as described; inviting someone then reloading shows the entry; the Status filter narrows by role.
-- The existing 128 unit and 16 browser tests stay green.
+- Unit (`view/activity.test.ts`): role status per role (declined for one role, open for another); an uncontacted Comeet lead not counting as in process; every block rule; Prepared not counted as contact; a repeated simulated send blocked; a correction superseding an earlier entry.
+- Browser (`e2e/contact-tracking.spec.ts`): the seeded examples render and block as described; an invite survives a reload and blocks a repeat; the Status filter narrows the list.
 
 ## Open questions
 
@@ -133,4 +130,4 @@ Tests:
 - [ ] HubSpot notes or custom timeline events for the history? Timeline events need a full HubSpot app, not the Service Key planned today.
 - [ ] The cross-role warning window: 30 days, or longer?
 - [ ] Who may set Do not contact, and who may lift it?
-- [ ] Build the assignment scope before the 2026-10-21 presentation, or present it as the next step?
+- [x] Build the assignment scope before the 2026-10-21 presentation? Yes, built (above).

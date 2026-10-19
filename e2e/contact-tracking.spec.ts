@@ -11,6 +11,9 @@ function watchErrors(page: Page): string[] {
   return errors;
 }
 
+// The header's Invite to job (a profile with no outreach shows a second one in its Activity card).
+const inviteButton = (page: Page) => page.locator('.d-reach').getByRole('button', { name: 'Invite to job' });
+
 // Each test starts from the seeded examples only.
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -24,21 +27,21 @@ test('seeded examples: declined one role, already in process, copied but not sen
   await page.goto('/#/candidate/C-HS029');
   await expect(page.locator('.d-fit', { hasText: 'Backend Engineer' }).locator('.d-fit-comeet')).toHaveText(/Declined · 8 Oct · Simulated/);
   await expect(page.locator('.d-fit', { hasText: 'Data Engineer' }).locator('.d-fit-comeet')).toHaveText('Not contacted for this role');
-  await page.getByRole('button', { name: 'Invite to job' }).click();
+  await inviteButton(page).click();
   await expect(page.locator('.ask .check-note')).toHaveText('Declined Backend Engineer on 8 Oct.');
   await expect(page.getByRole('button', { name: 'Send invite' })).toBeEnabled();
   await page.keyboard.press('Escape');
 
   // In process in Comeet: every new invite is blocked.
   await page.goto('/#/candidate/C-HS017');
-  await page.getByRole('button', { name: 'Invite to job' }).click();
+  await inviteButton(page).click();
   await expect(page.locator('.ask .check-note')).toContainText('Already in process for Data Engineer in Comeet');
   await expect(page.getByRole('button', { name: 'Send invite' })).toBeDisabled();
   await page.keyboard.press('Escape');
 
   // An uncontacted Comeet lead does not block the first approach.
   await page.goto('/#/candidate/C-HS040');
-  await page.getByRole('button', { name: 'Invite to job' }).click();
+  await inviteButton(page).click();
   await expect(page.getByRole('button', { name: 'Send invite' })).toBeEnabled();
   await page.keyboard.press('Escape');
 
@@ -57,7 +60,7 @@ test('seeded examples: declined one role, already in process, copied but not sen
 test('a simulated invite is kept after reload and blocks a repeat', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/#/candidate/C-HS029');
-  await page.getByRole('button', { name: 'Invite to job' }).click();
+  await inviteButton(page).click();
   await page.getByRole('button', { name: 'Send invite' }).click();
   await expect(page.locator('.ask .ask-status')).toHaveText(/Sent · Simulated/);
   await page.keyboard.press('Escape');
@@ -65,7 +68,7 @@ test('a simulated invite is kept after reload and blocks a repeat', async ({ pag
   await page.reload();
   await expect(page.locator('.d-fit', { hasText: 'Data Engineer' }).locator('.d-fit-comeet')).toHaveText(/^Contacted · .* · Simulated$/);
   await expect(page.locator('.d-card', { hasText: 'Activity' }).first()).toContainText('Invited to Data Engineer');
-  await page.getByRole('button', { name: 'Invite to job' }).click();
+  await inviteButton(page).click();
   await expect(page.locator('.ask .check-note')).toHaveText(/Already contacted for Data Engineer/);
   await expect(page.getByRole('button', { name: 'Send invite' })).toBeDisabled();
   expect(errors).toEqual([]);
