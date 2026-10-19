@@ -1373,3 +1373,19 @@ ul {
 .ml-btn {
   gap: 6px;
 }
+
+/* Each job card ends with where the person stands for that role in Comeet. */
+.d-card > .d-fit-comeet {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px -20px 0;
+  padding: 12px 20px 0;
+  border-top: 1px solid var(--ml-border-subtle);
+  font-size: 13px;
+  color: var(--ml-text-muted);
+}
+.d-fit-comeet img {
+  display: block;
+  border-radius: 4px;
+}

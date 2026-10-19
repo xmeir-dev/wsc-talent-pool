@@ -271,7 +271,20 @@ function FitRow({
 }
 
 /** One job they may fit: a TL;DR (shortlisted, or maybe relevant and why), then rows for required skills, nice to have and experience. */
-function JobFit({ a, job, outcome, onJob }: { a: CandidateAssessment; job: Job; outcome: Relevant; onJob: (jobId: string) => void }) {
+function JobFit({
+  a,
+  job,
+  outcome,
+  onJob,
+  comeet,
+}: {
+  a: CandidateAssessment;
+  job: Job;
+  outcome: Relevant;
+  onJob: (jobId: string) => void;
+  /** Their Comeet status for this role, if they are a candidate for it. */
+  comeet?: { outcome: string; date: string };
+}) {
   const profile = a.candidate.profile;
   const checks = fitChecks(a, job);
   const shortlisted = outcome === 'shortlist';
@@ -298,6 +311,11 @@ function JobFit({ a, job, outcome, onJob }: { a: CandidateAssessment; job: Job; 
       ) : (
         <p className="unknown">Unknown: no usable LinkedIn profile. Missing information is not a negative finding.</p>
       )}
+      {/* Read from Comeet (made up here, see data/demo_comeet.json): where they stand for this role. */}
+      <p className="d-fit-comeet">
+        <img src={comeetIcon} alt="" width={16} height={16} />
+        {comeet ? `${comeet.outcome} · ${monthYear(comeet.date)}` : 'Not a candidate in Comeet yet'}
+      </p>
     </section>
   );
 }
@@ -542,7 +560,14 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
         {ordered.length > 0 ? (
           <div className="d-grid">
             {ordered.map(({ job, outcome, a: fit }) => (
-              <JobFit key={job.jobId} a={fit} job={job} outcome={outcome} onJob={onJob} />
+              <JobFit
+                key={job.jobId}
+                a={fit}
+                job={job}
+                outcome={outcome}
+                onJob={onJob}
+                comeet={applications.find((ap) => ap.job === job.title)}
+              />
             ))}
           </div>
         ) : (
