@@ -47,6 +47,12 @@ Each output row is one person for the chosen role: the recommendation (`shortlis
 
 The recruiter view (`view/`) lists all attendees, filtered by conference and by job (a job shows its Shortlist and Needs review in rank order). A row opens the person's profile for one job, switchable to any of the four. **Download CSV** downloads the attendee list as shown or, with a job chosen, the same file the CLI writes for that job (a test checks they match byte for byte).
 
+Also in the view, with the made-up parts listed in [Assumptions](docs/assumptions.md):
+
+- **Add conference** adds an event's attendee list from a file, a Google Form's responses sheet, or a sample meetup; a quiet line explains how forms sync automatically instead.
+- **Synced … ago** in the header shows each source's last sync (HubSpot, Comeet, Google Forms) with **Sync now**.
+- Each profile has a **Contact** card (email, LinkedIn, HubSpot, Comeet with past applications), **Invite to job** (a drafted invite sent through Comeet), and **Ask** on each WSC connection (a drafted request for a reference).
+
 The assessment logic in `pipeline/` is plain TypeScript with no file or network access, so a browser view can import it directly (`import { buildDataset, assessJob, assessmentToCsv } from './pipeline'`). The Node command in `cli/` only reads the CSVs and writes the result.
 
 ## Repo contents

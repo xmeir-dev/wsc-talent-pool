@@ -43,12 +43,14 @@ export function NewConference({
   const [over, setOver] = useState(false);
   const [link, setLink] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showAuto, setShowAuto] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
   const close = () => {
     setOpen(false);
     setError(null);
     setLink('');
+    setShowAuto(false);
   };
   const add = (text: string, profiles?: string) => {
     const names = check(text, existing);
@@ -175,6 +177,16 @@ export function NewConference({
             </Tooltip>
           )}
         </label>
+        {/* Quiet pointer to the automatic route: forms in the shared folder sync on their own. */}
+        <button type="button" className="new-conf-auto" aria-expanded={showAuto} onClick={() => setShowAuto((v) => !v)}>
+          How to connect this automatically
+        </button>
+        {showAuto && (
+          <p className="new-conf-auto-text">
+            Keep each event's sign-up form in the shared Google Drive folder "Event sign-ups" and connect Google Forms from the
+            sync menu. New sign-ups then arrive on their own, with no file to add. Other forms are ignored.
+          </p>
+        )}
         {(busy || error) && (
           <p className="ask-status muted" role="status">
             {busy ? 'Opening the link…' : error}

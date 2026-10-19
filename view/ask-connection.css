@@ -374,6 +374,31 @@
   outline-offset: 2px;
 }
 
+.new-conf-auto {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ml-text-faint);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.new-conf-auto:hover,
+.new-conf-auto[aria-expanded='true'] {
+  color: var(--ml-text-muted);
+}
+.new-conf-auto:focus-visible {
+  outline: 2px solid var(--ml-text);
+  outline-offset: 2px;
+}
+.new-conf-auto-text {
+  margin: -8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ml-text-muted);
+}
+
 /* Sync status in the list header: quiet text that opens each source's last sync. */
 .sync-trigger {
   display: inline-flex;
