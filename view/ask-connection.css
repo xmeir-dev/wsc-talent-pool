@@ -1,0 +1,197 @@
+/* Ask a WSC connection for a recommendation: tag trigger + popover card. */
+
+.ask-trigger {
+  all: unset;
+  display: inline-flex;
+  border-radius: var(--ml-radius-pill);
+  cursor: pointer;
+}
+.ask-trigger:hover .ml-tag {
+  border-color: var(--ml-text-muted);
+}
+.ask-trigger:focus-visible {
+  outline: 2px solid var(--ml-text);
+  outline-offset: 2px;
+}
+.ask-trigger[aria-expanded='true'] .ml-tag {
+  border-color: var(--ml-text);
+}
+
+.ask {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.ask-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ask-to {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.ask-linkedin {
+  font-size: 13px;
+}
+
+/* Timeline */
+.ask-overlap {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+}
+.ask-gantt {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.ask-lane-name {
+  color: var(--ml-text-muted);
+}
+.ask-track {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ml-border-subtle);
+}
+.ask-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+}
+.ask-fill.is-theirs {
+  background: var(--ml-text-faint);
+}
+.ask-fill.is-mine {
+  background: var(--ml-color-success);
+}
+.ask-axis {
+  position: relative;
+  height: 16px;
+}
+.ask-guide {
+  position: absolute;
+  bottom: 16px;
+  height: 46px;
+  border-left: 1px dashed var(--ml-color-success);
+  opacity: 0.5;
+}
+.ask-year {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--ml-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.ask-year.is-together {
+  color: var(--ml-color-success);
+  font-weight: 600;
+}
+
+/* Question pills */
+.ask-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ask-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 6px;
+  border: 1px solid var(--ml-border);
+  border-radius: var(--ml-radius-pill);
+  background: var(--ml-bg-card);
+  color: var(--ml-text-muted);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.ask-chip:hover {
+  border-color: var(--ml-text-muted);
+}
+.ask-chip[aria-pressed='true'] {
+  color: var(--ml-text);
+  background: var(--ml-bg-surface);
+}
+.ask-check {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ml-border);
+}
+.ask-chip[aria-pressed='true'] .ask-check {
+  background: var(--ml-color-success);
+  border-color: var(--ml-color-success);
+}
+.ask-chip[aria-pressed='true'] .ask-check::after {
+  content: '';
+  width: 6px;
+  height: 3px;
+  border: solid #fff;
+  border-width: 0 0 1.5px 1.5px;
+  transform: translateY(-1px) rotate(-45deg);
+}
+
+/* Message, Slack-style */
+.ask-msg {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+}
+.ask-msg-body {
+  display: grid;
+  gap: 2px;
+}
+.ask-msg-from {
+  font-weight: 700;
+}
+.ask-msg-time {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--ml-text-faint);
+  margin-left: 4px;
+}
+.ask-msg textarea {
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: var(--ml-radius-sm);
+  padding: 2px 4px;
+  margin-left: -4px;
+  background: none;
+  color: var(--ml-text);
+  font: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+.ask-msg textarea:hover {
+  border-color: var(--ml-border-subtle);
+}
+.ask-msg textarea:focus {
+  outline: none;
+  border-color: var(--ml-border);
+}
+
+.ask-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.ask-status {
+  font-size: 12px;
+}
