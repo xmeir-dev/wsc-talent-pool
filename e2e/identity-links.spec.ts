@@ -133,3 +133,34 @@ test('a link learned in one tab is used by another tab that was already open', a
   expect(await sentInvites(b)).toHaveLength(1);
   expect(errors).toEqual([]);
 });
+
+test('Ryan (in process in Comeet) with a new email, then a name variant with only that email after a reload: still held', async ({ page }) => {
+  const errors = watchErrors(page);
+  const add = async (name: string, email: string, url: string) => {
+    await page.goto('/');
+    await page.reload();
+    await page.getByRole('button', { name: 'Add conference' }).click();
+    await page
+      .getByRole('dialog', { name: 'Add a conference' })
+      .locator('input[type=file]')
+      .setInputFiles({
+        name: 'ryan.csv',
+        mimeType: 'text/csv',
+        buffer: Buffer.from(`full_name,email,company,title,conference_name,conference_date,linkedin_url\n${name},${email},DAZN,Data Engineer,Independent Review,2026-10-19,${url}\n`),
+      });
+    // The added conference's list: the name variant shows as the one Ryan it resolves to.
+    await page.getByRole('row', { name: /Ryan/ }).getByText(/Ryan/).first().click();
+    await expect(page.getByRole('heading', { level: 1, name: /Ryan/ })).toBeVisible();
+  };
+
+  await add('Ryan Patel', 'ryan.new@example.test', 'https://www.linkedin.com/in/ryan-patel-dazn');
+  expect(page.url()).toMatch(/#\/candidate\/C-HS017$/);
+  await expect.poll(() => linkedTo(page, 'email:ryan.new@example.test')).toBe('C-HS017');
+
+  await add('Ryan J. Patel', 'ryan.new@example.test', '');
+  expect(page.url()).toMatch(/#\/candidate\/C-HS017$/);
+  await inviteButton(page).click();
+  await expect(send(page)).toBeDisabled();
+  expect(await sentInvites(page)).toHaveLength(0);
+  expect(errors).toEqual([]);
+});
