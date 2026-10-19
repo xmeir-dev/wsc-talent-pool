@@ -657,6 +657,9 @@
   border-radius: 12px;
   background: var(--ml-bg-surface);
 }
+.bulk-bar.is-below {
+  margin: var(--ml-space-md) 0 0;
+}
 .bulk-count {
   margin-right: 4px;
   font-weight: 600;

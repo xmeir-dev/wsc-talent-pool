@@ -298,6 +298,12 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         onSelect={setPicked}
         jobs={jobList}
       />
+      <BulkActions
+        selected={pool.attendees.filter((p) => picked.includes(p.candidate.candidateKey))}
+        jobs={pool.jobs}
+        onClear={() => setPicked([])}
+        below
+      />
       {shown > 0 && (
         <PaginationFooter
           className="pager"

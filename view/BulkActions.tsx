@@ -26,10 +26,23 @@ function askMessage(employee: Employee, people: Candidate[]): string {
 }
 
 /** A panel opened from the bulk bar, styled like the single Ask and Invite panels. */
-function BulkPanel({ label, icon, title, children }: { label: string; icon: ReactNode; title: string; children: (close: () => void) => ReactNode }) {
+function BulkPanel({
+  label,
+  icon,
+  title,
+  below,
+  children,
+}: {
+  label: string;
+  icon: ReactNode;
+  title: string;
+  /** The bar under the table opens its panels upward. */
+  below?: boolean;
+  children: (close: () => void) => ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   return (
-    <Popover placement="bottom-start" open={open} onOpenChange={setOpen}>
+    <Popover placement={below ? 'top-start' : 'bottom-start'} open={open} onOpenChange={setOpen}>
       <Popover.Trigger className="ml-btn ml-btn-secondary ml-btn-size-sm">
         <span className="ml-btn-icon-slot" aria-hidden="true">
           {icon}
@@ -53,7 +66,18 @@ function BulkPanel({ label, icon, title, children }: { label: string; icon: Reac
 }
 
 /** Shown above the table once rows are ticked: invite them all, or ask their WSC connections, in one go. */
-export function BulkActions({ selected, jobs, onClear }: { selected: Attendee[]; jobs: Job[]; onClear: () => void }) {
+export function BulkActions({
+  selected,
+  jobs,
+  onClear,
+  below,
+}: {
+  selected: Attendee[];
+  jobs: Job[];
+  onClear: () => void;
+  /** The same bar again under the table, so it is in reach at either end. */
+  below?: boolean;
+}) {
   const [status, setStatus] = useState<string | null>(null);
   // Each person goes to their own best job (shortlisted first); people with no fitting job or no email are skipped.
   const entries = useActivity();
@@ -113,9 +137,9 @@ export function BulkActions({ selected, jobs, onClear }: { selected: Attendee[];
   const preview = plan.groups[0];
 
   return (
-    <div className="bulk-bar" role="region" aria-label="Selected attendees">
+    <div className={`bulk-bar${below ? ' is-below' : ''}`} role="region" aria-label={below ? 'Selected attendees (bottom)' : 'Selected attendees'}>
       <span className="bulk-count">{selected.length} selected</span>
-      <BulkPanel label="Ask WSC connections" icon={<HugeiconsIcon icon={BubbleChatIcon} size={16} strokeWidth={1.75} />} title="Ask WSC connections">
+      <BulkPanel below={below} label="Ask WSC connections" icon={<HugeiconsIcon icon={BubbleChatIcon} size={16} strokeWidth={1.75} />} title="Ask WSC connections">
         {(close) =>
           asks.length ? (
             <>
@@ -168,6 +192,7 @@ export function BulkActions({ selected, jobs, onClear }: { selected: Attendee[];
         }
       </BulkPanel>
       <BulkPanel
+        below={below}
         label="Invite to jobs"
         icon={<HugeiconsIcon icon={MailAdd01Icon} size={16} strokeWidth={1.75} />}
         title={`Invite ${plan.total} to ${plan.groups.length === 1 ? 'a job' : 'jobs'}`}
