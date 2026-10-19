@@ -19,6 +19,7 @@ import type { ComeetService } from './comeet';
 import { HandoffDialog } from './HandoffDialog';
 import { lastContacted, timeline } from './hubspotActivity';
 import { comeetStatusText } from './comeetStatus';
+import { contactProperties } from './contactProperties';
 import { Icon } from './Icon';
 import { initials } from './initials';
 import { TalentMatchCard } from './TalentMatchCard';
@@ -61,6 +62,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
   const p = c.profile;
   const firstEvent = a.events[0]?.attendance;
   const position = comeet.positionFor(jobId);
+  const props = contactProperties(c);
   const status = position ? comeetStatusText(comeet.statusFor(c, position.uid)) : '--';
   const company = p?.currentCompany || c.attendances.at(-1)?.listedCompany || '';
   // Outreach from the recruiter app joins event attendance in one timeline, newest first.
@@ -117,9 +119,13 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
             </div>
             <dl className="hs-props">
               <dt>Contact owner</dt>
-              <dd>Unassigned</dd>
+              <dd data-testid="hs-owner">{props.owner}</dd>
+              <dt>Contact type</dt>
+              <dd>{props.contactType}</dd>
               <dt>Lifecycle stage</dt>
-              <dd>Lead</dd>
+              <dd data-testid="hs-lifecycle">{props.lifecycleStage}</dd>
+              <dt>Marketing contact status</dt>
+              <dd data-testid="hs-marketing">{props.marketingStatus}</dd>
               <dt>Lead source</dt>
               <dd>{firstEvent ? `Conference: ${firstEvent.editionLabel}` : '--'}</dd>
               <dt>Comeet status ({entry.result.job.title})</dt>
@@ -141,9 +147,13 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
               <dt>LinkedIn</dt>
               <dd className="hs-break">{c.linkedinUrl || '--'}</dd>
               <dt>City</dt>
-              <dd>{p?.location || '--'}</dd>
+              <dd>{props.city || '--'}</dd>
+              <dt>Country/Region</dt>
+              <dd>{props.country || '--'}</dd>
               <dt>Record ID</dt>
-              <dd>{c.sourceContactIds.join(', ')}</dd>
+              <dd data-testid="hs-record-id">{props.recordId}</dd>
+              <dt>Source ID</dt>
+              <dd>{props.sourceId}</dd>
             </dl>
           </section>
         </aside>
@@ -167,6 +177,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
             store={store}
             entry={entry}
             jobId={jobId}
+            recruiter={comeet.recruiterFor(jobId)}
             onJobChange={onJobChange}
             comeetRecord={position ? comeet.statusFor(c, position.uid) : null}
             onHandoff={() => setHandoffOpen(true)}

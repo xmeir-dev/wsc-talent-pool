@@ -10,6 +10,8 @@ interface Props {
   store: AssessmentStore;
   entry: StoredAssessment;
   jobId: string;
+  /** The selected role's Comeet recruiter (not the HubSpot contact owner). */
+  recruiter: string;
   onJobChange: (jobId: string) => void;
   /** This person's record in the selected role's Comeet position, kept in sync by Comeet's webhook. */
   comeetRecord: ComeetCandidate | null;
@@ -37,7 +39,7 @@ function Block({ title, wide, children }: { title: string; wide?: boolean; child
  * patterns. Every value comes from the assessment for the selected role; the selector reads another
  * stored assessment rather than recomputing or overwriting this one.
  */
-export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord, onHandoff, onOpenComeet }: Props) {
+export function TalentMatchCard({ store, entry, jobId, recruiter, onJobChange, comeetRecord, onHandoff, onOpenComeet }: Props) {
   const { a } = entry;
   const p = a.candidate.profile;
   const matched = a.skills.filter((s) => s.match !== 'none');
@@ -60,21 +62,24 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord
       </div>
 
       <div className="tm-toolbar">
-        <label className="tm-role">
-          <span>Role</span>
-          <select value={jobId} onChange={(e) => onJobChange(e.target.value)}>
-            {store.dataset.jobs.map((j) => (
-              <option key={j.jobId} value={j.jobId}>
-                {j.jobId} · {j.title}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="tm-rolebox">
+          <label className="tm-role">
+            <span>Role</span>
+            <select value={jobId} onChange={(e) => onJobChange(e.target.value)}>
+              {store.dataset.jobs.map((j) => (
+                <option key={j.jobId} value={j.jobId}>
+                  {j.jobId} · {j.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="tm-recruiter" data-testid="tm-recruiter">
+            Recruiter for this role: {recruiter}
+          </p>
+        </div>
         {comeetRecord ? (
           <div className="tm-incomeet">
-            <span data-testid="tm-comeet">
-              In Comeet: {comeetStatusText(comeetRecord)} · Owner: {comeetRecord.owner}
-            </span>
+            <span data-testid="tm-comeet">In Comeet: {comeetStatusText(comeetRecord)}</span>
             <button type="button" className="hs-btn hs-btn-outline" onClick={() => onOpenComeet(comeetRecord.uid)}>
               Open in Comeet
             </button>
@@ -193,9 +198,12 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord
         </Block>
       </div>
 
-      <p className="tm-version muted">
-        {a.jobId} · {store.version}
-      </p>
+      <details className="tm-details">
+        <summary>Details</summary>
+        <p className="muted">
+          {a.jobId} · {store.version}
+        </p>
+      </details>
     </section>
   );
 }

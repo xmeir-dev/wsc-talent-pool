@@ -5,6 +5,7 @@ import { createElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { loadSources } from '../../cli/load-sources';
 import { buildAssessmentStore } from '../../integration-demo/assessments';
+import { recruiterFor } from '../../integration-demo/comeet';
 import { TalentMatchCard } from '../../integration-demo/TalentMatchCard';
 import { buildDataset } from '../../pipeline';
 import { DATA_DIR } from '../helpers';
@@ -29,6 +30,7 @@ describe('Talent match card', () => {
         store,
         entry,
         jobId: 'JOB004',
+        recruiter: 'Amit Sasson',
         onJobChange: () => {},
         comeetRecord: null,
         onHandoff: () => {},
@@ -54,6 +56,7 @@ describe('Talent match card', () => {
       store,
       entry: store.get(key, jobId)!,
       jobId,
+      recruiter: recruiterFor(jobId),
       onJobChange: () => {},
       comeetRecord: null,
       onHandoff: () => {},
