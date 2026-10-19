@@ -1,6 +1,6 @@
 /** Small text helpers shared by the assessment modules. */
 
-import { SKILL_EVIDENCE } from './rules';
+import { SKILL_EVIDENCE, SKILL_SYNONYMS } from './rules';
 
 export function normalize(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -23,48 +23,49 @@ export function ownEntry<T>(table: Readonly<Record<string, T>>, key: string): T 
 }
 
 /**
- * Accepted names for a configured skill ("golang" for Go) → that skill. A configured skill is always its own key.
- * A name listed for two different skills ("football analytics": Sports Analytics and Sports domain knowledge) is
- * an alias of neither: it stays its own skill rather than whichever skill happens to be listed first.
- */
-const ALIAS_OF = (() => {
-  const owners = new Map<string, Set<string>>();
-  for (const [key, rule] of Object.entries(SKILL_EVIDENCE)) {
-    for (const term of rule.named) {
-      if (Object.hasOwn(SKILL_EVIDENCE, term)) continue;
-      owners.set(term, (owners.get(term) ?? new Set()).add(key));
-    }
-  }
-  const alias = new Map<string, string>();
-  for (const [term, keys] of owners) if (keys.size === 1) alias.set(term, [...keys][0]!);
-  return alias;
-})();
-
-/**
- * The skill a job skill name stands for, used as its scoring key: "Golang" and "go" are both Go, so either
- * spelling, in any order, scores the same. Related skills stay distinct.
+ * The skill a job skill name is scored as: a configured spelling variant ("golang", "rest api", see SKILL_SYNONYMS)
+ * is its skill, so either spelling, in any order, scores the same. Any other name is itself: a narrower tool listed
+ * under a broad skill ("SageMaker" under AWS) matches only its own name when a job requires it.
  */
 export function canonicalSkill(skill: string): string {
   const n = normalize(skill);
-  return ALIAS_OF.get(n) ?? n;
+  return ownEntry(SKILL_SYNONYMS, n) ?? n;
 }
 
 /**
- * A job's skill list as scored: extra spaces collapsed and repeats dropped, compared by canonical skill, so
- * "Python; python ;  Python" and "Go; Golang" are one requirement each. The first spelling is kept for display only;
- * scoring looks the skill up by canonicalSkill(), so which spelling came first never changes the result.
+ * A name that is not a configured skill but counts as one ("opencv" counts as Computer Vision) → the first
+ * configured skill, in rules order, that lists it as on profile ("football analytics" → Sports Analytics).
+ * Requiring both adds nothing: the narrower name folds into the skill.
+ */
+const FOLDS_INTO = (() => {
+  const map = new Map<string, string>();
+  for (const [key, rule] of Object.entries(SKILL_EVIDENCE)) {
+    for (const term of rule.named) {
+      if (Object.hasOwn(SKILL_EVIDENCE, term) || Object.hasOwn(SKILL_SYNONYMS, term) || map.has(term)) continue;
+      map.set(term, key);
+    }
+  }
+  return map;
+})();
+
+/**
+ * A job's skill list as scored. Extra spaces are collapsed and the list counts each skill once, whatever the order:
+ * - repeats and spelling variants are one requirement ("Python; python ; Python", "Go; Golang", "Golang; Go"); the
+ *   first spelling is kept for display only, since scoring looks the skill up by canonicalSkill();
+ * - a narrower name is dropped when the skill it counts as is also required ("Computer Vision; OpenCV" and
+ *   "OpenCV; Computer Vision" are Computer Vision). Without that skill it stays, matching its own name only.
  */
 export function uniqueSkills(skills: string[]): string[] {
   const seen = new Set<string>();
-  const out: string[] = [];
+  const kept: { skill: string; key: string }[] = [];
   for (const raw of skills) {
     const skill = raw.replace(/\s+/g, ' ').trim();
     const key = canonicalSkill(skill);
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    out.push(skill);
+    kept.push({ skill, key });
   }
-  return out;
+  return kept.filter(({ key }) => !seen.has(FOLDS_INTO.get(key) ?? '')).map(({ skill }) => skill);
 }
 
 function escapeRegExp(s: string): string {

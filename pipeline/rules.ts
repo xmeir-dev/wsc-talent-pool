@@ -87,6 +87,17 @@ export const SKILL_EVIDENCE: Record<string, SkillEvidenceRule> = {
   terraform: { named: ['terraform'] },
 };
 
+/**
+ * Spelling variants of one configured skill, normalized → that skill's key. Only pure variants of the same name
+ * belong here (another spelling, singular/plural): a job requiring either is scored as the skill, in any order.
+ * A narrower tool or a related name ("SageMaker" for AWS, "OpenCV" for Computer Vision) is NOT a synonym: it counts
+ * as the skill on a profile, but a job that requires it requires that tool. Each variant is also in its skill's named list.
+ */
+export const SKILL_SYNONYMS: Record<string, string> = {
+  golang: 'go',
+  'rest api': 'rest apis',
+};
+
 // ---------- Per-role policy ----------
 
 export interface Essential {
