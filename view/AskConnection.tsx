@@ -1,6 +1,15 @@
 import { useMemo, useState, type KeyboardEvent, type ReactNode, type SyntheticEvent } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowDown01Icon, ArrowUp01Icon, Cancel01Icon, Copy01Icon, Mail01Icon, SlackIcon, Tick02Icon } from '@hugeicons/core-free-icons';
+import {
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  BubbleChatIcon,
+  Cancel01Icon,
+  Copy01Icon,
+  Mail01Icon,
+  SlackIcon,
+  Tick02Icon,
+} from '@hugeicons/core-free-icons';
 import { Avatar, Button, Popover, Tag } from '@meir-labs/ui-kit';
 import {
   buildDataset,
@@ -177,15 +186,17 @@ const keepKeys = (e: KeyboardEvent) => {
   if (e.key !== 'Escape') e.stopPropagation();
 };
 
-/** A WSC connection tag that opens a drafted request for a recommendation: copy, Slack or email. */
+/** A WSC connection tag (or, on the profile, an "Ask <name>" button) that opens a drafted request for a recommendation: copy, Slack or email. */
 export function AskConnection({
   employee,
   refs,
   ctx,
+  asButton = false,
 }: {
   employee: Employee;
   refs: PossibleReference[];
   ctx: AskContext;
+  asButton?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const theirFirst = firstName(employee.fullName);
@@ -225,7 +236,7 @@ export function AskConnection({
   return (
     <Popover
       // Beside the tag, so it is clamped into the viewport even on the last rows.
-      placement="left-start"
+      placement={asButton ? 'bottom-end' : 'left-start'}
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
@@ -233,12 +244,17 @@ export function AskConnection({
       }}
     >
       <Popover.Trigger
-        className="ask-trigger"
+        className={asButton ? 'ml-btn ml-btn-secondary ml-btn-size-sm' : 'ask-trigger'}
         onClick={stop}
         onKeyDown={keepKeys}
         aria-label={`Ask ${employee.fullName} about ${ctx.candidate.fullName}`}
       >
-        {latest ? (
+        {asButton ? (
+          <>
+            <HugeiconsIcon icon={BubbleChatIcon} size={16} strokeWidth={1.75} aria-hidden="true" />
+            Ask {theirFirst}
+          </>
+        ) : latest ? (
           <span className="conn-tag2">
             <Avatar size="sm" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
             <span className="conn-tag2-name">{employee.fullName}</span>

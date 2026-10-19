@@ -127,7 +127,11 @@ export type FitCheckKey = 'must' | 'skills' | 'years';
 export interface FitCheck {
   key: FitCheckKey;
   ok: boolean;
-  /** One line for the hover: what was checked and what the profile shows. */
+  /** What was checked: "Must-have skills". */
+  name: string;
+  /** What the profile shows: "missing Sports Analytics". */
+  detail: string;
+  /** One line for the hover: name and detail. */
   tip: string;
 }
 
@@ -138,6 +142,14 @@ const CHECK_NAME: Record<FitCheckKey, string> = {
 };
 
 const and = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+
+const check = (key: FitCheckKey, ok: boolean, detail: string): FitCheck => ({
+  key,
+  ok,
+  name: CHECK_NAME[key],
+  detail,
+  tip: `${CHECK_NAME[key]}: ${detail}`,
+});
 
 /**
  * The three shortlist checks, shown one icon each. All three pass exactly when the pipeline shortlists
@@ -154,35 +166,27 @@ export function fitChecks(a: CandidateAssessment, job: Job): FitCheck[] {
         ? 'the profile lists no skills'
         : null;
   if (unknown || !profile) {
-    return (['must', 'skills', 'years'] as const).map((key) => ({ key, ok: false, tip: `${CHECK_NAME[key]}: unknown, ${unknown}` }));
+    return (['must', 'skills', 'years'] as const).map((key) => check(key, false, `unknown, ${unknown}`));
   }
   const essentials = policyFor(job).policy.essentials.map((e) => e.label);
   const threshold = requiredThreshold(a.points.requiredMax);
   const minYears = minYearsFor(job);
   const years = profile.yearsExperience;
   return [
-    {
-      key: 'must',
-      ok: a.missingEssentials.length === 0,
-      tip:
-        essentials.length === 0
-          ? `${CHECK_NAME.must}: none set for this role`
-          : a.missingEssentials.length > 0
-            ? `${CHECK_NAME.must}: missing ${and(a.missingEssentials)}`
-            : `${CHECK_NAME.must}: has ${and(essentials)}`,
-    },
-    {
-      key: 'skills',
-      ok: a.points.required >= threshold,
-      tip: `${CHECK_NAME.skills}: ${a.points.required} of ${a.points.requiredMax} points (needs ${threshold})`,
-    },
-    {
-      key: 'years',
-      ok: minYears === null || (years !== null && years >= minYears),
-      tip:
-        minYears === null
-          ? `${CHECK_NAME.years}: no minimum for this role`
-          : `${CHECK_NAME.years}: ${years === null ? 'years not stated' : `${years} years`} (needs ${minYears})`,
-    },
+    check(
+      'must',
+      a.missingEssentials.length === 0,
+      essentials.length === 0
+        ? 'none set for this role'
+        : a.missingEssentials.length > 0
+          ? `missing ${and(a.missingEssentials)}`
+          : `has ${and(essentials)}`,
+    ),
+    check('skills', a.points.required >= threshold, `${a.points.required} of ${a.points.requiredMax} points (needs ${threshold})`),
+    check(
+      'years',
+      minYears === null || (years !== null && years >= minYears),
+      minYears === null ? 'no minimum for this role' : `${years === null ? 'years not stated' : `${years} years`} (needs ${minYears})`,
+    ),
   ];
 }

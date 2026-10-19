@@ -84,7 +84,7 @@ const connections = ({ any, candidate, relevantFor }: Attendee) => {
   );
 };
 
-const CHECK_ICON: Record<FitCheckKey, IconSvgElement> = { must: StarIcon, skills: CheckListIcon, years: Clock01Icon };
+export const CHECK_ICON: Record<FitCheckKey, IconSvgElement> = { must: StarIcon, skills: CheckListIcon, years: Clock01Icon };
 
 /** One line per job, shortlist first: the title, then the three shortlist checks, green when passed. */
 function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowLeft01Icon, Download04Icon, Briefcase01Icon, Calendar03Icon, Location01Icon } from '@hugeicons/core-free-icons';
-import { Button, Callout, EmptyState, PaginationFooter, Select, TopBar, usePagination, type SortState } from '@meir-labs/ui-kit';
+import { Download04Icon, Briefcase01Icon, Calendar03Icon, Location01Icon } from '@hugeicons/core-free-icons';
+import { Button, Callout, EmptyState, PaginationFooter, Select, usePagination, type SortState } from '@meir-labs/ui-kit';
 import { buildDataset, DataValidationError, type Dataset, type SourceTexts } from '../pipeline';
 import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
 import { CandidateDetail } from './CandidateDetail';
@@ -155,37 +155,29 @@ function Workspace({ dataset }: { dataset: Dataset }) {
 
   if (open && viewJob) {
     return (
-      <>
-        <TopBar
-          className="toolbar"
-          left={
-            <Button variant="ghost" onClick={back} leftIcon={<HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.75} />}>
-              Back
-            </Button>
+      <main className="content profile">
+        <CandidateDetail
+          a={open.a}
+          row={open.row}
+          job={pool.jobs.find((j) => j.jobId === viewJob)!}
+          onBack={back}
+          jobPicker={
+            <div className="assessed-for">
+              <span className="d-label-name">Assessed for</span>
+              <Select value={viewJob} onValueChange={setProfileJob}>
+                <Select.Trigger aria-label="Assessed for" />
+                <Select.Content>
+                  {pool.jobs.map((j) => (
+                    <Select.Item key={j.jobId} value={j.jobId}>
+                      {jobLabel(j)}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select>
+            </div>
           }
         />
-        <main className="content profile">
-          <CandidateDetail
-            a={open.a}
-            row={open.row}
-            jobPicker={
-              <div className="assessed-for">
-                <span className="muted">Assessed for</span>
-                <Select value={viewJob} onValueChange={setProfileJob}>
-                  <Select.Trigger aria-label="Assessed for" />
-                  <Select.Content>
-                    {pool.jobs.map((j) => (
-                      <Select.Item key={j.jobId} value={j.jobId}>
-                        {jobLabel(j)}
-                      </Select.Item>
-                    ))}
-                  </Select.Content>
-                </Select>
-              </div>
-            }
-          />
-        </main>
-      </>
+      </main>
     );
   }
 

@@ -30,18 +30,6 @@ ul {
   font-style: italic;
 }
 
-/* Top bar: sticky, role picker takes the free width. */
-
-.toolbar {
-  position: sticky;
-  top: 0;
-  z-index: var(--ml-z-sticky);
-}
-.toolbar .ml-top-bar-left {
-  flex: 1;
-  max-width: 420px;
-}
-
 .content {
   padding: var(--ml-space-lg) var(--ml-space-xl) 48px;
 }
@@ -413,12 +401,10 @@ ul {
 .assessed-for {
   display: flex;
   align-items: center;
-  gap: var(--ml-space-sm);
-  margin-top: -16px;
-}
-.assessed-for .muted {
-  font-size: 13px;
-  white-space: nowrap;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+  max-width: 100%;
 }
 .assessed-for .ml-select-trigger {
   width: auto;
@@ -587,55 +573,165 @@ ul {
   --amber: #d97706;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 60px;
 }
 [data-meirlabs-theme='dark'] .detail {
   --amber: #f59e0b;
 }
 .profile {
-  max-width: 720px;
+  max-width: 1040px;
   margin: 0 auto;
 }
-.d-head h1 {
-  margin: 0 0 2px;
-  font-size: 24px;
+
+/* Header: same as the list page, with the initials where the logo sits. */
+.d-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ml-text-muted);
+  cursor: pointer;
+}
+.d-back:hover {
+  color: var(--ml-text);
+}
+.d-back:focus-visible {
+  outline: 2px solid var(--ml-text);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.page-head.d-head {
+  margin-bottom: 0;
+}
+.d-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.d-mono {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-right: 4px;
+  border-radius: 10px;
+  background: var(--ml-bg-surface);
+  box-shadow: inset 0 0 0 1px var(--ml-border-subtle);
   font-weight: 600;
-  letter-spacing: -0.01em;
+  color: var(--ml-text-muted);
+  flex-shrink: 0;
+}
+.d-reach {
+  display: flex;
+  gap: 8px;
 }
 
-.d-score {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
+/* The recruiter's note leads the page. */
+.d-lead p {
+  margin: 0;
 }
-.d-score-num {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
+.d-quote {
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  max-width: 760px;
 }
-.d-score-num .muted {
+.d-byline {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 13px;
-  padding-bottom: 4px;
+  color: var(--ml-text-muted);
 }
-.d-big {
-  font-size: 40px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
+
+/* The three shortlist checks in one strip. */
+.d-fit-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.d-fit-head .muted {
+  font-size: 13px;
+}
+.d-checks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--ml-border-subtle);
+  border-radius: 12px;
+  background: var(--ml-bg-card);
+}
+.d-checks li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 20px;
+  border-left: 1px solid var(--ml-border-subtle);
+}
+.d-checks li:first-child {
+  border-left: 0;
+}
+.fit-check.d-check {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 4px;
+}
+.d-check-detail {
+  color: var(--ml-text-muted);
+}
+.d-checks li.is-ok .d-check-detail {
+  color: var(--ml-text);
 }
 .d-tied {
   text-decoration: underline dotted;
   text-underline-offset: 3px;
 }
 
+/* Evidence cards, styled like the list page's pool cards. */
+.d-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ml-space-md);
+  align-items: start;
+}
+.d-grid-even {
+  align-items: stretch;
+}
+.d-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ml-space-md);
+}
+.d-card {
+  padding: 20px;
+  border: 1px solid var(--ml-border-subtle);
+  border-radius: 12px;
+  background: var(--ml-bg-card);
+}
+.d-card p {
+  margin: 0;
+}
+.d-sub {
+  margin-top: 24px;
+}
 .d-label {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
   font-size: 12px;
   color: var(--ml-text-faint);
 }
@@ -643,15 +739,83 @@ ul {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  color: var(--ml-text-muted);
+  white-space: nowrap;
 }
 .d-label-name svg {
   flex-shrink: 0;
 }
 .d-meta {
   font-variant-numeric: tabular-nums;
+}
+.d-people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.d-people li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.d-person {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-right: auto;
+}
+.d-person .muted {
+  font-size: 13px;
+}
+.d-contact {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.d-contact li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--ml-text-muted);
+}
+.d-contact a {
+  color: var(--ml-text);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.d-contact li + li a {
+  color: var(--ml-text-muted);
+}
+.d-contact a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 720px) {
+  .d-grid,
+  .d-checks {
+    grid-template-columns: 1fr;
+  }
+  .d-checks li {
+    border-left: 0;
+    border-top: 1px solid var(--ml-border-subtle);
+  }
+  .d-checks li:first-child {
+    border-top: 0;
+  }
+  .detail {
+    gap: 40px;
+  }
 }
 
 .d-skills,
@@ -687,8 +851,12 @@ ul {
 .s-likely {
   color: var(--amber);
 }
-.s-missing {
-  color: var(--ml-color-danger);
+.s-missing,
+.d-skills li.is-missing {
+  color: var(--ml-text-faint);
+}
+.d-skills li.is-missing span {
+  color: var(--ml-text-muted);
 }
 
 .d-timeline {
@@ -870,7 +1038,4 @@ ul {
   align-items: center;
   gap: 6px;
   opacity: 0.75;
-}
-.d-head .overview {
-  margin-top: 8px;
 }
