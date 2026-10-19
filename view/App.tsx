@@ -238,23 +238,22 @@ function Workspace({ dataset }: { dataset: Dataset }) {
         emptyState={empty}
         sort={sort}
         onSort={setSort}
-        footer={
-          shown > 0 && (
-            <PaginationFooter
-              pageIndex={paged.pageIndex}
-              pageCount={paged.pageCount}
-              onPage={paged.setPage}
-              total={shown}
-              pageSize={pageSize}
-              pageSizeOptions={[12, 24, 48, 96]}
-              onPageSizeChange={setPageSize}
-              noun="attendee"
-            />
-          )
-        }
       />
+      {shown > 0 && (
+        <PaginationFooter
+          className="pager"
+          pageIndex={paged.pageIndex}
+          pageCount={paged.pageCount}
+          onPage={paged.setPage}
+          total={shown}
+          pageSize={pageSize}
+          pageSizeOptions={[12, 24, 48, 96]}
+          onPageSizeChange={setPageSize}
+          noun="attendee"
+        />
+      )}
       <footer className="page-foot">
-        Created by{' '}
+        Made by{' '}
         <a href="https://www.linkedin.com/in/meir-rosenschein" target="_blank" rel="noreferrer">
           Meir Rosenschein
         </a>{' '}

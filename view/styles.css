@@ -176,6 +176,11 @@ ul {
   letter-spacing: -0.01em;
 }
 
+/* Paging sits under the table, outside its border. */
+.pager {
+  margin-top: var(--ml-space-md);
+}
+
 .page-foot {
   margin-top: 60px;
   text-align: center;
