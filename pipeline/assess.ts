@@ -142,13 +142,29 @@ function describeMatch(m: SkillMatch): string {
   return m.skill;
 }
 
-function fitEvidence(skills: SkillMatch[]): string[] {
+function fitEvidence(skills: SkillMatch[], mustHaves: SkillMatch[]): string[] {
   const req = skills.filter((s) => s.kind === 'required' && s.match !== 'none');
   const nice = skills.filter((s) => s.kind === 'nice_to_have' && s.match !== 'none');
+  const must = mustHaves.filter((s) => s.match !== 'none');
   const out: string[] = [];
+  if (must.length > 0) out.push(`Must-have: ${must.map(describeMatch).join(', ')}`);
   if (req.length > 0) out.push(`Required skills: ${req.map(describeMatch).join(', ')}`);
   if (nice.length > 0) out.push(`Nice to have: ${nice.map(describeMatch).join(', ')}`);
   return out;
+}
+
+/**
+ * Why the required-skills bar is not met, naming the gap: "2 of 4 required skills on the profile (needs 3);
+ * 1 more likely (Deep Learning for PyTorch), please confirm; missing AWS". Skills in the role's order.
+ */
+function requiredShortfall(requiredSkills: SkillMatch[], needed: number): string {
+  const named = requiredSkills.filter((s) => s.match === 'named').length;
+  const likely = requiredSkills.filter((s) => s.match === 'equivalent' || s.match === 'inferred');
+  const missing = requiredSkills.filter((s) => s.match === 'none').map((s) => s.skill);
+  const parts = [`${named} of ${requiredSkills.length} required skills on the profile (needs ${needed})`];
+  if (likely.length > 0) parts.push(`${likely.length} more likely (${likely.map((s) => `${s.evidence} for ${s.skill}`).join(', ')}), please confirm`);
+  if (missing.length > 0) parts.push(`missing ${missing.join(', ')}`);
+  return parts.join('; ');
 }
 
 function skillGaps(skills: SkillMatch[]): string[] {
@@ -193,11 +209,18 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
 
   // By canonical skill, so a must-have written "Go" is met by a job skill written "Golang".
   const byName = new Map(requiredSkills.map((s) => [canonicalSkill(s.skill), s]));
-  // A must-have the recruiter did not also list as required is checked against the profile directly.
-  const evidenceFor = (skill: string): SkillMatch | undefined =>
-    byName.get(canonicalSkill(skill)) ?? (profile ? { skill, kind: 'required', ...matchSkill(profile.skills, skill) } : undefined);
   const meets = (e: { allowRelated: boolean }, m: SkillMatch | undefined) =>
     !!m && (m.match === 'named' || (e.allowRelated && m.match !== 'none'));
+  // Must-haves the recruiter did not also list as required: matched for the card and evidence, not counted in the tally.
+  const mustHaveSkills: SkillMatch[] = profile
+    ? [...new Set(policy.essentials.flatMap((e) => e.anyOf))]
+        .filter((skill) => !byName.has(canonicalSkill(skill)))
+        .filter((skill, i, all) => all.findIndex((o) => canonicalSkill(o) === canonicalSkill(skill)) === i)
+        .map((skill) => ({ skill, kind: 'must_have', ...matchSkill(profile.skills, skill) }))
+    : [];
+  // A must-have the recruiter did not also list as required is checked against the profile directly.
+  const evidenceFor = (skill: string): SkillMatch | undefined =>
+    byName.get(canonicalSkill(skill)) ?? mustHaveSkills.find((s) => canonicalSkill(s.skill) === canonicalSkill(skill));
   const unmet = policy.essentials.filter((e) => !e.anyOf.some((skill) => meets(e, evidenceFor(skill))));
   const missingEssentials = unmet.map((e) => e.label);
   // Say when related evidence exists but is not enough (e.g. "Sports Broadcasting" for Sports Analytics).
@@ -245,13 +268,7 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
     reasons.push(`No ${policy.coreDiscipline.label} skill on profile; stays in the pool for other roles`);
   } else {
     if (missingEssentials.length > 0) reasons.push(`Missing must-have: ${missingEssentialDetail.join(', ')}`);
-    if (required < needed) {
-      reasons.push(
-        required + requiredLikely >= needed
-          ? `${required} of ${requiredTotal} required skills on the profile (needs ${needed}); ${requiredLikely} more likely, please confirm`
-          : `Only ${required} of ${requiredTotal} required skills on the profile (needs ${needed})`,
-      );
-    }
+    if (required < needed) reasons.push(requiredShortfall(requiredSkills, needed));
     if (seniorityProblem) reasons.push(`${seniorityProblem}; not shortlisted until the role's seniority is set`);
     if (yearsShort) {
       reasons.push(
@@ -283,7 +300,8 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
     skills,
     missingEssentials: profile ? missingEssentials : [],
     outcomeReasons: reasons,
-    fitEvidence: profile ? fitEvidence(skills) : [],
+    mustHaveSkills,
+    fitEvidence: profile ? fitEvidence(skills, mustHaveSkills) : [],
     skillGaps: gaps,
     industryBonusEvidence: bonus.evidence,
     seniority,

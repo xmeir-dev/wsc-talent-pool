@@ -6,6 +6,7 @@
  * Extraction: each sentence is classified by its wording, and every known skill named in it becomes a row of that
  * list, quoting the sentence. "A plus", "nice to have", "bonus", "preferred" → Nice to have; "must", "essential" →
  * Must-have; "you will", "you'll", "day to day", "focus on" → Core; any other sentence that names a skill → Required.
+ * A list subject ("Prometheus and Go are a plus") adds every listed name, known or not (listItems).
  * An opening "We're hiring…" line names the role, not its requirements, and is skipped.
  */
 
@@ -96,6 +97,43 @@ export function skillsIn(sentence: string): string[] {
     .map((h) => h.skill);
 }
 
+/**
+ * "X, Y and Z are a plus / are required / are a must": the subject is a list of skills, so each item becomes a row
+ * even when it is not in VOCABULARY ("Prometheus and Go are a plus"). Leading "Experience with" and a trailing
+ * "experience" are dropped. Unknown items are kept only in a list of two or more where every item looks like a name
+ * (capitalised, at most three words), so a sentence like "Teamwork is essential" adds nothing.
+ */
+const LIST_PREDICATE =
+  /\s+(?:is|are)\s+(?:also\s+)?(?:a\s+)?(?:(?:big|strong|real)\s+)?(?:plus|must(?:-have)?|required|essential|nice to have|preferred|bonus|non-negotiable)\b/i;
+const LIST_LEAD = /^(?:(?:hands-on|strong|solid|proven|deep|good)\s+)?(?:experience|knowledge|familiarity|expertise|skills?|proficiency)\s+(?:with|in|of)\s+/i;
+const LIST_TAIL = /\s+(?:experience|skills?|knowledge)$/i;
+
+function listItems(sentence: string): string[] {
+  const predicate = LIST_PREDICATE.exec(sentence);
+  if (!predicate) return [];
+  const subject = sentence.slice(0, predicate.index).trim().replace(LIST_LEAD, '').replace(LIST_TAIL, '');
+  const items = subject
+    .split(/\s*,\s*(?:(?:and|or)\s+)?|\s+(?:and|or|&)\s+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => ({ item, known: skillsIn(item) }));
+  // Unknown names are trusted only inside a list of names: "Teamwork is essential" is not a tool.
+  const allNames = items.length >= 2 && items.every(({ item, known }) => known.length > 0 || looksLikeName(item));
+  return items.flatMap(({ item, known }) => (known.length > 0 ? known : allNames ? [item] : []));
+}
+
+const looksLikeName = (item: string) =>
+  item.length <= 30 && /^[A-Z0-9][\w.+#/-]*(?: [\w.+#/-]+){0,2}$/.test(item) && !/^(strong|good|great|excellent|solid|proven|some)\b/i.test(item);
+
+/** Skills a sentence names: its subject list first, then any other known skill in it, each once. */
+function skillsOf(sentence: string): string[] {
+  const out: string[] = [];
+  for (const skill of [...listItems(sentence), ...skillsIn(sentence)]) {
+    if (!out.some((o) => normalize(o) === normalize(skill))) out.push(skill);
+  }
+  return out;
+}
+
 function listFor(sentence: string): CriteriaList {
   return CUES.find((c) => c.pattern.test(sentence))?.list ?? 'required';
 }
@@ -107,7 +145,7 @@ export function suggestCriteria(title: string, description: string): CriteriaRow
   for (const sentence of sentences(description)) {
     if (INTRO.test(sentence)) continue;
     const list = listFor(sentence);
-    for (const skill of skillsIn(sentence)) {
+    for (const skill of skillsOf(sentence)) {
       if (!has(list, skill)) rows.push({ id: `${list}-${rows.length}`, list, skill, quote: sentence, origin: 'description' });
     }
   }
@@ -117,4 +155,13 @@ export function suggestCriteria(title: string, description: string): CriteriaRow
     if (quote && !has(list, skill)) rows.push({ id: `${list}-${rows.length}`, list, skill, quote, origin: 'ai' });
   }
   return rows;
+}
+
+/**
+ * The recruiter changed a row's text. A suggested row then becomes the recruiter's own: it loses its "From description"
+ * or "AI suggestion" label and the quoted sentence, which supported the old text, not the new one.
+ */
+export function editRow(row: CriteriaRow, skill: string): CriteriaRow {
+  if (skill === row.skill) return row;
+  return row.origin === 'recruiter' ? { ...row, skill } : { ...row, skill, quote: '', origin: 'recruiter' };
 }
