@@ -72,7 +72,7 @@ export function NewConference({
 
   return (
     <Popover placement="bottom-end" open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
-      <Popover.Trigger className="ml-btn ml-btn-secondary ml-btn-size-md">
+      <Popover.Trigger className="ml-btn ml-btn-primary ml-btn-size-md">
         <span className="ml-btn-icon-slot" aria-hidden="true">
           <HugeiconsIcon icon={CalendarAdd01Icon} size={16} strokeWidth={1.75} />
         </span>

@@ -608,6 +608,10 @@ ul {
   border: 0 solid;
   border-image: linear-gradient(to top, var(--ml-border-subtle) 1px, var(--ml-bg) 1px) fill 0 / 0 / 0 100vmax;
 }
+/* The list page's header: same sticky bar as the profile's, with the usual 60px before the cards. */
+.page-head.home-head {
+  margin-bottom: 60px;
+}
 .d-name {
   display: flex;
   align-items: center;

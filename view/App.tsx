@@ -219,29 +219,27 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
 
   return (
     <main className="content">
-      <header className="page-head">
+      <header className="page-head d-head home-head">
         <img className="page-logo" src="/favicon-192.png" alt="WSC Sports" width={44} height={44} />
         <div className="page-title">
           <h1>WSC talent pool</h1>
           <p className="muted">Conference to candidate pipeline</p>
         </div>
+        <NewConference
+          existing={pool.conferences.map((c) => c.name)}
+          onAdd={(text, names) => {
+            const problems = onAddAttendees(text);
+            // Show who came: filter the table to the new event.
+            if (!problems) setConferences(names);
+            return problems;
+          }}
+        />
       </header>
       <PoolCards
         pool={pool}
         attendeesPer={filterCounts(pool).conferences}
         conferences={{ selected: conferences, onSelect: setConferences }}
         jobs={{ selected: jobIds, onSelect: setJobIds }}
-        newConference={
-          <NewConference
-            existing={pool.conferences.map((c) => c.name)}
-            onAdd={(text, names) => {
-              const problems = onAddAttendees(text);
-              // Show who came: filter the table to the new event.
-              if (!problems) setConferences(names);
-              return problems;
-            }}
-          />
-        }
       />
       {filters}
       <AttendeeTable

@@ -101,7 +101,7 @@ export function PoolCards({
   attendeesPer: Map<string, number>;
   conferences: Filter;
   jobs: Filter;
-  newConference: ReactNode;
+  newConference?: ReactNode;
 }) {
   const shortlisted = (jobId: string) =>
     pool.attendees.filter((p) => p.relevantFor.some((r) => r.job.jobId === jobId && r.outcome === 'shortlist')).length;
