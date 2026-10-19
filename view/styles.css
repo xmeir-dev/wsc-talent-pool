@@ -76,6 +76,14 @@ ul {
 .pool-card p {
   margin: 0;
 }
+.pool-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pool-toggle-row {
+  margin-top: 6px !important;
+}
 .pool-count {
   margin: 2px 0 !important;
   font-size: 32px;

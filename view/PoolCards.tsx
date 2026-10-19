@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { HugeiconsIcon } from '@hugeicons/react';
-import { Add01Icon } from '@hugeicons/core-free-icons';
+import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
+import { Add01Icon, Briefcase04Icon, ConferenceIcon } from '@hugeicons/core-free-icons';
 import { Button } from '@meir-labs/ui-kit';
 import type { Pool } from './attendees';
 import { shortDate } from './format';
@@ -11,16 +11,19 @@ interface Row {
 }
 
 /** One card: label, big count, a short line, then "See all" opens the full list in place. */
-function PoolCard({ label, count, line, rows, action, primary }: { label: string; count: number; line: string; rows: Row[]; action: string; primary?: boolean }) {
+function PoolCard({ icon, label, count, line, rows, action, primary }: { icon: IconSvgElement; label: string; count: number; line: string; rows: Row[]; action: string; primary?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <section className="pool-card" aria-label={label}>
       <div className="pool-card-top">
         <div>
-          <span className="muted">{label}</span>
+          <span className="muted pool-label">
+            <HugeiconsIcon icon={icon} size={16} strokeWidth={1.75} aria-hidden="true" />
+            {label}
+          </span>
           <p className="pool-count">{count}</p>
-          <p className="muted">
-            {line} ·{' '}
+          <p className="muted">{line}</p>
+          <p className="pool-toggle-row">
             <button type="button" className="pool-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
               {open ? 'Show less' : 'See all'}
             </button>
@@ -51,6 +54,7 @@ export function PoolCards({ pool, attendeesPer }: { pool: Pool; attendeesPer: Ma
   return (
     <div className="pool-cards">
       <PoolCard
+        icon={ConferenceIcon}
         label="Conferences"
         count={pool.conferences.length}
         line={`${pool.attendees.length} attendees`}
@@ -58,6 +62,7 @@ export function PoolCards({ pool, attendeesPer }: { pool: Pool; attendeesPer: Ma
         action="New conference"
       />
       <PoolCard
+        icon={Briefcase04Icon}
         label="Open jobs"
         count={pool.jobs.length}
         line={`${jobs.reduce((s, j) => s + j.n, 0)} shortlisted across all roles`}
