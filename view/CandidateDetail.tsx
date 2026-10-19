@@ -60,7 +60,7 @@ function skillLabel(s: SkillMatch, must: boolean): string {
   return `${KIND_WORDS[must ? 'must' : s.kind]}, ${state === 'has' ? 'has it' : state === 'missing' ? 'missing' : 'likely'}`;
 }
 
-/** The hover card for a skill chip: the skill, what kind it is, what the profile shows, and the points it earned. */
+/** The hover card for a skill chip: the skill, what kind it is, and what the profile shows. */
 function SkillTip({ s, must }: { s: SkillMatch; must: boolean }) {
   const state = skillState(s);
   const found =
@@ -79,10 +79,6 @@ function SkillTip({ s, must }: { s: SkillMatch; must: boolean }) {
         <span>{KIND_WORDS[must ? 'must' : s.kind]}</span>
         <span>Profile</span>
         <span>{found}</span>
-        <span>Points</span>
-        <span>
-          {s.points} of {s.kind === 'required' ? 2 : 1}
-        </span>
       </span>
     </span>
   );
@@ -145,7 +141,7 @@ function SkillChips({ a, job }: { a: CandidateAssessment; job: Job }) {
   );
 }
 
-/** One job they may fit: a TL;DR (shortlisted, or maybe relevant and why), skill points and years, then the job's skills. */
+/** One job they may fit: a TL;DR (shortlisted, or maybe relevant and why), required skills and years, then the job's skills. */
 function JobFit({ a, job, outcome, onJob }: { a: CandidateAssessment; job: Job; outcome: Relevant; onJob: (jobId: string) => void }) {
   const profile = a.candidate.profile;
   const checks = fitChecks(a, job);
