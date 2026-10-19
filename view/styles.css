@@ -433,6 +433,11 @@ ul {
 .th-text {
   text-box: trim-both cap alphabetic;
 }
+/* The kit's label box is a text line taller than the icon; centre our label in it so it lines up with the sort arrows. */
+.ml-dt-th-label:has(> .th-label) {
+  display: inline-flex;
+  align-items: center;
+}
 
 .candidates td {
   vertical-align: top;
