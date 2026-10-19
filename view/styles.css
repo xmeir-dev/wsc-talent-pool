@@ -453,50 +453,52 @@ ul {
   align-items: flex-start;
   gap: 6px;
 }
-/* One pill per job: the title, then its three shortlist checks right after it. */
+/* One pill per job: the title and a status mark, tinted like the profile's job card header (green shortlisted, amber maybe relevant). */
 .fit {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   max-width: 100%;
-  /* Same shape as the WSC connection tags: 24px tall, fully round, 20px round icons 2px in from the edge. */
+  /* Same shape as the WSC connection tags: 24px tall, fully round. */
   box-sizing: border-box;
   min-height: 24px;
-  padding: 1px 2px 1px 10px;
+  padding: 2px 8px 2px 10px;
   border-radius: 9999px;
-  box-shadow: inset 0 0 0 1px var(--ml-border);
-  background: var(--ml-bg-surface);
+  box-shadow: inset 0 0 0 1px var(--fit-line);
+  background: var(--fit-tint);
+  color: var(--ml-text);
   font-size: 12px;
   font-weight: 500;
+  cursor: default;
 }
-.fit-checks {
-  display: inline-flex;
+.fit.is-shortlist,
+.d-fit.is-shortlist {
+  --fit-text: var(--ml-color-success);
+  --fit-tint: var(--ml-color-success-muted);
+  --fit-line: color-mix(in srgb, var(--ml-color-success) 28%, transparent);
+}
+.fit.is-review,
+.d-fit.is-review {
+  --fit-text: #9a6700;
+  --fit-tint: color-mix(in srgb, #d4a72c 14%, transparent);
+  --fit-line: color-mix(in srgb, #d4a72c 40%, transparent);
+}
+[data-meirlabs-theme='dark'] .fit.is-review,
+[data-meirlabs-theme='dark'] .d-fit.is-review {
+  --fit-text: #d29922;
+}
+.fit svg {
   flex-shrink: 0;
-  gap: 2px;
+  color: var(--fit-text);
 }
-/* Centre the letters on their cap height, and keep each hover wrapper exactly icon-sized, so text and icons sit mid-pill. */
+/* Centre the letters on their cap height so text and icon sit mid-pill. */
 .fit-title {
   text-box: trim-both cap alphabetic;
 }
-.fit-checks > * {
+/* Hover wrappers stay pill-sized. */
+.jobs > * {
   display: flex;
-}
-/* One round icon per check: green when passed, grey when not. */
-.fit-check {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px var(--ml-border);
-  background: var(--ml-bg-card);
-  color: var(--ml-text-faint);
-}
-.fit-check.is-ok {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ml-color-success) 35%, transparent);
-  background: var(--ml-color-success-muted);
-  color: var(--ml-color-success);
+  max-width: 100%;
 }
 .conns {
   display: flex;
@@ -944,18 +946,7 @@ ul {
 /* The TL;DR row right under the title band, then a row each for required skills, nice to have and experience, hairlines edge to edge. */
 /* Job fit card: the header is tinted by the verdict, which sits on the right of the title. */
 .d-fit {
-  --fit-text: var(--ml-color-success);
-  --fit-tint: var(--ml-color-success-muted);
-  --fit-line: color-mix(in srgb, var(--ml-color-success) 28%, transparent);
   border-color: var(--fit-line);
-}
-.d-fit.is-review {
-  --fit-text: #9a6700;
-  --fit-tint: color-mix(in srgb, #d4a72c 14%, transparent);
-  --fit-line: color-mix(in srgb, #d4a72c 40%, transparent);
-}
-[data-meirlabs-theme='dark'] .d-fit.is-review {
-  --fit-text: #d29922;
 }
 /* The hover wrapper around the verdict is a flex box, so it centres like the title instead of sitting on a text baseline. */
 .d-card.d-fit .d-label > * {

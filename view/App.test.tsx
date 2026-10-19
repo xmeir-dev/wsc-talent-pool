@@ -111,8 +111,9 @@ describe('recruiter view: list', () => {
     await showAll(userEvent.setup());
     const adaora = screen.getByRole('row', { name: /Adaora Okafor/ });
     expect(adaora.querySelector('.jobs')?.textContent).toBe('Senior ML Engineer: Needs review');
-    expect([...adaora.querySelectorAll('.fit-check')].map((c) => c.classList.contains('is-ok'))).toEqual([false, true, true]);
-    expect(within(adaora).getByRole('img', { name: /^Must-have skills: missing PyTorch/ })).toBeTruthy();
+    // One pill per job, tinted by the verdict: no per-check icons.
+    expect(adaora.querySelector('.jobs .fit')!.classList.contains('is-review')).toBe(true);
+    expect(adaora.querySelectorAll('.fit-check')).toHaveLength(0);
     const noah = screen.getByRole('row', { name: /Noah Anderson/ });
     expect([...noah.querySelectorAll('.jobs .fit')].map((p) => p.textContent)).toEqual([
       'Data Engineer: Shortlist',

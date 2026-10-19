@@ -1,20 +1,13 @@
 import { isValidElement, type ReactElement, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import {
-  Calendar03Icon,
-  CheckListIcon,
-  Clock01Icon,
-  StarIcon,
-  Briefcase04Icon,
-  UserIcon,
-} from '@hugeicons/core-free-icons';
+import { Briefcase04Icon, Calendar03Icon, CheckmarkBadge01Icon, HelpCircleIcon, UserIcon } from '@hugeicons/core-free-icons';
 import { DataTable, Hint, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
 import { CountryFlag } from './Location';
 import { WscMark } from './WscMark';
-import { fitChecks, shortDate, TABLE_OUTCOME_LABEL, type FitCheckKey } from './format';
+import { fitChecks, shortDate, TABLE_OUTCOME_LABEL } from './format';
 
 interface Shared {
   onOpen: (key: string) => void;
@@ -80,31 +73,32 @@ const connections = ({ any, candidate, relevantFor }: Attendee) => {
   );
 };
 
-export const CHECK_ICON: Record<FitCheckKey, IconSvgElement> = { must: StarIcon, skills: CheckListIcon, years: Clock01Icon };
-
-/** One line per job, shortlist first: the title, then the three shortlist checks, green when passed. */
+/** One pill per job, shortlist first: the title, tinted green (shortlisted) or amber (maybe relevant), with the reason on hover. */
 function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
   if (list.length === 0) return empty;
   const ordered = [...list].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1));
   return (
     <span className="jobs">
-      {ordered.map(({ job, outcome, a }) => (
-        <span key={job.jobId} className="fit">
-          <span className="fit-title">
-            {job.title}
-            <span className="ml-visually-hidden">{`: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
-          </span>
-          <span className="fit-checks">
-            {fitChecks(a, job).map((c) => (
-              <Hint key={c.key} tip={c.tip} focusable={false}>
-                <span className={`fit-check${c.ok ? ' is-ok' : ''}`} role="img" aria-label={c.tip}>
-                  <HugeiconsIcon icon={CHECK_ICON[c.key]} size={14} strokeWidth={1.75} aria-hidden="true" />
-                </span>
-              </Hint>
-            ))}
-          </span>
-        </span>
-      ))}
+      {ordered.map(({ job, outcome, a }) => {
+        const shortlisted = outcome === 'shortlist';
+        const why = shortlisted
+          ? 'Shortlisted'
+          : `Maybe relevant: ${fitChecks(a, job)
+              .filter((c) => !c.ok)
+              .map((c) => c.tip)
+              .join('. ')}`;
+        return (
+          <Hint key={job.jobId} tip={why} focusable={false}>
+            <span className={`fit ${shortlisted ? 'is-shortlist' : 'is-review'}`}>
+              <span className="fit-title">
+                {job.title}
+                <span className="ml-visually-hidden">{`: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
+              </span>
+              <HugeiconsIcon icon={shortlisted ? CheckmarkBadge01Icon : HelpCircleIcon} size={14} strokeWidth={1.75} aria-hidden="true" />
+            </span>
+          </Hint>
+        );
+      })}
     </span>
   );
 }
