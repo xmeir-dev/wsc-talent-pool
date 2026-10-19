@@ -149,26 +149,30 @@ function Lead({ a }: { a: CandidateAssessment }) {
   const o = overviewFor(a.candidate);
   if (!o) return null;
   const met = a.candidate.attendances.find((at) => at.notes.trim());
+  // A message from whoever wrote it: their avatar beside a speech bubble, who and where underneath.
   return (
     <section className="d-lead">
-      <p className="d-quote">{o.text}</p>
-      <div className="d-byline">
-        {o.by ? (
-          <>
-            <Avatar size="xs" src={AVATAR[o.by.id]} fallback={initials(o.by.name)} aria-hidden="true" />
-            <span>
-              Note by {o.by.name} at{' '}
+      {o.by ? (
+        <Avatar size="md" src={AVATAR[o.by.id]} fallback={initials(o.by.name)} aria-hidden="true" />
+      ) : (
+        <span className="d-lead-ai" aria-hidden="true">
+          <HugeiconsIcon icon={AiFileIcon} size={16} strokeWidth={1.75} />
+        </span>
+      )}
+      <div className="d-lead-body">
+        <p className="d-bubble">{o.text}</p>
+        <p className="d-byline">
+          {o.by ? (
+            <>
+              {o.by.name} at{' '}
               <Hint tip={shortDate(o.by.date)} focusable={false}>
                 <span className="d-conf">{met?.conferenceName}</span>
               </Hint>
-            </span>
-          </>
-        ) : (
-          <>
-            <HugeiconsIcon icon={AiFileIcon} size={14} strokeWidth={1.75} aria-hidden="true" />
-            {o.origin}
-          </>
-        )}
+            </>
+          ) : (
+            o.origin
+          )}
+        </p>
       </div>
     </section>
   );
