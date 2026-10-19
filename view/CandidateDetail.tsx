@@ -108,7 +108,7 @@ function Lead({ a }: { a: CandidateAssessment }) {
   const met = a.candidate.attendances.find((at) => at.notes.trim());
   return (
     <section className="d-lead">
-      <p className="d-quote">{o.source === 'recruiter' ? `“${o.text}”` : o.text}</p>
+      <p className="d-quote">{o.text}</p>
       <div className="d-byline">
         {o.by ? (
           <>
