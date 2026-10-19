@@ -445,6 +445,35 @@ ul {
   vertical-align: top;
   overflow-wrap: anywhere;
 }
+/* The tick box sits in the middle of its cell, both ways, in the header and every row. */
+.candidates .ml-dt-check-cell {
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+/* A block, not inline: an inline box sits on the text line and lands a pixel or two high. */
+.candidates .ml-dt-check-cell .ml-dt-check {
+  display: flex;
+  width: fit-content;
+  margin: 0 auto;
+}
+/* Smaller than the kit's 18px: a quiet control beside the names, not a feature. */
+.candidates .ml-dt-check-cell {
+  width: 40px;
+}
+.candidates .ml-dt-check-box {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+.candidates .ml-dt-check-mark {
+  width: 10px;
+  height: 10px;
+}
+.candidates .ml-dt-check-dash {
+  width: 6px;
+}
 
 .rank-cell {
   display: inline-flex;

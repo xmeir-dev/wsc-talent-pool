@@ -84,7 +84,7 @@ export function BulkActions({ selected, jobs, onClear }: { selected: Attendee[];
   return (
     <div className="bulk-bar" role="region" aria-label="Selected attendees">
       <span className="bulk-count">{selected.length} selected</span>
-      <BulkPanel label="Invite to job" icon={<HugeiconsIcon icon={MailAdd01Icon} size={16} strokeWidth={1.75} />} title={`Invite ${selected.length} to a job`}>
+      <BulkPanel label="Invite to jobs" icon={<HugeiconsIcon icon={MailAdd01Icon} size={16} strokeWidth={1.75} />} title={`Invite ${selected.length} to a job`}>
         {(close) => (
           <>
             <Select
