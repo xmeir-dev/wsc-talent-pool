@@ -4,6 +4,7 @@ import {
   AiFileIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
+  ArrowUpRight01Icon,
   Briefcase01Icon,
   Calendar03Icon,
   Cancel01Icon,
@@ -311,7 +312,8 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
               {x.name}
             </span>
             <a href={x.href} target={x.key === 'email' ? undefined : '_blank'} rel="noreferrer">
-              {x.value}
+              <span>{x.value}</span>
+              <HugeiconsIcon icon={ArrowUpRight01Icon} size={14} strokeWidth={1.75} aria-hidden="true" />
             </a>
           </li>
         ))}

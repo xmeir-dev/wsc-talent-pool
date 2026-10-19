@@ -791,9 +791,10 @@ ul {
   border-bottom: 0;
 }
 .d-contact a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   /* Padded always, pulled back by the same amount, so the hover pill doesn't move the text. */
   margin-right: -10px;
@@ -804,6 +805,20 @@ ul {
   transition:
     background-color 150ms ease-out,
     color 150ms ease-out;
+}
+.d-contact a span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The arrow's space is always kept; it fades in on hover to say the link opens elsewhere. */
+.d-contact a svg {
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+.d-contact a:hover svg,
+.d-contact a:focus-visible svg {
+  opacity: 1;
 }
 .d-contact a:hover,
 .d-contact a:focus-visible {
