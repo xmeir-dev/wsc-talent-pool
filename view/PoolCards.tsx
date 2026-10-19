@@ -10,8 +10,8 @@ interface Row {
   value: string;
 }
 
-/** One card: label, big count, a short line, then "See all" opens the full list in place. */
-function PoolCard({ icon, label, count, line, rows, action, primary }: { icon: IconSvgElement; label: string; count: number; line: string; rows: Row[]; action: string; primary?: boolean }) {
+/** One card: icon, label, big count, then "See all" opens the full list in place. */
+function PoolCard({ icon, label, count, rows, action, primary }: { icon: IconSvgElement; label: string; count: number; rows: Row[]; action: string; primary?: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <section className="pool-card" aria-label={label}>
@@ -22,7 +22,6 @@ function PoolCard({ icon, label, count, line, rows, action, primary }: { icon: I
             {label}
           </span>
           <p className="pool-count">{count}</p>
-          <p className="muted">{line}</p>
           <p className="pool-toggle-row">
             <button type="button" className="pool-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
               {open ? 'Show less' : 'See all'}
@@ -57,7 +56,6 @@ export function PoolCards({ pool, attendeesPer }: { pool: Pool; attendeesPer: Ma
         icon={ConferenceIcon}
         label="Conferences"
         count={pool.conferences.length}
-        line={`${pool.attendees.length} attendees`}
         rows={pool.conferences.map((c) => ({ name: c.name, value: `${shortDate(c.date)} · ${attendeesPer.get(c.name)} attendees` }))}
         action="New conference"
       />
@@ -65,7 +63,6 @@ export function PoolCards({ pool, attendeesPer }: { pool: Pool; attendeesPer: Ma
         icon={Briefcase04Icon}
         label="Open jobs"
         count={pool.jobs.length}
-        line={`${jobs.reduce((s, j) => s + j.n, 0)} shortlisted across all roles`}
         rows={jobs.map((j) => ({ name: j.name, value: `${j.n} shortlisted` }))}
         action="New job"
         primary
