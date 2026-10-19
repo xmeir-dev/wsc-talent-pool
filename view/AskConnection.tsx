@@ -1,6 +1,6 @@
 import { useMemo, useState, type KeyboardEvent, type ReactNode, type SyntheticEvent } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Cancel01Icon, Copy01Icon, Mail01Icon, SlackIcon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, ArrowUp01Icon, Cancel01Icon, Copy01Icon, Mail01Icon, SlackIcon } from '@hugeicons/core-free-icons';
 import { Avatar, Button, Popover, Tag } from '@meir-labs/ui-kit';
 import {
   buildDataset,
@@ -132,7 +132,6 @@ function Timeline({ o, theirName, myName }: { o: Overlap; theirName: string; myN
   const marks = [...new Set([o.theirs.start, o.mine.start, o.together.start, o.together.end])].sort((a, b) => a - b);
   return (
     <div className="ask-overlap">
-      <strong>{o.company}</strong>
       <div
         className="ask-gantt"
         role="img"
@@ -162,6 +161,16 @@ function Timeline({ o, theirName, myName }: { o: Overlap; theirName: string; myN
   );
 }
 
+/** Text button that opens a section below it: arrow on the right, down to open, up to close. */
+function Disclosure({ open, onToggle, children }: { open: boolean; onToggle: () => void; children: ReactNode }) {
+  return (
+    <button type="button" className="ask-disclosure" aria-expanded={open} onClick={onToggle}>
+      {children}
+      <HugeiconsIcon icon={open ? ArrowUp01Icon : ArrowDown01Icon} size={14} aria-hidden="true" />
+    </button>
+  );
+}
+
 const stop = (e: SyntheticEvent) => e.stopPropagation();
 /** Keys stay inside the popover (the table row would otherwise treat Space and Enter as "open profile"), except Escape. */
 const keepKeys = (e: KeyboardEvent) => {
@@ -186,6 +195,8 @@ export function AskConnection({
   const qs = questions(myFirst, !!overlap);
   const [picked, setPicked] = useState([true, true, true, false]);
   const [text, setText] = useState<string | null>(null);
+  const [showTimeline, setShowTimeline] = useState(false);
+  const [showQuestions, setShowQuestions] = useState(false);
   const [status, setStatus] = useState<ReactNode>(null);
   const message =
     text ??
@@ -257,31 +268,39 @@ export function AskConnection({
           </Button>
         </div>
         {overlap ? (
-          <Timeline o={overlap} theirName={theirFirst} myName={myFirst} />
-        ) : (
-          <p className="muted ask-linkedin">LinkedIn connection · no shared employer on record</p>
-        )}
-        <div className="ask-chips">
-          {qs.map((q, i) => (
-            <button key={q} type="button" className="ask-chip" aria-pressed={picked[i]} onClick={() => toggle(i)}>
-              <span className="ask-check" aria-hidden="true" />
-              {q}
-            </button>
-          ))}
-        </div>
-        <div className="ask-msg">
-          <Avatar size="sm" fallback="You" aria-hidden="true" />
-          <label className="ask-msg-body">
-            <span className="ask-msg-from">
-              You <span className="ask-msg-time">now</span>
+          <div className="ask-context">
+            <span>
+              <strong className="ask-together">Together at {overlap.company}</strong> {span(overlap.together)}
             </span>
-            <textarea
-              value={message}
-              onChange={(e) => setText(e.target.value)}
-              rows={7}
-              aria-label={`Message to ${employee.fullName}`}
-            />
-          </label>
+            <Disclosure open={showTimeline} onToggle={() => setShowTimeline((v) => !v)}>
+              Timeline
+            </Disclosure>
+          </div>
+        ) : (
+          <p className="muted ask-context">LinkedIn connection</p>
+        )}
+        {overlap && showTimeline && <Timeline o={overlap} theirName={theirFirst} myName={myFirst} />}
+        <textarea
+          className="ask-text"
+          value={message}
+          onChange={(e) => setText(e.target.value)}
+          rows={11}
+          aria-label={`Message to ${employee.fullName}`}
+        />
+        <div className="ask-questions">
+          <Disclosure open={showQuestions} onToggle={() => setShowQuestions((v) => !v)}>
+            Questions · {picked.filter(Boolean).length} of {qs.length}
+          </Disclosure>
+          {showQuestions && (
+            <div className="ask-chips">
+              {qs.map((q, i) => (
+                <button key={q} type="button" className="ask-chip" aria-pressed={picked[i]} onClick={() => toggle(i)}>
+                  <span className="ask-check" aria-hidden="true" />
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="ask-actions">
           <Button
@@ -303,7 +322,12 @@ export function AskConnection({
           >
             Send in Slack
           </Button>
-          <Button size="sm" variant="secondary" href={email} leftIcon={<HugeiconsIcon icon={Mail01Icon} size={16} aria-hidden="true" />}>
+          <Button
+            size="sm"
+            variant="secondary"
+            href={email}
+            leftIcon={<HugeiconsIcon icon={Mail01Icon} size={16} aria-hidden="true" />}
+          >
             Email {theirFirst}
           </Button>
           <span className="ask-status muted" role="status">

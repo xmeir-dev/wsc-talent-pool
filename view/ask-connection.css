@@ -17,13 +17,15 @@
   border-color: var(--ml-text);
 }
 
-.ask {
-  width: min(460px, calc(100vw - 32px));
+/* Doubled class: beats the kit popover's 360px max-width. */
+.ask.ask {
+  width: min(540px, calc(100vw - 32px));
+  max-width: none;
   max-height: calc(100vh - 16px);
   overflow-y: auto;
   display: grid;
   gap: 14px;
-  padding: 16px;
+  padding: 18px;
 }
 
 .ask-head {
@@ -38,9 +40,6 @@
   font-weight: 600;
 }
 
-.ask-linkedin {
-  font-size: 13px;
-}
 
 /* Timeline */
 .ask-overlap {
@@ -147,43 +146,54 @@
   transform: translateY(-1px) rotate(-45deg);
 }
 
-/* Message, Slack-style */
-.ask-msg {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
+/* Context line, message, questions */
+.ask-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-size: 13px;
+  color: var(--ml-text-muted);
 }
-.ask-msg-body {
-  display: grid;
-  gap: 2px;
+.ask-together {
+  color: var(--ml-color-success);
+  font-weight: 600;
 }
-.ask-msg-from {
-  font-weight: 700;
-}
-.ask-msg-time {
-  font-weight: 400;
-  font-size: 12px;
-  color: var(--ml-text-faint);
-  margin-left: 4px;
-}
-.ask-msg textarea {
-  width: 100%;
-  border: 1px solid transparent;
-  border-radius: var(--ml-radius-sm);
-  padding: 2px 4px;
-  margin-left: -4px;
+.ask-disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
   background: none;
+  padding: 0;
+  color: var(--ml-text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ask-disclosure:hover {
+  color: var(--ml-text);
+}
+.ask-text {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid var(--ml-border);
+  border-radius: var(--ml-radius-md);
+  padding: 10px 12px;
+  background: var(--ml-bg-surface);
   color: var(--ml-text);
   font: inherit;
-  line-height: 1.5;
+  line-height: 1.55;
   resize: vertical;
 }
-.ask-msg textarea:hover {
-  border-color: var(--ml-border-subtle);
-}
-.ask-msg textarea:focus {
+.ask-text:focus {
   outline: none;
-  border-color: var(--ml-border);
+  border-color: var(--ml-text-muted);
+}
+.ask-questions {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
 }
 
 .ask-actions {
