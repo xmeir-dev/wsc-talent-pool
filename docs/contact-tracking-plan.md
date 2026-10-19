@@ -1,106 +1,132 @@
 # Contact tracking plan
 
-Status: proposal for review, 2026-10-19. Not built yet.
+Status: proposal, revised 2026-10-19 after CTO review. Not built yet.
 
-Proposal: record every outreach action on the person and show one status per person, so a recruiter can see at a glance who in the talent pool was contacted, how, and with what result.
+Proposal: keep a history of every outreach action and show where each person stands **for each role**, with person-wide warnings on top, so recruiters can see who was contacted, how and with what result, and are stopped before contacting someone they shouldn't. Outreach stays separate from candidate fit: nothing here changes a ranking.
 
 ## Why we are doing this
 
-The recruiter asked for it directly: on the 2026-10-15 discovery call she wanted to "manage the process" in one place, meaning see who is relevant, where to start, and whether and how each person was contacted. Today the view can draft an invite or a reference request, but it forgets it the moment the panel closes.
+The recruiter asked for it directly: on the 2026-10-15 discovery call she wanted to "manage the process" in one place, meaning see who is relevant, where to start, and whether and how each person was contacted. Today the view drafts invites and reference requests but forgets them as soon as the panel closes.
 
 Why it matters:
 
-- **No double contact.** Five recruiters share one pool. Without a record, two of them can invite the same person, or ask the same colleague twice. The call was explicit that unwanted messages to attendees "feel weird"; repeats are worse.
-- **The pool only pays off if it is worked.** Her own example: a product meetup five months ago, a product role opening today, and "I won't go back to look." A status per person turns the pool into a worklist: who for this role have we not contacted yet?
-- **Bulk actions need memory.** The view now has Invite to jobs and Ask WSC connections for many people at once. Without tracking, a second bulk send can hit people already contacted.
-- **Managers can see progress.** Contacted, replied and not interested per conference and per role is the first honest measure of whether conference contacts turn into hires (the [design doc](design.md#measuring-success)'s success measures need this data).
-- **It keeps people in fewer tools.** In production every action lands on the person's HubSpot record, which the call asked for ("data should move between systems").
+- **No unwanted or repeated contact.** Five recruiters share one pool. Without a record, two of them can invite the same person, approach someone already interviewing, or ask the same colleague twice. The call was explicit that unwanted messages to attendees "feel weird"; repeats are worse.
+- **The pool only pays off if it is worked.** Her own example: a product meetup five months ago, a product role opening today, and "I won't go back to look." A status per role turns the pool into a worklist: who for this role have we not contacted yet?
+- **Bulk actions need guard rails.** The view now has Invite to jobs and Ask WSC connections for many people at once. Without them, one click can reach people who declined or are mid-process.
+- **Managers can see progress.** Contacted, responded and declined per conference and per role is the first honest measure of whether conference contacts turn into hires (the [design doc](design.md#measuring-success)'s success measures need this data).
+- **It keeps people in fewer tools.** HubSpot holds the pool and shows the history; Comeet keeps owning recruitment progress after handoff, as the call asked ("data should move between systems").
+
+## What changed after review
+
+| Review point | Change in this version |
+| --- | --- |
+| Track outcomes per person **and role** | Status is per person × role. Person-wide warnings (Do not contact, Already interviewing) sit on top. Reference requests are tracked separately from contacting the candidate. |
+| Only record "sent" when sending is confirmed | Every action has a state: Prepared, Sent, Failed, Confirmed by recruiter, or Simulated. Copying a message or opening email is Prepared, never Sent. Adding someone to Comeet is not treated as an invitation. |
+| Repeat protection beyond a 30-day rule | Blocking rules apply to single and bulk actions: Do not contact, already in a process, same role already contacted, same colleague already asked about the same person. Production adds a server-side check for two recruiters acting at once. |
+| Use Comeet's existing tracking | Comeet leads already carry a role, an outreach status (Not Contacted, Contacted, Responded) and a process status ([lead schema](https://developers.comeet.com/reference/lead-schema)). Production uses them instead of rebuilding them. |
+| Allow corrections and deletion | Corrections add a new entry that supersedes the old one (audit kept). A deletion request removes the person's history from every connected system. |
 
 ## What the recruiter sees
 
-Three additions, no new page:
-
 | Where | What appears | What it is for |
 | --- | --- | --- |
-| Main table | A **Status** column with one word per person: Not contacted, Asked colleague, Invited, In Comeet, Replied, Not interested | Scan the pool for who still needs a first touch |
+| Main table | A **Status** column showing the person's status **for the selected role** (or their most advanced role when no role is selected), plus a warning icon for person-wide flags | Scan a role's pool for who still needs a first touch |
 | Filter line | A **Status** filter next to Conference, Job and Location | "Shortlisted for Data Engineer and not contacted yet" in two clicks |
-| Profile page | An **Activity** card: every invite, reference request, Comeet change and outcome, newest first, with who did it and when | Context before contacting someone; no repeats |
+| Profile page | An **Activity** card: each entry with its role, action state (Prepared, Sent, Failed, Confirmed, Simulated), who and when; a separate **Reference requests** list; person-wide flags at the top | Context before contacting someone |
+| Invite and Ask panels | A block, not a warning, when a rule applies: "Already interviewing for Data Engineer (Comeet)", "Asked not to be contacted", "Noa was already asked about Alex on 12 Oct" | No unwanted or repeated contact |
 
-The recruiter also sets outcomes by hand on the profile (Replied, Interested, Not interested), because replies arrive by email or Slack, outside the app.
+Recruiters set outcomes per role by hand (Responded, Interested, Declined), and can mark a Prepared message as **Sent by me** once they have actually sent it. A person-wide **Do not contact** can be set from the profile.
 
-Invite and Ask warn before a repeat: "Invited to Senior ML Engineer on 12 Oct by Neta. Send again?" Bulk actions skip people already invited to the same job in the last 30 days and say how many were skipped.
+Everything in the demo is labelled Simulated, next to the existing Demo sticker.
 
 ## Data model
 
-An append-only event log per person; the status is computed from it, never typed in. Nothing is edited or deleted, so the history is the audit trail.
+Three kinds of record, kept apart:
 
-| Event | Recorded when | Fields |
+| Record | Key | Values |
 | --- | --- | --- |
-| `invited` | Send invite (single or bulk) | person, job, channel (Comeet), by, at |
-| `asked_colleague` | Ask sent to a WSC employee (single or bulk) | person, employee, channel (Slack or email), by, at |
-| `outcome` | Recruiter marks Replied, Interested or Not interested | person, outcome, optional note, by, at |
-| `comeet_status` | Sync reads a change from Comeet | person, job, Comeet status and step, at |
+| Role status | person × role | Not contacted, Contacted, Responded, Interested, Declined; once handed off: Comeet's own process status (In progress, On hold, Rejected, Not interested, Hired) |
+| Person flags | person | Do not contact; Already interviewing (derived: an active Comeet process for any role) |
+| Reference requests | person × colleague | Prepared, Sent, Failed, Confirmed, with any answer the recruiter records |
 
-One status per person, highest rule wins:
+Each outreach or reference action is an entry with: role (if any), channel (Comeet, Slack, email, copy), **action state**, by, at.
 
-1. **Not interested**: any `outcome` = not interested (stays until a newer outcome replaces it)
-2. **In Comeet**: an active Comeet candidacy for any role
-3. **Replied** / **Interested**: the latest positive `outcome`
-4. **Invited**: any `invited`
-5. **Asked colleague**: any `asked_colleague`
-6. **Not contacted**: none of the above
+| Action state | Meaning | Counts as contact? |
+| --- | --- | --- |
+| Prepared | Drafted, copied, or opened in an email app | No |
+| Sent | The sending system confirmed it (Slack API success, an email send result, a Comeet message we can see) | Yes |
+| Failed | The sending system returned an error | No |
+| Confirmed | The recruiter marked a Prepared message as sent by them | Yes |
+| Simulated | Demo only: what would have been sent | Shown as simulated, never mixed with real counts |
 
-Status is per person, not per job: someone who said no to one role is flagged before anyone approaches them for another. The Activity card still shows which job each event was about.
+Corrections: entries are not edited in place. A correction is a new entry that supersedes an earlier one (for example "Declined" entered by mistake, replaced by "Responded"), so the history shows both. Deletion is different: a person's deletion request removes their entries, flags and requests everywhere (see below).
 
-The status never changes a ranking result. Fit and outreach stay separate, as the [scoring rules](scoring.md) already keep fit and connections separate.
+## Rules before any contact
+
+Checked for every single and bulk action. A bulk action skips blocked people and lists why ("3 skipped: 2 already interviewing, 1 asked not to be contacted").
+
+| Rule | Blocks |
+| --- | --- |
+| Do not contact | Every invite and every reference request about them |
+| Already interviewing (active Comeet process, any role) | New invites; the owning recruiter decides |
+| Role status is Contacted or later for this role | A second invite to the same role |
+| Declined this role | Invites to this role; other roles stay open, with a warning |
+| Same colleague already asked about the same person (Sent or Confirmed) | A repeat request |
+| Recent contact for another role (window to agree, e.g. 30 days) | Warns, does not block |
+
+Production: two recruiters can act at the same moment, so the check runs on the server, and one key per person × role × action makes a second identical action a no-op. Browser storage cannot show this; the demo only checks one browser's history.
 
 ## Where it is stored
 
-The demo keeps the log in the browser; production keeps it on the person's HubSpot record, so the whole team sees the same history in the tool they already use.
+HubSpot holds the pool and displays the history; Comeet owns progress after handoff.
 
 | Piece | Demo (this take-home) | Production |
 | --- | --- | --- |
-| Event log | Browser storage, one key per browser, survives reload; not shared between people | A HubSpot note on the contact per event, plus a small table in the assessment store for fast filtering |
-| Status | Computed in the view from the log | Same rules, written to contact properties `talent_outreach_status` and `talent_last_contacted_at`, so HubSpot lists and views can filter on it |
-| Invite | Logged as `invited`; nothing sent | Recruiting API adds the person to the Comeet position; Comeet sends the invite; logged as `invited` |
-| Comeet status | Made-up history (`data/demo_comeet.json`) | Read from the Comeet Recruiting API every few minutes (Comeet has no status-change webhook); changes logged as `comeet_status` |
-| Ask a colleague | Logged as `asked_colleague`; nothing sent | Slack bot sends a direct message (or email); logged as `asked_colleague` |
-| Outcomes | Set on the profile | Same, written back to HubSpot |
+| History and flags | Browser storage, one browser, survives reload, labelled Simulated | HubSpot: a note per entry on the contact, contact properties for person flags and last contact; the assessment store keeps the per-role table for fast filtering |
+| Role status before handoff | Computed from the history | Same, mirrored to HubSpot properties so lists can filter on it |
+| Role status after handoff | Made-up Comeet history (`data/demo_comeet.json`) | A Comeet lead or candidate for that role; its `outreach_status` and `status` are read back every few minutes (no status webhook) |
+| Invite | Simulated entry | Created as a Comeet lead or candidate for the role; marked Sent only when an actual message is confirmed, not on creation ([create a candidate](https://developers.comeet.com/reference/create-a-candidate-new) does not say an invitation is sent) |
+| Reference request | Simulated entry; copy and email are Prepared | Slack bot direct message, Sent on API success; email Prepared until confirmed |
+| Deletion | Clear the browser history for that person | Delete across HubSpot, the assessment store and Comeet, keeping only a dated record that a deletion happened, with no personal data |
 
-Nothing new is collected about the person: the log records WSC's own actions and the recruiter's notes. It follows the retention and deletion rules in [Assumptions](assumptions.md#privacy).
+Nothing new is collected about the person beyond WSC's own actions and recruiters' notes. Retention and deletion follow [Assumptions](assumptions.md#privacy).
+
+## Scope for the assignment
+
+Keep it to what demonstrates the thinking:
+
+1. A **clearly simulated** activity history.
+2. **Role-aware status** in the table and a Status filter.
+3. Seeded examples, so reviewers see the rules without clicking around:
+    - **Declined one role, open for another**: blocked for that role, invitable for the other with a warning.
+    - **Already interviewing**: Ryan Patel, in process for Data Engineer in the demo Comeet data, blocked from new invites.
+    - **Copied but not sent**: a reference request to a colleague that was copied, shown as Prepared, not counted as contact.
+4. The block messages in Invite, Ask and both bulk actions.
+
+Left for production: outcome buttons beyond Responded/Declined, Do not contact management, HubSpot and Comeet writes, concurrency protection.
 
 ## Build steps and tests
 
-Medium-sized, all in the recruiter view (`view/`); the pipeline and its CSV output do not change.
+All in the recruiter view (`view/`); the pipeline and its CSV output do not change.
 
-1. **Activity store**: new `view/activity.ts` with append-only events in browser storage (wrapped so a blocked or private-mode store falls back to memory), a `useActivity()` hook, and a pure `statusFor(events, comeet)` function implementing the six rules.
-2. **Record actions**: Invite to job, Ask (Slack, email, copy), and both bulk actions append events instead of only showing "would send".
-3. **Repeat guard**: single actions warn on a repeat; bulk actions skip people invited to the same job in the last 30 days and report the count.
-4. **Table**: a Status column in `view/CandidateTable.tsx` and a Status filter beside Conference, Job and Location (same filter menu component).
-5. **Profile**: an Activity card (timeline, newest first) and the three outcome buttons.
-6. **Docs**: assumptions (demo storage, the 30-day window), design (HubSpot note and properties), README.
+1. **Activity store**: new `view/activity.ts` with entries in browser storage (falls back to memory when storage is blocked), seeded examples, and pure functions `roleStatus(person, role)`, `personFlags(person)` and `checkContact(action)` implementing the rules above.
+2. **Record actions with their state**: Invite, Ask and both bulk actions add Simulated entries; Copy and Email add Prepared entries; a **Sent by me** control turns Prepared into Confirmed.
+3. **Blocks**: the rules table, in single and bulk actions, with the skip summary.
+4. **Table and filter**: Status column (per selected role) with the flag icon, and a Status filter.
+5. **Profile**: Activity card, Reference requests list, flags.
+6. **Docs**: assumptions (simulated history, one browser), design (HubSpot vs Comeet ownership), README.
 
 Tests:
 
-- Unit: every status rule and precedence case, including Not interested overriding In Comeet, and an empty log.
-- Unit: the repeat guard (same job inside 30 days skipped, different job allowed).
-- Browser: invite someone, reload, status reads Invited and the Activity card shows it; the Status filter narrows to Not contacted; bulk invite twice skips the repeats.
+- Unit: role status per role (declined for one role, open for another); person flags; every block rule; Prepared not counted as contact; a correction superseding an earlier entry.
+- Unit: bulk skip summary counts.
+- Browser: the three seeded examples render as described; inviting someone then reloading shows the entry; the Status filter narrows by role.
 - The existing 128 unit and 16 browser tests stay green.
 
-## Risks and open questions
+## Open questions
 
-| Risk | Effect | Mitigation |
-| --- | --- | --- |
-| Demo history lives in one browser | Reviewers on another machine see a clean slate | Say so on screen (the Demo sticker) and in the assumptions doc; production uses HubSpot |
-| Replies are not captured automatically | A status can lag behind reality until a recruiter marks it | Manual outcome buttons now; reading Slack and email replies is a later step |
-| Status precedence is a judgment call | Recruiters may disagree with e.g. Not interested outranking In Comeet | One function holds the rules; agree them with the recruiting team |
-| Logging outreach is personal data | Needs a lawful basis and a retention limit | Covered by the existing privacy section; log WSC actions only, no message bodies |
-| Scope creep into a CRM | The view starts duplicating HubSpot | Keep it to one status, one log and one filter; HubSpot stays the record |
-
-Open questions for review:
-
-- [ ] Store events as HubSpot notes or as custom timeline events? Timeline events need a full HubSpot app, not the Service Key planned today.
-- [ ] Status per person (proposed) or per person and job?
-- [ ] Is 30 days the right repeat window for bulk invites?
-- [ ] Who may set Not interested, and can anyone undo it or only its author?
-- [ ] Build it for the 2026-10-21 presentation, or present it as the next step?
+- [ ] Are Comeet leads (with outreach status) enabled in WSC's account, and can the Recruiting API create them, or only read them?
+- [ ] HubSpot notes or custom timeline events for the history? Timeline events need a full HubSpot app, not the Service Key planned today.
+- [ ] The cross-role warning window: 30 days, or longer?
+- [ ] Who may set Do not contact, and who may lift it?
+- [ ] Build the assignment scope before the 2026-10-21 presentation, or present it as the next step?
