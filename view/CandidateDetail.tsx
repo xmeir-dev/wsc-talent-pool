@@ -6,6 +6,7 @@ import {
   Briefcase01Icon,
   Calendar03Icon,
   Cancel01Icon,
+  CheckmarkBadge01Icon,
   HelpCircleIcon,
   Linkedin01Icon,
   Mail01Icon,
@@ -15,7 +16,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { Avatar, Button, Hint } from '@meir-labs/ui-kit';
 import { policyFor, type CandidateAssessment, type EmploymentSpell, type Job, type OutputRow, type PossibleReference, type SkillMatch } from '../pipeline';
-import type { Attendee } from './attendees';
+import type { Attendee, Relevant } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
 import { AVATAR, initials } from './avatars';
 import { CHECK_ICON } from './CandidateTable';
@@ -69,7 +70,7 @@ function Label({ icon, children, meta }: { icon: IconSvgElement; children: React
 }
 
 /**
- * The job's skills as one row of chips, required first. Four looks: required and has it (green), nice to have and
+ * The job's skills as chips, required then nice to have. Four looks: required and has it (green), nice to have and
  * has it (green outline), required and missing (red), nice to have and missing (grey dashed). Must-haves carry a star.
  */
 function SkillChips({ a, job }: { a: CandidateAssessment; job: Job }) {
@@ -80,47 +81,70 @@ function SkillChips({ a, job }: { a: CandidateAssessment; job: Job }) {
       e.anyOf.filter((skill) => unmet.has(e.label) || a.skills.some((s) => s.skill === skill && s.match !== 'none')),
     ),
   );
-  const ordered = [...a.skills.filter((s) => s.kind === 'required'), ...a.skills.filter((s) => s.kind === 'nice_to_have')];
+  const chip = (s: SkillMatch) => {
+    const state = skillState(s);
+    const must = musts.has(s.skill);
+    const tip = skillTip(s, must);
+    return (
+      <li key={s.skill}>
+        <Hint tip={tip} focusable={false}>
+          <span className={`d-chip is-${state} is-${s.kind === 'required' ? 'required' : 'nice'}`} aria-label={`${s.skill}: ${tip}`}>
+            <HugeiconsIcon icon={must ? StarIcon : STATE_ICON[state]} size={14} strokeWidth={1.75} aria-hidden="true" />
+            {s.skill}
+          </span>
+        </Hint>
+      </li>
+    );
+  };
+  const groups = [
+    { label: 'Required', skills: a.skills.filter((s) => s.kind === 'required') },
+    { label: 'Nice to have', skills: a.skills.filter((s) => s.kind === 'nice_to_have') },
+  ].filter((g) => g.skills.length > 0);
   return (
-    <ul className="d-chips">
-      {ordered.map((s) => {
-        const state = skillState(s);
-        const must = musts.has(s.skill);
-        const tip = skillTip(s, must);
-        return (
-          <li key={s.skill}>
-            <Hint tip={tip} focusable={false}>
-              <span className={`d-chip is-${state} is-${s.kind === 'required' ? 'required' : 'nice'}`} aria-label={`${s.skill}: ${tip}`}>
-                <HugeiconsIcon icon={must ? StarIcon : STATE_ICON[state]} size={14} strokeWidth={1.75} aria-hidden="true" />
-                {s.skill}
-              </span>
-            </Hint>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="d-skill-groups">
+      {groups.map((g) => (
+        <div key={g.label}>
+          <p className="d-label-name">{g.label}</p>
+          <ul className="d-chips">{g.skills.map(chip)}</ul>
+        </div>
+      ))}
+    </div>
   );
 }
 
-/** One job they may fit: the three shortlist checks, then the job's skills against theirs. */
-function JobFit({ a, job }: { a: CandidateAssessment; job: Job }) {
+/** One job they may fit: a TL;DR (shortlisted, or maybe relevant and why), skill points and years, then the job's skills. */
+function JobFit({ a, job, outcome }: { a: CandidateAssessment; job: Job; outcome: Relevant }) {
   const profile = a.candidate.profile;
+  const checks = fitChecks(a, job);
+  const shortlisted = outcome === 'shortlist';
+  const verdictTip = shortlisted ? a.tieNote && upperFirst(a.tieNote) : checks.filter((k) => !k.ok).map((k) => k.tip).join('. ');
+  const verdict = (
+    <span className="d-verdict">
+      <span className={`fit-check${shortlisted ? ' is-ok' : ''}`} aria-hidden="true">
+        <HugeiconsIcon icon={shortlisted ? CheckmarkBadge01Icon : HelpCircleIcon} size={14} strokeWidth={1.75} />
+      </span>
+      <span>{shortlisted ? `Shortlisted${a.shortlistRank !== null ? `, #${a.shortlistRank}` : ''}` : 'Maybe relevant'}</span>
+    </span>
+  );
   return (
     <section className="d-card">
       <div className="d-label">
         <span className="d-job">{job.title}</span>
       </div>
-      <ul className="d-fit-checks">
-        {fitChecks(a, job).map((k) => (
-          <li key={k.key}>
-            <Hint tip={k.name} focusable={false}>
-              <span className={`fit-check${k.ok ? ' is-ok' : ''}`} role="img" aria-label={`${k.name}: ${k.ok ? 'passed' : 'not passed'}`}>
-                <HugeiconsIcon icon={CHECK_ICON[k.key]} size={14} strokeWidth={1.75} aria-hidden="true" />
-              </span>
-            </Hint>
-            <span>{upperFirst(k.detail)}</span>
-          </li>
-        ))}
+      <ul className="d-fit-strip">
+        <li>{verdictTip ? <Hint tip={verdictTip}>{verdict}</Hint> : verdict}</li>
+        {checks
+          .filter((k) => k.key !== 'must')
+          .map((k) => (
+            <li key={k.key}>
+              <Hint tip={k.name} focusable={false}>
+                <span className={`fit-check${k.ok ? ' is-ok' : ''}`} role="img" aria-label={`${k.name}: ${k.ok ? 'passed' : 'not passed'}`}>
+                  <HugeiconsIcon icon={CHECK_ICON[k.key]} size={14} strokeWidth={1.75} aria-hidden="true" />
+                </span>
+              </Hint>
+              <span>{upperFirst(k.detail)}</span>
+            </li>
+          ))}
       </ul>
       {profile && profile.skills.length > 0 ? (
         <SkillChips a={a} job={job} />
@@ -326,8 +350,8 @@ export function CandidateDetail({ a, row, fits, onBack }: Props) {
         <SectionTitle>Fit to WSC roles</SectionTitle>
         {ordered.length > 0 ? (
           <div className="d-grid">
-            {ordered.map(({ job, a: fit }) => (
-              <JobFit key={job.jobId} a={fit} job={job} />
+            {ordered.map(({ job, outcome, a: fit }) => (
+              <JobFit key={job.jobId} a={fit} job={job} outcome={outcome} />
             ))}
           </div>
         ) : (

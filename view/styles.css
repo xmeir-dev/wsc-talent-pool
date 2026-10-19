@@ -797,21 +797,47 @@ ul {
   font-weight: 500;
   color: var(--ml-text);
 }
-.d-fit-checks {
+/* TL;DR, points and years in one strip right under the title band, edge to edge. */
+.d-fit-strip {
   list-style: none;
-  margin: 4px 0 20px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: -12px -20px 16px;
   padding: 0;
+  border-bottom: 1px solid var(--ml-border-subtle);
+}
+.d-fit-strip > li {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 16px;
+  border-left: 1px solid var(--ml-border-subtle);
+  font-size: 13px;
 }
-.d-fit-checks li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.d-fit-strip > li:first-child {
+  padding-left: 20px;
+  border-left: 0;
 }
-.d-fit-checks li > :first-child {
+.d-fit-strip > li > :first-child {
   display: flex;
+}
+.d-verdict {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  font-weight: 500;
+  cursor: default;
+}
+.d-skill-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.d-skill-groups .d-label-name {
+  margin: 0 0 8px;
 }
 .d-chips {
   list-style: none;
