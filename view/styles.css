@@ -71,12 +71,20 @@ ul {
 }
 
 .page-foot {
-  margin-top: var(--ml-space-lg);
+  margin-top: 40px;
+  text-align: center;
   font-size: 13px;
   color: var(--ml-text-faint);
 }
 .page-foot a {
   color: var(--ml-text-muted);
+  text-decoration: none;
+  transition: color 150ms ease-out;
+}
+.page-foot a:hover {
+  color: var(--ml-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .list-count {
