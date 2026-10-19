@@ -293,7 +293,7 @@ describe('recruiter view: profile', () => {
       'Terraform is-missing is-nice',
     ]);
     expect(cards[1]!.textContent).toContain('Required skills2/6');
-    expect(cards[1]!.textContent).toContain('ExperienceNeeds 45 years');
+    expect(cards[1]!.querySelector('.d-years')!.getAttribute('aria-label')).toBe('5 years, needs 4');
     // "Python or Go": Python meets it, so Go is not shown as a missing must-have.
     expect(screen.getByLabelText('Go: Required, missing')).toBeTruthy();
     expect(screen.getAllByLabelText('Python: Must-have, has it')).toHaveLength(2);

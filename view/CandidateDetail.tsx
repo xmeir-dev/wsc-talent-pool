@@ -9,7 +9,6 @@ import {
   Calendar03Icon,
   Cancel01Icon,
   CheckmarkBadge01Icon,
-  Clock01Icon,
   HelpCircleIcon,
   Linkedin01Icon,
   Mail01Icon,
@@ -132,7 +131,6 @@ function SkillRows({ a, job }: { a: CandidateAssessment; job: Job }) {
   const has = (list: SkillMatch[]) => list.filter((s) => s.match === 'named').length;
   const years = a.candidate.profile?.yearsExperience ?? null;
   const minYears = minYearsFor(job);
-  const yearsState = minYears === null ? 'has' : years !== null && years >= minYears ? 'has' : 'missing';
   return (
     <>
       <FitRow label="Required skills" count={`${has(required)}/${required.length}`} tip={`Needs ${a.tally.requiredNeeded} on the profile`}>
@@ -143,29 +141,56 @@ function SkillRows({ a, job }: { a: CandidateAssessment; job: Job }) {
           <ul className="d-chips">{nice.map(chip)}</ul>
         </FitRow>
       )}
-      <FitRow label="Experience" count={minYears === null ? 'No minimum' : `Needs ${minYears}`}>
-        <span className={`d-chip is-${yearsState} is-required`}>
-          <HugeiconsIcon icon={Clock01Icon} size={14} strokeWidth={1.75} aria-hidden="true" />
-          {years === null ? 'Not stated' : `${years} years`}
-        </span>
+      <FitRow label="Experience" count={minYears === null ? 'No minimum' : undefined}>
+        <YearsBar years={years} minYears={minYears} />
+        {minYears !== null && a.seniority.earlyCareerRoles.length > 0 && (
+          <p className="d-years-note">Includes intern or junior roles; confirm non-intern years</p>
+        )}
       </FitRow>
     </>
   );
 }
 
+/**
+ * Years they have against the years the job needs, on one bar: the fill is their years (green when enough, red when
+ * short), the tick is the minimum. The scale runs to at least 10 years, so bars line up across cards.
+ */
+function YearsBar({ years, minYears }: { years: number | null; minYears: number | null }) {
+  if (years === null) return <p className="unknown">Years not stated on the profile</p>;
+  const scale = Math.max(10, years + 1, (minYears ?? 0) + 2);
+  const at = (n: number) => `${(n / scale) * 100}%`;
+  const state = minYears === null ? 'neutral' : years >= minYears ? 'ok' : 'short';
+  const label = `${years} years${minYears === null ? '' : `, needs ${minYears}`}`;
+  return (
+    <div className="d-years" role="img" aria-label={label}>
+      <div className="d-years-track">
+        <span className={`d-years-fill is-${state}`} style={{ width: at(years) }} />
+        {minYears !== null && <span className="d-years-tick" style={{ left: at(minYears) }} />}
+        {minYears !== null && (
+          <span className="d-years-need" style={{ left: at(minYears) }}>
+            needs {minYears}
+          </span>
+        )}
+      </div>
+      <span className={`d-years-value is-${state}`}>{years} yrs</span>
+    </div>
+  );
+}
+
 /** One row of a job card: a caps label with a count on the right, then its content. */
-function FitRow({ label, count, tip, children }: { label: string; count: string; tip?: string; children: ReactNode }) {
+function FitRow({ label, count, tip, children }: { label: string; count?: string; tip?: string; children: ReactNode }) {
   return (
     <div className="d-fit-row">
       <p className="d-fit-row-head">
         <span className="d-label-name">{label}</span>
-        {tip ? (
-          <Hint tip={tip} focusable={false}>
+        {count !== undefined &&
+          (tip ? (
+            <Hint tip={tip} focusable={false}>
+              <span className="d-meta">{count}</span>
+            </Hint>
+          ) : (
             <span className="d-meta">{count}</span>
-          </Hint>
-        ) : (
-          <span className="d-meta">{count}</span>
-        )}
+          ))}
       </p>
       {children}
     </div>
