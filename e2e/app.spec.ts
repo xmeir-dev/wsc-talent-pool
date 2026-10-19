@@ -102,13 +102,14 @@ test('clicking a column header sorts the attendee list', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
   const firstName = () => bodyRows(page).first().locator('.name').textContent();
-  expect(await firstName()).toContain('Adaora Okafor');
-  await page.getByRole('columnheader', { name: /Relevant job/ }).getByRole('button').click();
+  // Default: by relevant job, shortlisted first.
   await expect(bodyRows(page).first().locator('.jobs .fit').first()).toContainText('Senior ML Engineer: Shortlist');
   await page.getByRole('columnheader', { name: /Candidate/ }).getByRole('button').click();
   expect(await firstName()).toContain('Adaora Okafor');
   await page.getByRole('columnheader', { name: /Candidate/ }).getByRole('button').click();
   expect(await firstName()).not.toContain('Adaora Okafor');
+  await page.getByRole('columnheader', { name: /Relevant job/ }).getByRole('button').click();
+  await expect(bodyRows(page).first().locator('.jobs .fit').first()).toContainText('Senior ML Engineer: Shortlist');
   expect(errors).toEqual([]);
 });
 
@@ -159,7 +160,7 @@ test('a row opens a profile page; Back, Escape and the browser back button retur
 test('a profile shows every job they may fit, whatever the list filter', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
-  await pick(page, 'Job', /^Senior ML Engineer/, /^Backend Engineer/);
+  await pick(page, 'Job', /^Backend Engineer/);
   await page.getByRole('row', { name: /Ingrid Svensson/ }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Ingrid Svensson' })).toBeVisible();
   await expect(page.locator('.d-job')).toHaveText(['Data Engineer', 'Backend Engineer']);

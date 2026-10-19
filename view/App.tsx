@@ -14,6 +14,9 @@ import { downloadFile, exportCsv } from './download';
 import { FilterMenu, type FilterOption } from './FilterMenu';
 import { conferenceShort, jobShort } from './format';
 
+/** The list's default order: shortlisted first, then maybe relevant, then everyone else. */
+const BY_RELEVANT_JOB: SortState = { columnId: 'relevant', direction: 'asc' };
+
 function keyFromHash(): string | null {
   const m = /^#\/candidate\/(.+)$/.exec(window.location.hash);
   return m ? decodeURIComponent(m[1]!) : null;
@@ -82,7 +85,7 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
   const job = jobIds.length === 1 ? jobIds[0]! : null;
   const attendees = useMemo(() => {
     const list = filterAttendees(pool, conferences, jobIds, countries);
-    if (sort || !job) return sortAttendees(list, sort, pool.jobs);
+    if (sort || !job) return sortAttendees(list, sort ?? BY_RELEVANT_JOB, pool.jobs);
     const order = new Map(jobItems(pool, job, []).map(({ a }, i) => [a.candidate.candidateKey, i]));
     return [...list].sort((x, y) => order.get(x.candidate.candidateKey)! - order.get(y.candidate.candidateKey)!);
   }, [pool, conferences, jobIds, countries, sort, job]);
@@ -250,7 +253,8 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         attendees={paged.page}
         onOpen={openProfile}
         emptyState={empty}
-        sort={sort}
+        // With no header clicked: one job keeps that job's ranked order, otherwise shortlisted people come first.
+        sort={sort ?? (job ? null : BY_RELEVANT_JOB)}
         onSort={setSort}
       />
       {shown > 0 && (

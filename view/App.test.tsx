@@ -6,7 +6,7 @@ import { loadSources } from '../cli/load-sources';
 import { assessmentToCsv, buildDataset } from '../pipeline';
 import { FIXTURE_DIR } from '../tests/helpers';
 import { App } from './App';
-import { buildPool, filterAttendees } from './attendees';
+import { buildPool, filterAttendees, sortAttendees } from './attendees';
 import { bundledSources } from './data';
 import { downloadFile } from './download';
 
@@ -68,11 +68,12 @@ describe('recruiter view: list', () => {
     expect(value('Conference')).toBe('All');
   });
 
-  it('opens on every attendee, A–Z, with no top bar or view switcher', () => {
+  it('opens on every attendee, shortlisted first, with no top bar or view switcher', () => {
     render(<App />);
     expect(heading()).toBe('All 75 attendees');
     expect(rows()).toHaveLength(12);
-    expect(rows()[0]!.textContent).toContain('Adaora Okafor');
+    expect(rows()[0]!.textContent).toContain('Priya Anand');
+    expect(rows().every((r) => r.querySelector('.fit.is-shortlist'))).toBe(true);
     expect(trigger('Conference').textContent).toBe('ConferenceAll');
     expect(trigger('Job').textContent).toBe('JobAll');
     expect(screen.queryByRole('tab')).toBeNull();
@@ -127,8 +128,9 @@ describe('recruiter view: list', () => {
     expect(alexei.querySelector('.empty-line')).not.toBeNull();
   });
 
-  it('has no About candidate column; the note lives on the profile', () => {
+  it('has no About candidate column; the note lives on the profile', async () => {
     render(<App />);
+    await showAll(userEvent.setup());
     expect(screen.queryByRole('columnheader', { name: /About candidate/ })).toBeNull();
     const adaora = screen.getByRole('row', { name: /Adaora Okafor/ });
     expect(adaora.textContent).not.toContain('Building video analytics platform for African leagues');
@@ -202,7 +204,8 @@ describe('recruiter view: list', () => {
     expect(value('Job')).toBe('Senior ML Engineer +1');
     expect(heading()).toBe(`${union.length} of 75 attendees`);
     expect(rows()).toHaveLength(union.length);
-    expect(rows().map((r) => r.querySelector('.name')!.textContent)).toEqual(union.map((p) => p.candidate.fullName));
+    const ranked = sortAttendees(union, { columnId: 'relevant', direction: 'asc' }, pool.jobs);
+    expect(rows().map((r) => r.querySelector('.name')!.textContent)).toEqual(ranked.map((p) => p.candidate.fullName));
     expect(screen.getByRole('table').closest('.attendees')).not.toBeNull();
   });
 
