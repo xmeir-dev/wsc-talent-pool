@@ -426,9 +426,6 @@
   outline: 2px solid var(--ml-text);
   outline-offset: 2px;
 }
-.sync-trigger.is-off {
-  color: var(--ml-color-warning);
-}
 .sync-pop.sync-pop {
   width: min(620px, calc(100vw - 32px));
   max-width: none;

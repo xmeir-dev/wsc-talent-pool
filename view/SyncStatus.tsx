@@ -157,7 +157,7 @@ export function SyncStatus() {
 
   return (
     <Popover placement="bottom-end" open={open} onOpenChange={setOpen}>
-      <Popover.Trigger className={`sync-trigger${connected ? '' : ' is-off'}`}>
+      <Popover.Trigger className="sync-trigger">
         {syncing ? 'Syncing…' : connected ? `Synced ${relative(now - Math.max(...times))}` : 'Connect accounts'}
         <HugeiconsIcon icon={ArrowDown01Icon} size={14} strokeWidth={1.75} aria-hidden="true" />
       </Popover.Trigger>
