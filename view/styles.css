@@ -206,6 +206,15 @@ ul {
 .pager {
   margin-top: var(--ml-space-md);
 }
+/* Page size is a quiet control: faint words, muted number, faint outline. */
+.pager .ml-pgf-size,
+.pager .ml-pgf-size span {
+  color: var(--ml-text-faint);
+}
+.pager .ml-pgf-size select {
+  color: var(--ml-text-muted);
+  border-color: var(--ml-border-subtle);
+}
 
 .page-foot {
   margin-top: 60px;
