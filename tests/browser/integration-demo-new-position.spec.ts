@@ -46,9 +46,9 @@ test('New position: criteria suggested from the description, edited, then publis
   // What the engine gives for these confirmed criteria (asserted against the pipeline in tests/app/suggest-criteria.test.ts).
   const counts = EDITED_SRE_COUNTS;
   await toApp(page, 'HubSpot');
-  await expect(notices(page).getByRole('button', { name: `${SRE_TITLE}: ${counts.shortlist} shortlist`, exact: true })).toBeVisible();
-  await expect(notices(page).getByRole('button', { name: `${SRE_TITLE}: ${counts.needs_review} needs review`, exact: true })).toBeVisible();
-  await notices(page).getByRole('button', { name: `${SRE_TITLE}: ${counts.shortlist} shortlist`, exact: true }).click();
+  const notice = notices(page).getByRole('listitem').filter({ hasText: `New Comeet position: ${SRE_TITLE}` });
+  await expect(notice).toContainText(`${counts.shortlist} shortlist · ${counts.needs_review} needs review.`);
+  await notice.getByRole('button', { name: `View results: New Comeet position: ${SRE_TITLE}`, exact: true }).click();
   await expect(group(page, 'Shortlist')).toHaveText(`Shortlist (${counts.shortlist})`);
   await expect(group(page, 'Needs review')).toHaveText(`Needs review (${counts.needs_review})`);
   expect(errors).toEqual([]);
