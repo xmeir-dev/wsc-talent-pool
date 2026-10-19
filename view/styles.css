@@ -348,6 +348,31 @@ ul {
 }
 .filters .export {
   margin-left: auto;
+  gap: 0;
+  padding-inline: 12px;
+}
+/* Icon only; the label slides out on hover or keyboard focus. */
+.export-label {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition:
+    max-width 180ms ease-out,
+    margin-left 180ms ease-out,
+    opacity 120ms ease-out;
+}
+.export:hover .export-label,
+.export:focus-visible .export-label {
+  max-width: 80px;
+  margin-left: 6px;
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .export-label {
+    transition: none;
+  }
 }
 
 .assessed-for {
@@ -708,6 +733,12 @@ ul {
   .filters .export {
     flex: 1 1 100%;
     margin-left: 0;
+  }
+  /* No hover on touch: a full-width button shows its label. */
+  .filters .export .export-label {
+    max-width: 80px;
+    margin-left: 6px;
+    opacity: 1;
   }
 
   .candidates thead {

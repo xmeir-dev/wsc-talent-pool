@@ -77,7 +77,7 @@ describe('recruiter view: list', () => {
     expect(trigger('Job').textContent).toBe('JobAll');
     expect(screen.queryByRole('tab')).toBeNull();
     expect(screen.queryByRole('combobox', { name: 'Role' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Export' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Download' })).toBeTruthy();
   });
 
   it('Location puts WSC office countries first, most attendees first; the rest open behind "N more countries"', async () => {
@@ -224,7 +224,7 @@ describe('recruiter view: list', () => {
     const user = userEvent.setup();
     render(<App />);
     const lastExport = async () => {
-      await user.click(screen.getByRole('button', { name: 'Export' }));
+      await user.click(screen.getByRole('button', { name: 'Download' }));
       return vi.mocked(downloadFile).mock.lastCall![0];
     };
     await pick(user, 'Job', /^Senior ML Engineer/);
