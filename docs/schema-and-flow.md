@@ -61,7 +61,7 @@ Export UTF-8 CSV with headers. Values are the same normalized values as the asse
 
 ## HubSpot preparation
 
-Map `email` to Email, `firstname` to First name, `lastname` to Last name, and other columns to configured `talent_<column>` contact properties, using Number or text as above. Synthetic `HS...` IDs are source identifiers, not HubSpot Record IDs. Resolve identity/email conflicts before import. [HubSpot import guide](https://knowledge.hubspot.com/import-and-export/understand-the-import-tool).
+Map `email` to Email, `firstname` to First name, `lastname` to Last name, and other columns to configured `talent_<column>` contact properties, using Number or text as above. Synthetic `HS...` IDs are source identifiers, not HubSpot Record IDs. Resolve identity/email conflicts before import. Import talent-only contacts as non-marketing contacts, and do not map Contact owner or Lifecycle stage, so an import never overwrites a sales or marketing owner ([design](design.md#production-version)). [HubSpot import guide](https://knowledge.hubspot.com/import-and-export/understand-the-import-tool).
 
 Contact properties hold one selected-job snapshot: another job can overwrite it. Preserve per-job results. Blank CSV cells do not clear old values, including a former shortlist rank, so production updates need an explicit clearing policy. [HubSpot file requirements](https://knowledge.hubspot.com/import-and-export/set-up-your-import-file).
 

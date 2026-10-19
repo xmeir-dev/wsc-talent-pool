@@ -8,6 +8,12 @@ The [written assignment](../assignment/index.html) defines the scope; the [disco
 
 **Plans are assumed.** WSC left the plans to this design (Shir, 2026-10-19), so the production design assumes Comeet Enterprise (API and custom fields) and, for the interactive contact card, HubSpot Enterprise. If WSC is on lower plans, the fallback keeps results on HubSpot properties and lists. See [platform requirements](design.md#production-version).
 
+**Recruiting stays apart from sales and marketing** ([design](design.md#production-version)). Assumed, to confirm with WSC:
+
+- The recruiter responsible for a Comeet position owns the people handed off for it; the HubSpot Contact owner is left alone. Whether Comeet assigns the position's lead recruiter automatically, or the integration must set it, is unverified.
+- Contacts known only as talent are non-marketing contacts, and recruiting activity is not sales progress. Who decides that a talent contact also has a commercial relationship (and so stays a marketing contact) is for WSC's marketing team.
+- The demo's Comeet screens follow Comeet's public API and screenshots; the Candidates and Prospects tab layout should be matched to WSC's own Comeet setup.
+
 ## Selection rules
 
 - **A focused shortlist.** Promising candidates with insufficient evidence go into `needs_review`. Missing information is not proof of missing ability.
@@ -23,7 +29,7 @@ All 75 supplied attendees match a profile: **42 list WSC employee connections an
 
 Profile freshness, application history, previous rejection, job interest, and permission to contact are unknown. Total experience is not specialty experience; employment-history lists cannot safely be paired by position.
 
-Roles have no location in the data, so location does not affect the score; recruiters can filter by where attendees are based. The Location filter lists countries with a WSC office first (`data/demo/wsc_offices.json`, from WSC's own site, checked 2026-10-19; Spain appears only on the careers page, so it may be remote hires rather than an office). See [Made up for the recruiter view](#made-up-for-the-recruiter-view) for everything the view shows that the files don't contain.
+Roles have no location in the data, so location does not affect the score; recruiters can filter by where attendees are based. In production each Comeet role would carry its office or country and work mode; someone outside it would be flagged to confirm relocation or remote work, never rejected automatically, since WSC's remote and relocation rules are still to confirm. The Location filter lists countries with a WSC office first (`data/demo/wsc_offices.json`, from WSC's own site, checked 2026-10-19; Spain appears only on the careers page, so it may be remote hires rather than an office). See [Made up for the recruiter view](#made-up-for-the-recruiter-view) for everything the view shows that the files don't contain.
 
 ## Made up for the recruiter view
 
@@ -101,3 +107,13 @@ Further assumptions behind them:
 - Total years come from the profile and include internships; they are shown, not corrected, and anyone with intern or junior roles is flagged "confirm non-intern years".
 - Possible references are matched from employer names and years only, so they are leads to check.
 - Conference relevance uses skills and industry, not job titles.
+- A new role is matched on criteria a recruiter has confirmed. The suggestions come from the job description (scripted in the demo, an LLM in production) and are only proposals; the provisional default is kept for a `job_openings.csv` row without criteria ([scoring](scoring.md#the-shortlist-checks)).
+
+## Connecting the tools
+
+What each connection needs, as listed in the recruiter view's **Your accounts** panel:
+
+- **HubSpot:** a Service Key (Settings → Integrations → Service Keys, created by a Super Admin, with contact, contact-schema and list scopes). A Service Key cannot receive webhooks, so contact changes are checked every few minutes; a full HubSpot app can, if WSC wants instant scoring.
+- **Comeet:** a Recruiting API key (requested through Comeet's API access form, copied by an Admin from Settings → Integrations) plus a secret from Comeet support; support points position updates at the integration.
+- **Google Forms:** a one-time Google sign-in that allows reading the "Event sign-ups" folder and its responses.
+- **Slack:** a small workspace app (bot token with `chat:write`, `im:write`, `users:read`, `users:read.email`) so reference requests reach colleagues as direct messages.
