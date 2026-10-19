@@ -166,6 +166,21 @@ describe('acceptance: SportsTech Innovation Summit 2024 and 2026-11-14, then a l
     expect(retry.ok && { added: retry.added, same: retry.sources === r.sources }).toEqual({ added: 0, same: true });
   });
 
+  it('a row with no email, LinkedIn URL or source ID is still recognised on an exact retry', () => {
+    const file = 'full_name,email,company,title,conference_name,conference_domain,conference_date,notes,linkedin_url\nNo Ids,,Synth,Eng,NoId Meetup,Sports,2026-05-01,,\n';
+    const first = importAttendeeList(base(), file);
+    if (!first.ok) throw new Error(first.problems.join('; '));
+    expect(first.added).toBe(1);
+    const again = importAttendeeList(first.sources, file);
+    expect(again.ok && { added: again.added, alreadyRecorded: again.alreadyRecorded, same: again.sources === first.sources }).toEqual({
+      added: 0,
+      alreadyRecorded: 1,
+      same: true,
+    });
+    const person = first.dataset.candidates.filter((c) => c.fullName === 'No Ids');
+    expect(person.map((c) => c.dataQualityFlags.filter((f) => f.startsWith('duplicate attendee row')))).toEqual([[]]);
+  });
+
   it('warns when rows with and without an event ID look like one event split in two', () => {
     const s = loadSources(FIXTURE_DIR);
     const a = parseCsv(s.attendees);

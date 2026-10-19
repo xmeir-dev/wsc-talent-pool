@@ -437,8 +437,15 @@ export function planAttendeeImport(
   added: readonly CsvRecord[],
   options: BuildOptions = {},
 ): { add: number[]; alreadyRecorded: number[]; editionKeys: string[]; editions: Map<string, string> } {
-  const existing = parseCsv(existingAttendees).records.map(trimRecord);
-  const all = [...existing, ...added] as unknown as AttendeeRecord[];
+  const parsed = parseCsv(existingAttendees);
+  // Rows as the source table will hold them after appendRecords: every row has the same columns (missing = blank).
+  // A row with no LinkedIn URL, email or source ID is identified by its whole content (resolvePeople), so the new
+  // row must be compared in that stored shape, or an exact retry would never match the row already there.
+  const columns = [...parsed.header];
+  for (const r of added) for (const k of Object.keys(r)) if (!columns.includes(k) && (ATTENDEE_SOURCE_COLUMNS as readonly string[]).includes(k)) columns.push(k);
+  const stored = (r: CsvRecord): CsvRecord => Object.fromEntries(columns.map((c) => [c, r[c] ?? '']));
+  const existing = parsed.records.map(trimRecord).map(stored);
+  const all = [...existing, ...added.map(stored)] as unknown as AttendeeRecord[];
   const { keys, editions } = assignEditions(all);
   const personOf = new Map<AttendeeRecord, string>();
   for (const g of resolvePeople(all, identityRowOf, knownMap(options.knownPeople))) for (const r of g.rows) personOf.set(r, g.personId);

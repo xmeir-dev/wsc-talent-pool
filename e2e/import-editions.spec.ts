@@ -90,3 +90,16 @@ test('F11 (verifier repro): one file with Cara on the 14th and 17th and Dev on t
   await page.locator('.filters').getByRole('button', { name: /^Conference/ }).click();
   await expect(conferenceMenu(page).getByRole('button', { name: /^SportsTech/ })).toHaveText(['SportsTech (2024) 40', 'SportsTech (2026) 2']);
 });
+
+test('F11: retrying a list whose row has no email, LinkedIn URL or ID changes nothing', async ({ page }) => {
+  await page.goto('/');
+  const file = Buffer.from(`${HEADER}\nNo Ids,,Synth,Eng,NoId Meetup,Sports,2026-05-01,,\n`);
+  await addList(page, 'noid.csv', file);
+  await expect(title(page)).toHaveText('1 of 76 attendees');
+  for (let i = 0; i < 2; i++) {
+    await addList(page, 'noid.csv', file);
+    await expect(popover(page).getByRole('status')).toHaveText('Everyone on this list is already recorded for this event. Nothing changed.');
+  }
+  await page.keyboard.press('Escape');
+  await expect(title(page)).toHaveText('1 of 76 attendees');
+});
