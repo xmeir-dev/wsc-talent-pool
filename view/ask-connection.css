@@ -254,44 +254,83 @@
   color: var(--ml-text-muted);
 }
 
-/* Add conference: the same panel, narrower; one file row, then Add to pool. */
+/* Add conference: a drop zone (also click to browse), a link field, then the sample chip. */
 .ask.new-conf {
   width: min(380px, calc(100vw - 32px));
 }
-.new-conf-pick,
-.new-conf-file {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--ml-border-subtle);
-  border-radius: 10px;
+.new-conf-drop {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 24px 16px;
+  border: 1px dashed var(--ml-border);
+  border-radius: 12px;
   background: var(--ml-bg-surface);
+  color: var(--ml-text);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease-out,
+    background-color 150ms ease-out;
 }
-.new-conf-file > svg {
-  flex-shrink: 0;
+.new-conf-drop > svg {
+  margin-bottom: 6px;
   color: var(--ml-text-muted);
 }
-.new-conf-what {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  margin-right: auto;
-}
-.new-conf-what .muted {
+.new-conf-drop .muted {
   font-size: 13px;
 }
-.new-conf-change {
-  padding: 0;
-  border: 0;
-  background: none;
+.new-conf-drop:hover,
+.new-conf-drop[data-over] {
+  border-color: var(--ml-text-muted);
+}
+.new-conf-drop:focus-visible {
+  outline: 2px solid var(--ml-text);
+  outline-offset: 2px;
+}
+.new-conf-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--ml-border);
+  border-radius: 8px;
   color: var(--ml-text-muted);
+}
+.new-conf-link:focus-within {
+  border-color: var(--ml-text-muted);
+}
+.new-conf-link input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--ml-text);
+  font: inherit;
+}
+.new-conf-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.new-conf-chip {
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--ml-border);
+  border-radius: 999px;
+  background: var(--ml-bg-card);
+  color: var(--ml-text);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
 }
-.new-conf-change:hover,
-.new-conf-change:focus-visible {
-  color: var(--ml-text);
-  text-decoration: underline;
+.new-conf-chip:hover {
+  border-color: var(--ml-text-muted);
+}
+.new-conf-chip:focus-visible {
+  outline: 2px solid var(--ml-text);
+  outline-offset: 2px;
 }

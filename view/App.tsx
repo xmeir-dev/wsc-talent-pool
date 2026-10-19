@@ -233,7 +233,6 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         jobs={{ selected: jobIds, onSelect: setJobIds }}
         newConference={
           <NewConference
-            known={new Set(pool.attendees.map((p) => p.candidate.email.toLowerCase()).filter(Boolean))}
             existing={pool.conferences.map((c) => c.name)}
             onAdd={(text, names) => {
               const problems = onAddAttendees(text);
