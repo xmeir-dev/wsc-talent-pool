@@ -1,8 +1,9 @@
 import { Cancel01Icon, File01Icon } from '@hugeicons/core-free-icons';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { SourceTexts } from '../pipeline';
 import { Icon } from './Icon';
 import { previewImport, type ImportPreview, type ImportRow } from './sources';
+import { useDialog } from './useDialog';
 
 interface Props {
   sources: SourceTexts;
@@ -21,18 +22,7 @@ export function ImportDialog({ sources, onClose, onImport }: Props) {
   const [file, setFile] = useState<{ name: string; preview: ImportPreview } | null>(null);
   const [loadError, setLoadError] = useState('');
 
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    dialog.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      opener?.focus();
-    };
-  }, [onClose]);
+  useDialog(dialog, onClose);
 
   const check = (name: string, text: string) => {
     setLoadError('');

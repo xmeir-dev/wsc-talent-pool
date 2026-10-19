@@ -3,6 +3,7 @@ import type { StoredAssessment } from './assessments';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { buildHandoff, type ComeetCandidate, type ComeetService } from './comeet';
 import { Icon } from './Icon';
+import { useDialog } from './useDialog';
 
 interface Props {
   entry: StoredAssessment;
@@ -35,20 +36,7 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
   const position = comeet.positionFor(a.jobId);
   const payload = position ? buildHandoff(a, result.job, version, position) : null;
 
-  // Not a native modal dialog: that would make the demo strip (outage switch, reset) inert while open.
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    dialog.current?.focus();
-    return () => opener?.focus();
-  }, []);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  useDialog(dialog, onClose);
 
   useEffect(() => {
     if (!payload) return;

@@ -23,7 +23,7 @@ interface Props {
 function roleLines(store: AssessmentStore, jobIds: string[]) {
   return jobIds.map((jobId) => {
     const r = store.result(jobId);
-    return { jobId, text: `${r.job.title}: ${r.counts.shortlist} shortlist · ${r.counts.needs_review} needs review` };
+    return { jobId, title: r.job.title, shortlist: r.counts.shortlist, needsReview: r.counts.needs_review };
   });
 }
 
@@ -138,7 +138,7 @@ export function App({ sources: initialSources = bundledSources, delayMs }: Props
           notices={notices}
           unread={unread}
           onReadAll={() => setUnread(0)}
-          onOpenView={(jobId) => setHubspot({ name: 'list', view: jobId })}
+          onOpenView={(view) => setHubspot({ name: 'list', view })}
         >
           {hubspot.name === 'list' ? (
             <HubSpotList

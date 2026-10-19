@@ -18,7 +18,7 @@ Take-home task for the AI Solution Manager role at WSC Sports: turn conference a
 
 ## Follow-on integration demo
 
-A clickable concept of the production experience, the morning after a conference: a HubSpot notification leads to per-role shortlists, a Talent match card on each contact hands people into Comeet, Comeet status comes back to HubSpot, and spreadsheet imports and new Comeet positions are scored automatically. [Walkthrough](integration-demo/README.md), [plan](docs/native-integration-demo-plan.md). Synthetic data and simulated services; not connected to either product. What it takes on the real platforms: [platform requirements](docs/design.md#production-version).
+A clickable concept of the production experience, the morning after a conference: a HubSpot notification leads to per-role Shortlist and Needs review views, a Talent match card on each contact hands people into Comeet, Comeet status comes back to HubSpot, and spreadsheet imports and new Comeet positions are scored automatically. [Walkthrough](integration-demo/README.md), [plan](docs/native-integration-demo-plan.md). Synthetic data and simulated services; not connected to either product. What it takes on the real platforms: [platform requirements](docs/design.md#production-version).
 
 ## Setup
 

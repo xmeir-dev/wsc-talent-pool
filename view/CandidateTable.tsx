@@ -1,4 +1,4 @@
-import { isValidElement, type MouseEvent, type ReactElement, type ReactNode } from 'react';
+import { isValidElement, useEffect, useRef, type MouseEvent, type ReactElement, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import { Briefcase04Icon, Calendar03Icon, Cancel01Icon, CheckmarkBadge01Icon, HelpCircleIcon, Tick02Icon, UserIcon } from '@hugeicons/core-free-icons';
 import { checkInvite, comeetFor, statusLine, useActivity, type Entry } from './activity';
@@ -170,6 +170,29 @@ function RelevantFor({
   );
 }
 
+/**
+ * The kit's table opens a row on Enter or Space from anywhere inside it, so Space on a row's
+ * checkbox (or Enter on a button in it) would open the profile instead of doing its own job.
+ * Keys aimed at a control inside a row stop here, before React hands them to the row; the
+ * control keeps its native behaviour and a focused row still opens on Enter or Space.
+ */
+function useNativeKeysInRows() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const target = e.target as HTMLElement;
+      const row = target.closest('tbody tr');
+      if (row && row !== target) e.stopPropagation();
+    };
+    el.addEventListener('keydown', onKey);
+    return () => el.removeEventListener('keydown', onKey);
+  }, []);
+  return ref;
+}
+
 /** Every attendee once, A–Z. */
 export function AttendeeTable({
   attendees,
@@ -190,6 +213,7 @@ export function AttendeeTable({
   onSelect: (next: string[]) => void;
 }) {
   const entries = useActivity();
+  const keys = useNativeKeysInRows();
   const pageKeys = new Set(attendees.map((a) => a.candidate.candidateKey));
   const tickedHere = selected.filter((k) => pageKeys.has(k)).length;
   // With some rows ticked (the header shows a dash), the header box clears the selection instead of ticking every row.
@@ -228,7 +252,7 @@ export function AttendeeTable({
 
   return (
     // display: contents keeps the table's layout; the wrapper only catches the header box click first.
-    <div className="dt-catch" onClickCapture={clearOnPartial}>
+    <div ref={keys} className="dt-catch" onClickCapture={clearOnPartial}>
       <DataTable
         className="candidates attendees"
         aria-label="Attendees"

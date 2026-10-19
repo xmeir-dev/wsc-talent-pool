@@ -1,7 +1,8 @@
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { roleProblems, type NewRole } from './sources';
+import { useDialog } from './useDialog';
 
 interface Props {
   onClose: () => void;
@@ -33,18 +34,7 @@ export function NewPositionDialog({ onClose, onCreate }: Props) {
   const [role, setRole] = useState<NewRole>(EXAMPLE);
   const [problems, setProblems] = useState<string[]>([]);
 
-  useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null;
-    dialog.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      opener?.focus();
-    };
-  }, [onClose]);
+  useDialog(dialog, onClose);
 
   return (
     <div className="cm-modal-backdrop">
