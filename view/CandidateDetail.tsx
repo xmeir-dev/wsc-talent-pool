@@ -18,7 +18,7 @@ import {
   UserIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
-import { Avatar, Hint } from '@meir-labs/ui-kit';
+import { Avatar, Hint, Tag } from '@meir-labs/ui-kit';
 import { minYearsFor, policyFor, type CandidateAssessment, type EmploymentSpell, type Job, type OutputRow, type PossibleReference, type SkillMatch } from '../pipeline';
 import type { Attendee, Relevant } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
@@ -30,6 +30,12 @@ import { InviteToJob } from './InviteToJob';
 import { CountryFlag } from './Location';
 import { overviewFor } from './Overview';
 import { currentRole, fitChecks, shortDate, years } from './format';
+
+/** How long they overlapped, from year-only dates: 2019–2021 is 2y, a single shared year is under one. */
+const yearsTogether = (start: number, end: number) => {
+  const n = (end === Infinity ? new Date().getFullYear() : end) - start;
+  return n < 1 ? '<1y' : `${n}y`;
+};
 
 interface Props {
   /** One job's assessment, for the person-level facts (career, connections, events), which every job shares. */
@@ -501,8 +507,15 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
               <li key={employee.employeeId}>
                 <Avatar size="md" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
                 <span className="d-person">
-                  <span>{employee.fullName}</span>
-                  <span className="muted">{ref ? `${employee.title} · both at ${ref.company}` : employee.title}</span>
+                  <span className="d-person-name">
+                    {employee.fullName}
+                    {ref && (
+                      <Tag size="sm" tone="success">
+                        Worked together {yearsTogether(ref.overlapStart, ref.overlapEnd)}
+                      </Tag>
+                    )}
+                  </span>
+                  <span className="muted">{employee.title}</span>
                 </span>
                 <AskConnection employee={employee} refs={refs} ctx={ctx} asButton />
               </li>

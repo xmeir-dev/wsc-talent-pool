@@ -845,18 +845,33 @@ ul {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
+/* Same row dividers as the Contact card. */
 .d-people li {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--ml-border-subtle);
+}
+.d-people li:first-child {
+  padding-top: 0;
+}
+.d-people li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 .d-person {
   display: flex;
   flex-direction: column;
   min-width: 0;
   margin-right: auto;
+}
+.d-person-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 .d-person .muted {
   font-size: 13px;
