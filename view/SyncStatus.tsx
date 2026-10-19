@@ -293,7 +293,6 @@ export function SyncStatus() {
         )}
         <Button
           variant="secondary"
-          size="sm"
           className="sync-now"
           disabled={!connected || syncing}
           onClick={syncNow}
