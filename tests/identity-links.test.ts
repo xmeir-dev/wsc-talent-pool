@@ -35,7 +35,9 @@ function accept(saved: Saved, people: readonly Candidate[]): Saved {
 function importRow(saved: Saved, row: Record<string, string>): { saved: Saved; person: Candidate } {
   const r = importAttendeeList(supplied, toCsv(Object.keys(row), [row]), undefined, knownPeople(saved.people));
   if (!r.ok) throw new Error(r.problems.join('; '));
-  const person = r.dataset.candidates.find((c) => c.fullName === row.full_name);
+  // The person this row became (a supplied namesake is someone else unless the row's email is theirs too).
+  const mine = (c: Candidate) => !row.email || c.identity.identifiers.includes(`email:${row.email}`);
+  const person = r.dataset.candidates.find((c) => mine(c) && c.fullName === row.full_name) ?? r.dataset.candidates.find(mine);
   if (!person) throw new Error(`${row.full_name} not in the pool`);
   return { saved: accept(saved, r.dataset.candidates), person };
 }
@@ -90,10 +92,12 @@ describe('links learned by an import are kept without any action', () => {
     expect(sentInvites(again.saved)).toHaveLength(1);
   });
 
-  it('a link is saved only for someone with saved history, so people without history keep the IDs the CLI gives them', () => {
+  it('no link is saved for an imported newcomer without history, so their ID stays what the CLI gives', () => {
     const r = importRow(empty(), bridge({ linkedin_url: 'linkedin.com/in/review-bridge' }));
     expect(store.acceptIdentities(r.saved, [r.person])).toEqual([]);
-    expect(r.saved.people.size).toBe(0);
+    expect(r.saved.people.has(r.person.candidateKey)).toBe(false);
+    // Supplied people's links are stored (their published IDs are fixed anyway); no imported newcomer's is.
+    expect([...r.saved.people.keys()].every((id) => id.startsWith('C-'))).toBe(true);
   });
 
   it('an identifier already linked to someone else is not taken over; the row is held as a conflict', () => {
@@ -109,6 +113,31 @@ describe('links learned by an import are kept without any action', () => {
     expect(act(clash.saved, clash.person).result.ok).toBe(false);
     // Neither person's saved identifiers changed because of the conflicting row.
     expect(clash.saved.people).toEqual(s.people);
+  });
+});
+
+describe('supplied people with seeded or Comeet history also keep links learned by an import', () => {
+  const BACKEND = { jobId: 'JOB002', title: 'Backend Engineer' };
+  const row = (full_name: string, email: string, linkedin_url = '') => ({ full_name, email, company: 'Acme', title: 'Engineer', conference_name: 'Independent Review', conference_date: '2026-10-19', linkedin_url });
+
+  it('Ryan (in process in Comeet): new email + his URL, then after a reload a name variant with only that email is still held', () => {
+    const first = importRow(empty(), row('Ryan Patel', 'ryan.new@example.test', 'https://www.linkedin.com/in/ryan-patel-dazn'));
+    expect(first.person.candidateKey).toBe('C-HS017');
+    expect(gate(first.saved, first.person).block).toBeDefined();
+    expect(knownPeople(first.saved.people).get('email:ryan.new@example.test')).toBe('C-HS017');
+    const later = importRow(first.saved, row('Ryan J. Patel', 'ryan.new@example.test'));
+    expect(later.person.candidateKey).toBe('C-HS017');
+    expect(gate(later.saved, later.person).block).toBeDefined();
+    expect(act(later.saved, later.person).result.ok).toBe(false);
+  });
+
+  it('Noah (seeded decline for Backend Engineer): after a reload a name variant with the new email is still C-HS029, so the decline blocks', () => {
+    const first = importRow(empty(), row('Noah Anderson', 'noah.new@example.test', 'linkedin.com/in/noah-anderson-gs'));
+    expect(first.person.candidateKey).toBe('C-HS029');
+    const later = importRow(first.saved, row('Noah J. Anderson', 'noah.new@example.test'));
+    expect(later.person.candidateKey).toBe('C-HS029');
+    const check = inviteCheck({ entries: [...SEEDED, ...later.saved.entries], people: later.saved.people, held: later.saved.held }, later.person, BACKEND, [BACKEND]);
+    expect(check.block).toBeDefined();
   });
 });
 

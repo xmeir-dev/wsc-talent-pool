@@ -153,13 +153,24 @@ export function decide(
 }
 
 /**
- * Identity links a dataset build accepted, kept whether or not anyone acts. For each person with saved history in
- * this browser whose identity is resolved and not under review, any identifier they now have that is not yet on
+ * History that is not (yet) a stored person record: this browser's entries, the seeded examples, Comeet records,
+ * or a supplied person (published C-HS### ID, fixed by data/person_ids.json, so storing their links cannot change
+ * what the CLI gives anyone).
+ */
+const seededKeys = new Set(SEEDED.map((e) => e.candidateKey));
+function hasHistoryElsewhere(personId: string, withEntries: ReadonlySet<string>): boolean {
+  return withEntries.has(personId) || seededKeys.has(personId) || comeetFor(personId).length > 0 || isRegisteredPersonId(personId);
+}
+
+/**
+ * Identity links a dataset build accepted, kept whether or not anyone acts. For each person with history from any
+ * source (this browser's store, the seeded examples, Comeet) or a supplied person, whose identity is resolved and
+ * not under review, any identifier they now have that is not yet on
  * record (a LinkedIn URL added to an email-only person, a new email on a known URL, an email on a source-ID-only
  * person) is added to their stored record. Without this, a link learned by an import was lost on reload unless an
  * action happened to succeed, and a later import with the new identifier could start a second, empty history.
  * Never takes an identifier already on record for someone else (resolvePeople makes that person a conflict).
- * People with no saved history get nothing stored, so their IDs stay what the CLI gives them. Pure.
+ * Imported newcomers with no history get nothing stored, so their IDs stay what the CLI gives them. Pure.
  */
 export function acceptIdentities(saved: Pick<Saved, 'entries' | 'people'>, persons: readonly PersonRef[]): StoredPerson[] {
   const people = new Map(saved.people);
@@ -168,7 +179,7 @@ export function acceptIdentities(saved: Pick<Saved, 'entries' | 'people'>, perso
   const at = new Date().toISOString();
   for (const p of persons) {
     const before = people.get(p.candidateKey);
-    if (!before && !withEntries.has(p.candidateKey)) continue;
+    if (!before && !hasHistoryElsewhere(p.candidateKey, withEntries)) continue;
     if (identityBlock(p.identity) || storedAsSomeoneElse({ people }, p) || storedUnderOtherId({ people }, p)) continue;
     const owned = knownPeople(people);
     const have = new Set(before?.identifiers ?? []);
