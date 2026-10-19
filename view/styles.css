@@ -46,11 +46,23 @@ ul {
   padding: var(--ml-space-lg) var(--ml-space-xl) 48px;
 }
 
-.list-title {
-  margin: 0 var(--ml-space-sm) 0 0;
-  font-size: 18px;
+.page-head {
+  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: var(--ml-space-sm);
+  margin-bottom: var(--ml-space-lg);
+}
+.page-head h1 {
+  margin: 0 auto 0 0;
+  font-size: 24px;
   font-weight: 600;
   letter-spacing: -0.01em;
+}
+
+.list-count {
+  margin-right: var(--ml-space-sm);
+  color: var(--ml-text-muted);
 }
 
 /* One line above the table: count, pickers, then Export at the right edge. */
@@ -62,7 +74,7 @@ ul {
   gap: var(--ml-space-sm);
   margin-bottom: var(--ml-space-md);
 }
-.list-title {
+.list-count {
   /* Room for the widest count, so the filters do not shift while a menu is open. */
   min-width: 9.5em;
   font-variant-numeric: tabular-nums;
@@ -515,7 +527,7 @@ ul {
   .ml-select-trigger {
     font-size: 16px;
   }
-  .filters .list-title {
+  .filters .list-count {
     flex: 1 1 100%;
     min-width: 0;
     margin-bottom: 4px;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowLeft01Icon, Briefcase01Icon, Calendar03Icon, Location01Icon } from '@hugeicons/core-free-icons';
+import { Add01Icon, ArrowLeft01Icon, Briefcase01Icon, Calendar03Icon, Location01Icon } from '@hugeicons/core-free-icons';
 import { Button, Callout, EmptyState, Select, TopBar, type SortState } from '@meir-labs/ui-kit';
 import { buildDataset, DataValidationError, type Dataset, type SourceTexts } from '../pipeline';
 import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
@@ -188,7 +188,7 @@ function Workspace({ dataset }: { dataset: Dataset }) {
   const filtered = conferences.length > 0 || jobIds.length > 0 || countries.length > 0;
   const filters = (
     <div className="filters">
-      <h1 className="list-title">{filtered ? `${shown} of ${total} attendees` : `All ${total} attendees`}</h1>
+      <span className="list-count">{filtered ? `${shown} of ${total} attendees` : `All ${total} attendees`}</span>
       <FilterMenu
         label="Conference"
         icon={Calendar03Icon}
@@ -207,6 +207,13 @@ function Workspace({ dataset }: { dataset: Dataset }) {
 
   return (
     <main className="content">
+      <header className="page-head">
+        <h1>Talent pool</h1>
+        <Button variant="secondary" leftIcon={<HugeiconsIcon icon={Add01Icon} size={16} strokeWidth={1.75} />}>
+          New conference
+        </Button>
+        <Button leftIcon={<HugeiconsIcon icon={Add01Icon} size={16} strokeWidth={1.75} />}>New job</Button>
+      </header>
       {filters}
       <AttendeeTable attendees={attendees} onOpen={openProfile} emptyState={empty} sort={sort} onSort={setSort} />
     </main>

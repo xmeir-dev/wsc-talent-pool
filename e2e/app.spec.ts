@@ -15,7 +15,7 @@ function watchErrors(page: Page): string[] {
 }
 
 const bodyRows = (page: Page) => page.locator('table tbody tr');
-const title = (page: Page) => page.getByRole('heading', { level: 1 });
+const title = (page: Page) => page.locator('.list-count');
 
 const trigger = (page: Page, name: 'Conference' | 'Job') =>
   page.locator('.filters').getByRole('button', { name: new RegExp(`^${name}`) });

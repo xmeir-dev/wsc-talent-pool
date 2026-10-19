@@ -23,7 +23,7 @@ afterEach(() => {
 
 type User = ReturnType<typeof userEvent.setup>;
 const rows = () => within(screen.getByRole('table')).getAllByRole('row').slice(1);
-const heading = () => screen.getByRole('heading', { level: 1 }).textContent;
+const heading = () => document.querySelector('.list-count')?.textContent;
 
 const trigger = (name: 'Conference' | 'Job') =>
   within(document.querySelector<HTMLElement>('.filters')!).getByRole('button', { name: new RegExp(`^${name}`) });
