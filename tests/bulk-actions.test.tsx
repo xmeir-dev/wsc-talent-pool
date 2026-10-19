@@ -3,11 +3,11 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildDataset } from '../pipeline';
-import { connectionPeople } from './AskConnection';
-import { buildPool } from './attendees';
-import { BulkActions } from './BulkActions';
-import { bundledSources } from './data';
-import { recordActions, resetActivity } from './actionStore';
+import { connectionPeople } from '../view/AskConnection';
+import { buildPool } from '../view/attendees';
+import { BulkActions } from '../view/BulkActions';
+import { bundledSources } from '../view/data';
+import { recordActions, resetActivity } from '../view/actionStore';
 
 const dataset = buildDataset(bundledSources);
 const pool = buildPool(dataset);

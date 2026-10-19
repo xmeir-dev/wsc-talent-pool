@@ -4,14 +4,14 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { assessmentToCsv, assessmentToXlsx, buildDataset, XLSX_MIME } from '../pipeline';
-import { readXlsx } from '../tests/xlsx-read';
-import { App } from './App';
-import { buildPool } from './attendees';
-import { bundledSources } from './data';
-import { downloadFile } from './download';
+import { readXlsx } from './xlsx-read';
+import { App } from '../view/App';
+import { buildPool } from '../view/attendees';
+import { bundledSources } from '../view/data';
+import { downloadFile } from '../view/download';
 
-vi.mock('./download', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./download')>()),
+vi.mock('../view/download', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../view/download')>()),
   downloadFile: vi.fn(),
 }));
 

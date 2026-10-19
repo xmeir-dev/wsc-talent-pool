@@ -5,7 +5,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [react()],
   test: {
-    include: ['tests/**/*.test.ts', 'view/**/*.test.{ts,tsx}'],
+    include: ['tests/**/*.test.{ts,tsx}'],
     environment: 'node',
   },
 });

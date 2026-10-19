@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { activeInComeet, checkInvite, checkReference, current, overallStatus, personFlags, roleStatus, SEEDED, type ComeetRecord, type Entry } from './activity';
+import { activeInComeet, checkInvite, checkReference, current, overallStatus, personFlags, roleStatus, SEEDED, type ComeetRecord, type Entry } from '../view/activity';
 
 const BACKEND = { jobId: 'JOB002', title: 'Backend Engineer' };
 const DATA = { jobId: 'JOB004', title: 'Data Engineer' };

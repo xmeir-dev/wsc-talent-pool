@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildDataset } from '../pipeline';
-import { readXlsx, records } from '../tests/xlsx-read';
-import { ATTENDEE_COLUMNS, attendeesTable, attendeesXlsx, attended, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
-import { placeOf } from './place';
-import { fitChecks } from './format';
-import { bundledSources } from './data';
+import { readXlsx, records } from './xlsx-read';
+import { ATTENDEE_COLUMNS, attendeesTable, attendeesXlsx, attended, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from '../view/attendees';
+import { placeOf } from '../view/place';
+import { fitChecks } from '../view/format';
+import { bundledSources } from '../view/data';
 
 const pool = buildPool(buildDataset(bundledSources));
 /** The edition key of a conference that has one edition in the supplied data. */

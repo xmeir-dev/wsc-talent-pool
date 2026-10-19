@@ -4,15 +4,15 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadSources } from '../cli/load-sources';
 import { assessmentToCsv, buildDataset, XLSX_MIME } from '../pipeline';
-import { FIXTURE_DIR } from '../tests/helpers';
-import { App } from './App';
-import { buildPool, filterAttendees, sortAttendees } from './attendees';
-import { bundledSources } from './data';
-import { downloadFile } from './download';
-import { readXlsx } from '../tests/xlsx-read';
+import { FIXTURE_DIR } from './helpers';
+import { App } from '../view/App';
+import { buildPool, filterAttendees, sortAttendees } from '../view/attendees';
+import { bundledSources } from '../view/data';
+import { downloadFile } from '../view/download';
+import { readXlsx } from './xlsx-read';
 
-vi.mock('./download', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./download')>()),
+vi.mock('../view/download', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../view/download')>()),
   downloadFile: vi.fn(),
 }));
 

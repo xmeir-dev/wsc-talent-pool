@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { assessJob, buildDataset } from '../pipeline';
-import { ROOT } from '../tests/helpers';
-import { bundledSources } from './data';
-import { exportCsv } from './download';
+import { ROOT } from './helpers';
+import { bundledSources } from '../view/data';
+import { exportCsv } from '../view/download';
 
 // The browser bundles data/ as raw text; its CRM import CSV must be the committed CLI output, byte for byte.
 describe('browser export', () => {

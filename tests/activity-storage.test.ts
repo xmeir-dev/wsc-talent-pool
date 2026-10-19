@@ -5,8 +5,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildDataset, type Candidate } from '../pipeline';
-import { actionGate, heldFor } from './activity';
-import { bundledSources } from './data';
+import { actionGate, heldFor } from '../view/activity';
+import { bundledSources } from '../view/data';
 
 const KEY = 'wsc-activity-v1';
 const good = {
@@ -39,9 +39,9 @@ async function loadWith(raw: string | null) {
   vi.resetModules();
   window.localStorage.clear();
   if (raw !== null) window.localStorage.setItem(KEY, raw);
-  const m = await import('./actionStore');
+  const m = await import('../view/actionStore');
   const s = await m.refreshActivity();
-  return { m, s, seeded: (await import('./activity')).SEEDED };
+  return { m, s, seeded: (await import('../view/activity')).SEEDED };
 }
 
 beforeEach(() => window.localStorage.clear());

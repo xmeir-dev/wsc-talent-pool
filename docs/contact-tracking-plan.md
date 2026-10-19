@@ -124,7 +124,7 @@ All in the recruiter view (`view/`); the pipeline and its CSV output do not chan
 
 Tests (all passing: 141 unit, 19 browser):
 
-- Unit (`view/activity.test.ts`): role status per role (declined for one role, open for another); an uncontacted Comeet lead not counting as in process; every block rule; a past Comeet rejection for another role warning (a withdrawal does not); Prepared not counted as contact; a repeated simulated send blocked; a correction superseding an earlier entry.
+- Unit (`tests/activity.test.ts`): role status per role (declined for one role, open for another); an uncontacted Comeet lead not counting as in process; every block rule; a past Comeet rejection for another role warning (a withdrawal does not); Prepared not counted as contact; a repeated simulated send blocked; a correction superseding an earlier entry.
 - Browser (`e2e/contact-tracking.spec.ts`): the seeded examples render and block as described; an invite survives a reload and blocks a repeat; the Status filter narrows the list.
 
 ## Open questions

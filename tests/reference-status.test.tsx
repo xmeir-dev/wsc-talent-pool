@@ -2,9 +2,9 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
-import { referenceSummary, type Entry } from './activity';
-import { resetActivity } from './actionStore';
-import { App } from './App';
+import { referenceSummary, type Entry } from '../view/activity';
+import { resetActivity } from '../view/actionStore';
+import { App } from '../view/App';
 
 afterEach(async () => {
   cleanup();
