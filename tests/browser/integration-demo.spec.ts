@@ -186,9 +186,12 @@ async function publishRole(page: Page, title: string, requiredSkills: string) {
   const form = page.getByRole('dialog', { name: 'New position' });
   await form.getByLabel('Position title').fill(title);
   await form.getByLabel('Seniority').selectOption('Mid');
-  await form.getByRole('textbox', { name: /^Key domains/ }).fill('');
-  await form.getByRole('textbox', { name: /^Required skills/ }).fill(requiredSkills);
-  await form.getByRole('textbox', { name: /^Nice to have/ }).fill('');
+  // No description, so no suggested criteria: only the required skills typed here (provisional core).
+  await form.getByLabel('Job description').fill('');
+  for (const [i, skill] of requiredSkills.split(', ').entries()) {
+    await form.getByRole('button', { name: 'Add required skill' }).click();
+    await form.getByRole('textbox', { name: `Required skill ${i + 1}` }).fill(skill);
+  }
   await form.getByRole('button', { name: 'Publish position' }).click();
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
 }

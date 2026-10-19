@@ -2140,7 +2140,8 @@ button.cm-btn-primary {
 }
 
 .cm-field input,
-.cm-field select {
+.cm-field select,
+.np-row input {
   height: 38px;
   padding: 0 10px;
   border: 1px solid var(--cm-border);
@@ -2148,8 +2149,20 @@ button.cm-btn-primary {
   font-weight: 400;
 }
 
+.cm-field textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--cm-border);
+  border-radius: 4px;
+  font: inherit;
+  font-weight: 400;
+  line-height: 1.45;
+  resize: vertical;
+}
+
 .cm-field input:focus,
-.cm-field select:focus {
+.cm-field select:focus,
+.cm-field textarea:focus,
+.np-row input:focus {
   border-color: var(--cm-blue);
   outline: none;
   box-shadow: 0 0 0 3px var(--cm-blue-soft);
@@ -2160,6 +2173,120 @@ button.cm-btn-primary {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 6px;
+}
+
+/* New position: the suggested-criteria step. */
+.cm-modal-wide {
+  width: min(640px, calc(100vw - 32px));
+  /* Tall enough to reach the top: keep its header clear of the demo strip (44px, above the backdrop). */
+  max-height: calc(100vh - 76px);
+  margin-top: 44px;
+}
+
+.np-criteria {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.np-criteria h3 {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.np-criteria h3 + .muted {
+  margin-top: -10px;
+  font-size: 13px;
+}
+
+.np-list {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.np-list legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-weight: 500;
+}
+
+.np-row {
+  display: grid;
+  gap: 2px;
+}
+
+.np-row-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.np-row input {
+  /* Grows from zero, so a narrow dialog never sizes to the input's default width. */
+  flex: 1;
+  width: 0;
+  min-width: 0;
+}
+
+.np-origin {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: var(--cm-soft);
+  color: var(--cm-muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.np-origin.is-ai {
+  background: var(--cm-blue-soft);
+  color: #2337b8;
+}
+
+.np-remove {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--cm-muted);
+  cursor: pointer;
+}
+
+.np-quote {
+  color: var(--cm-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.np-add {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cm-blue);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .np-remove:hover {
+    background: var(--cm-soft);
+    color: var(--cm-text);
+  }
+
+  .np-add:hover {
+    text-decoration: underline;
+  }
 }
 
 .tm-block-wide {
