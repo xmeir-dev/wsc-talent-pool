@@ -1,11 +1,14 @@
 {
-  "about": "Made-up Comeet history for a few attendees, so the profile can show past applications. The provided data has nothing from Comeet; in production this comes from the Comeet API, matched by email. Not WSC data.",
+  "about": "Made-up Comeet history for a few attendees, so the profile can show past applications, one active process (Ryan Patel) and one uncontacted lead (Scarlett Green), which must not block a first approach. The provided data has nothing from Comeet; in production this comes from the Comeet API, matched by email. Not WSC data.",
   "byCandidate": {
     "C-HS021": [
       { "job": "Senior Product Manager - Sports Data", "outcome": "Rejected after phone screen", "date": "2025-03-12" },
       { "job": "Product Analyst", "outcome": "Withdrew at interview", "date": "2023-06-02" }
     ],
     "C-HS017": [{ "job": "Data Engineer", "outcome": "In process: phone screen", "date": "2026-09-28" }],
-    "C-HS001": [{ "job": "Computer Vision Engineer", "outcome": "Rejected after technical interview", "date": "2024-01-15" }]
+    "C-HS001": [{ "job": "Computer Vision Engineer", "outcome": "Rejected after technical interview", "date": "2024-01-15" }],
+    "C-HS040": [
+      { "job": "Data Engineer", "outcome": "Lead, not contacted yet", "date": "2026-10-16", "kind": "lead", "status": "In progress", "outreach": "Not Contacted" }
+    ]
   }
 }
