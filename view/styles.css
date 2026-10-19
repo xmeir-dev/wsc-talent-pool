@@ -599,7 +599,9 @@ ul {
   z-index: 10;
   margin: calc(-1 * var(--ml-space-lg)) 0 0;
   padding: var(--ml-space-lg) 0 var(--ml-space-sm);
-  background: var(--ml-bg);
+  /* Background and the bottom line run edge to edge; a border-image outset doesn't add sideways scroll. */
+  border: 0 solid;
+  border-image: linear-gradient(to top, var(--ml-border-subtle) 1px, var(--ml-bg) 1px) fill 0 / 0 / 0 100vmax;
 }
 .d-name {
   display: flex;
