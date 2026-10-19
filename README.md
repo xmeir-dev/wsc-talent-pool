@@ -52,7 +52,7 @@ Also in the view, with the made-up parts listed in [Assumptions](docs/assumption
 - **Add conference** (header) adds an event's attendee list from a file, a Google Form's responses sheet, or a sample meetup; the sample fills the empty Senior PM shortlist, Shir's "product meetup, then a product role opens" example. A quiet line explains how forms sync automatically instead.
 - **Connect accounts** in the header opens **Your accounts**: HubSpot, Comeet, Google Forms and Slack, each **Not connected** at first, with **Connect** (the setup steps plus the keys or sign-in that tool needs), step-by-step **How to connect** instructions, and **Sync now**.
 - Hovering a job chip shows **Invite** where an invite is allowed. Ticking rows opens a bar, above and below the table, to **Invite to jobs** (each person to their own best-fit job, one personalised invite each, sent through Comeet) or **Ask WSC connections** (one request per colleague, covering everyone selected they know).
-- A job chip with an outreach status turns into a small card with the status underneath (for example "Declined · 8 Oct"), and the **Status** filter narrows by it. The history is simulated and kept in the browser; invites or reference requests that would repeat, or reach someone declined or already in process, are blocked ([plan](docs/contact-tracking-plan.md)).
+- A job chip with an outreach status turns into a small card with the status underneath (for example "Declined · 8 Oct"), and the **Status** filter narrows by it. The history is simulated and kept in the browser, safe across tabs; invites or reference requests that would repeat, or reach someone declined, already in process or not yet reliably identified, are blocked ([plan](docs/contact-tracking-plan.md), [identity and history](docs/identity-and-history.md)).
 - Each profile has a **Contact** card (email, LinkedIn, HubSpot, Comeet with past applications), an **Activity** card (outreach history, plus a flag when someone is in process), **Invite to job**, each job card's status for that role, and **Ask** on each WSC connection (a drafted reference request; under the colleague it shows whether they were already asked, with **Mark sent** for a copied request).
 
 The assessment logic in `pipeline/` is plain TypeScript with no file or network access, so a browser view can import it directly (`import { buildDataset, assessJob, assessmentToCsv } from './pipeline'`). The Node command in `cli/` only reads the CSVs and writes the result.
@@ -67,4 +67,5 @@ The assessment logic in `pipeline/` is plain TypeScript with no file or network 
 - `tests/` — Vitest tests and synthetic fixtures
 - `integration-demo/` — the simulated HubSpot → Comeet concept
 - `e2e/` — Playwright browser tests
+- `docs/identity-and-history.md` — person IDs, import lifetime, saved history across tabs, and invite versus handoff rules
 - `docs/discovery-call-context.md` — context from the discovery call the task came out of

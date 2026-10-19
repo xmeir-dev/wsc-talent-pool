@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildAssessmentStore } from '../integration-demo/assessments';
 import { buildHandoff, createSimulatedComeet, type ComeetService } from '../integration-demo/comeet';
-import { checkInvite, comeetFor } from '../view/activity';
+import { checkInvite, comeetFor, SEEDED } from '../view/activity';
 import { byName, realDataset } from './helpers';
 
 const store = buildAssessmentStore(realDataset());
@@ -11,7 +11,7 @@ const fresh = () => createSimulatedComeet({ isAvailable: () => true, delayMs: 0,
 
 function payloadFor(comeet: ComeetService, name: string, jobId: string, override: Record<string, string> = {}) {
   const a = byName(store.result(jobId), name);
-  const p = buildHandoff(a, store.result(jobId).job, store.version, comeet.positionFor(jobId)!);
+  const p = buildHandoff(a, store.result(jobId).job, store.version, comeet.positionFor(jobId)!, SEEDED);
   return { ...p, ...override };
 }
 const keyOf = (name: string) => byName(store.result('JOB001'), name).candidate.candidateKey;
@@ -94,13 +94,13 @@ describe('shared Comeet history (data/demo_comeet.json)', () => {
     expect(fresh().check(keyOf('Alex Turner'), 'JOB003')).toEqual({});
   });
 
-  it('uses the recruiter view\'s invite rule as is: same result, one warning, same words', () => {
+  it('matches the recruiter view\'s invite rule where no outreach is recorded for the role: same result, same words', () => {
     const comeet = fresh();
     const jobs = comeet.positions().map((p) => ({ jobId: p.jobId, title: p.name }));
     for (const name of ['Alex Turner', 'James Thornton', 'Ryan Patel', 'Scarlett Green', 'Priya Anand'])
       for (const job of jobs) {
         const key = keyOf(name);
-        expect(comeet.check(key, job.jobId)).toEqual(checkInvite([], comeetFor(key), key, job, jobs));
+        expect(comeet.check(key, job.jobId)).toEqual(checkInvite(SEEDED, comeetFor(key), key, job, jobs));
       }
   });
 });

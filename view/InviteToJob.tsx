@@ -7,7 +7,8 @@ import recruiters from '../data/demo_recruiters.json';
 import type { Relevant } from './attendees';
 import comeetIcon from './assets/comeet.png';
 import { initials } from './avatars';
-import { checkInvite, comeetFor, record, useActivity } from './activity';
+import { inviteCheck } from './activity';
+import { recordActions, useActivityState } from './actionStore';
 
 const RECRUITERS: Record<string, { id: string; name: string }> = recruiters.byConference;
 const firstName = (name: string) => name.split(' ')[0] ?? name;
@@ -58,18 +59,14 @@ export function InviteToJob({
   const [jobId, setJobId] = useState(initialJobId ?? fits[0]?.job.jobId ?? '');
   const [text, setText] = useState<string | null>(null);
   const [status, setStatus] = useState<ReactNode>(null);
-  const entries = useActivity();
+  const activity = useActivityState();
   const job = fits.find((f) => f.job.jobId === jobId)?.job ?? fits[0]?.job;
   if (!job) return null;
   const message = text ?? inviteMessage(c, job);
   // The same rules as bulk invites: blocked people cannot be sent to; a warning is shown first.
-  const check = checkInvite(
-    entries,
-    comeetFor(c.candidateKey),
-    c.candidateKey,
-    { jobId: job.jobId, title: job.title },
-    fits.map((f) => ({ jobId: f.job.jobId, title: f.job.title })),
-  );
+  const role = { jobId: job.jobId, title: job.title };
+  const others = fits.map((f) => ({ jobId: f.job.jobId, title: f.job.title }));
+  const check = inviteCheck(activity, c, role, others);
 
   return (
     <Popover
@@ -138,9 +135,10 @@ export function InviteToJob({
             variant="primary"
             disabled={!c.email || !!check.block}
             leftIcon={<img src={comeetIcon} alt="" width={16} height={16} className="invite-comeet" />}
-            onClick={() => {
-              record({ kind: 'invite', candidateKey: c.candidateKey, jobId: job.jobId, jobTitle: job.title, channel: 'comeet', state: 'sent' });
-              setStatus(`Sent · Simulated: Comeet would invite ${firstName(c.fullName)} to ${job.title}.`);
+            onClick={async () => {
+              // Checked again inside the store's transaction: another tab may have acted since this panel opened.
+              const [r] = await recordActions([{ kind: 'invite', person: c, job: role, otherJobs: others, channel: 'comeet', state: 'sent' }]);
+              setStatus(r?.ok ? `Sent · Simulated: Comeet would invite ${firstName(c.fullName)} to ${job.title}.` : `Not sent: ${r?.reason ?? 'could not save.'}`);
             }}
           >
             Send invite

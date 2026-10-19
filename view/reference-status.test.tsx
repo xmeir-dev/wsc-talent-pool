@@ -2,12 +2,13 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
-import { referenceSummary, resetActivity, type Entry } from './activity';
+import { referenceSummary, type Entry } from './activity';
+import { resetActivity } from './actionStore';
 import { App } from './App';
 
-afterEach(() => {
+afterEach(async () => {
   cleanup();
-  resetActivity();
+  await resetActivity();
   window.history.replaceState(null, '', '/');
 });
 
@@ -48,7 +49,7 @@ describe('profile: copying again after Mark sent', () => {
     const asked = () => document.querySelector('.d-asked')!.textContent;
     expect(asked()).toContain('Prepared');
     await user.click(screen.getByRole('button', { name: 'Mark sent' }));
-    expect(asked()).toContain('Confirmed');
+    await waitFor(() => expect(asked()).toContain('Confirmed'));
 
     await user.click(screen.getByRole('button', { name: 'Ask Noa Shapiro about Alex Turner' }));
     const panel = await screen.findByRole('dialog', { name: 'Ask Noa Shapiro for a recommendation' });

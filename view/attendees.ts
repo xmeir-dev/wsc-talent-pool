@@ -2,7 +2,7 @@
  * The list page's model: every attendee once, with the jobs they are worth a look for.
  * Every decision still comes from the pipeline (assessJob); this file only groups and filters it.
  */
-import { assessJob, compareSkills, skillKey, splitName, toCsv, toOutputRows } from '../pipeline';
+import { assessJob, compareSkills, indexByPersonId, skillKey, splitName, toCsv, toOutputRows } from '../pipeline';
 import type { Candidate, CandidateAssessment, Dataset, Job, JobAssessment, OutputRow } from '../pipeline';
 import { currentRole } from './format';
 import { placeOf } from './place';
@@ -48,7 +48,8 @@ export function buildPool(dataset: Dataset): Pool {
     const result = assessJob(dataset, job.jobId);
     const rows = toOutputRows(result);
     results.set(job.jobId, result);
-    items.set(job.jobId, new Map(result.candidates.map((a, i) => [a.candidate.candidateKey, { a, row: rows[i]! }])));
+    // Keyed by durable person ID; a duplicate ID throws instead of handing one person another's assessment.
+    items.set(job.jobId, indexByPersonId(result.candidates.map((a, i) => ({ a, row: rows[i]! })), ({ a }) => a.candidate.candidateKey));
   }
 
   const first = dataset.jobs[0]!.jobId;

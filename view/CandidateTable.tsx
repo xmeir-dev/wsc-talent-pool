@@ -1,7 +1,8 @@
 import { isValidElement, type MouseEvent, type ReactElement, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import { Briefcase04Icon, Calendar03Icon, Cancel01Icon, CheckmarkBadge01Icon, HelpCircleIcon, Tick02Icon, UserIcon } from '@hugeicons/core-free-icons';
-import { checkInvite, comeetFor, statusLine, useActivity, type Entry } from './activity';
+import { inviteCheck, statusLine } from './activity';
+import { useActivityState, type ActivityState } from './actionStore';
 import { InviteToJob } from './InviteToJob';
 import { DataTable, Hint, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
@@ -84,7 +85,7 @@ function Conferences({ attendances }: { attendances: Attendee['candidate']['atte
   return (
     <span className="confs">
       {latest.slice(0, 2).map((at) => (
-        <Hint key={at.hubspotId} tip={full(at)} focusable={false}>
+        <Hint key={at.attendanceId} tip={full(at)} focusable={false}>
           <Tag size="sm" className="conf-tag">
             {conferenceShort(at.conferenceName)} {year(at.conferenceDate)}
           </Tag>
@@ -105,11 +106,11 @@ function Conferences({ attendances }: { attendances: Attendee['candidate']['atte
 function RelevantFor({
   list,
   candidate,
-  entries,
+  activity,
 }: {
   list: Attendee['relevantFor'];
   candidate: Attendee['candidate'];
-  entries: readonly Entry[];
+  activity: ActivityState;
 }) {
   const key = candidate.candidateKey;
   const roles = list.map((r) => ({ jobId: r.job.jobId, title: r.job.title }));
@@ -137,9 +138,9 @@ function RelevantFor({
         );
         // With an outreach status, the chip becomes a small card: the job on top, the status in a band below.
         const role = { jobId: job.jobId, title: job.title };
-        const status = statusLine(entries, key, role);
+        const status = statusLine(activity.entries, key, role);
         // Invite shows on hover only where the rules allow it (not declined, contacted or in process).
-        const canInvite = !!candidate.email && !checkInvite(entries, comeetFor(key), key, role, roles).block;
+        const canInvite = !!candidate.email && !inviteCheck(activity, candidate, role, roles).block;
         const title = (
           <span className="fit-top">
             <span className="fit-title">
@@ -189,7 +190,7 @@ export function AttendeeTable({
   selected: string[];
   onSelect: (next: string[]) => void;
 }) {
-  const entries = useActivity();
+  const activity = useActivityState();
   const pageKeys = new Set(attendees.map((a) => a.candidate.candidateKey));
   const tickedHere = selected.filter((k) => pageKeys.has(k)).length;
   // With some rows ticked (the header shows a dash), the header box clears the selection instead of ticking every row.
@@ -221,7 +222,7 @@ export function AttendeeTable({
       header: <Head icon={Briefcase04Icon} label="Relevant job" />,
       sortable: true,
       width: '30%',
-      accessor: ({ candidate, relevantFor }) => <RelevantFor list={relevantFor} candidate={candidate} entries={entries} />,
+      accessor: ({ candidate, relevantFor }) => <RelevantFor list={relevantFor} candidate={candidate} activity={activity} />,
     },
     { id: 'ref', header: <Head icon={<WscMark />} label="WSC connections" />, accessor: connections },
   ];
