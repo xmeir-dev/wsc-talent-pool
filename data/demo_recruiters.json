@@ -4,6 +4,7 @@
     "SportsTech Innovation Summit": { "id": "REC1", "name": "Neta Harel" },
     "Broadcast & Streaming Technology Expo": { "id": "REC2", "name": "Gal Ofer" },
     "Data & AI Summit Europe": { "id": "REC3", "name": "Ronit Sela" },
-    "DevOps World 2025": { "id": "REC4", "name": "Amit Sasson" }
+    "DevOps World 2025": { "id": "REC4", "name": "Amit Sasson" },
+    "WSC Product Meetup": { "id": "REC2", "name": "Gal Ofer" }
   }
 }

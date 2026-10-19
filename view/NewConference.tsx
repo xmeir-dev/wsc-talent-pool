@@ -4,6 +4,7 @@ import { CalendarAdd01Icon, Cancel01Icon, CircleArrowUp02Icon, ClipboardPasteIco
 import { Button, Popover, Tooltip } from '@meir-labs/ui-kit';
 import { parseCsv } from '../pipeline';
 import sample from '../data/samples/wsc_product_meetup.csv?raw';
+import sampleProfiles from '../data/samples/wsc_product_meetup_profiles.csv?raw';
 
 const NEEDED = ['full_name', 'email', 'conference_name', 'conference_date'];
 
@@ -34,7 +35,8 @@ export function NewConference({
 }: {
   existing: string[];
   /** Adds the list; returns problems if the merged data no longer reads. */
-  onAdd: (text: string, names: string[]) => string[] | null;
+  /** `profiles` stands in for the LinkedIn lookup production runs on new attendees (the sample brings its own). */
+  onAdd: (text: string, names: string[], profiles?: string) => string[] | null;
 }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +50,10 @@ export function NewConference({
     setError(null);
     setLink('');
   };
-  const add = (text: string) => {
+  const add = (text: string, profiles?: string) => {
     const names = check(text, existing);
     if (typeof names === 'string') return setError(names);
-    const problems = onAdd(text, names);
+    const problems = onAdd(text, names, profiles);
     if (problems) setError(problems.join(' '));
     else close();
   };
@@ -119,7 +121,7 @@ export function NewConference({
             Choose attendee list
           </button>
           <span className="muted">Drop a CSV here or click to browse</span>
-          <button type="button" className="new-conf-chip" onClick={() => add(sample)}>
+          <button type="button" className="new-conf-chip" onClick={() => add(sample, sampleProfiles)}>
             Use a sample list
           </button>
         </div>

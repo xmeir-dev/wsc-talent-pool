@@ -30,8 +30,8 @@ function load(sources: SourceTexts): Loaded {
   }
 }
 
-/** The attendee list with another event's rows added, in the original columns. */
-function withAttendees(base: string, added: string): string {
+/** A source file with more rows added, in the original columns. */
+function withRows(base: string, added: string): string {
   const a = parseCsv(base);
   return toCsv(a.header, [...a.records, ...parseCsv(added).records]);
 }
@@ -54,8 +54,12 @@ export function App({ sources: initial = bundledSources }: { sources?: SourceTex
       </main>
     );
   }
-  const addAttendees = (text: string): string[] | null => {
-    const next = { ...sources, attendees: withAttendees(sources.attendees, text) };
+  const addAttendees = (text: string, profiles?: string): string[] | null => {
+    const next = {
+      ...sources,
+      attendees: withRows(sources.attendees, text),
+      ...(profiles && { profiles: withRows(sources.profiles, profiles) }),
+    };
     const tried = load(next);
     if (!tried.ok) return tried.problems;
     setSources(next);
@@ -64,7 +68,7 @@ export function App({ sources: initial = bundledSources }: { sources?: SourceTex
   return <Workspace dataset={loaded.dataset} onAddAttendees={addAttendees} />;
 }
 
-function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttendees: (text: string) => string[] | null }) {
+function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttendees: (text: string, profiles?: string) => string[] | null }) {
   const pool = useMemo(() => buildPool(dataset), [dataset]);
   // Filters live here, so they survive a trip to a profile and back.
   // Empty means no filter. Values are conference names and job IDs, in list order.
@@ -227,8 +231,8 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         </div>
         <NewConference
           existing={pool.conferences.map((c) => c.name)}
-          onAdd={(text, names) => {
-            const problems = onAddAttendees(text);
+          onAdd={(text, names, profiles) => {
+            const problems = onAddAttendees(text, profiles);
             // Show who came: filter the table to the new event.
             if (!problems) setConferences(names);
             return problems;
