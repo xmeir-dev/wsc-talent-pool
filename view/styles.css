@@ -51,7 +51,7 @@ ul {
   display: flex;
   align-items: center;
   gap: var(--ml-space-sm);
-  margin-bottom: var(--ml-space-lg);
+  margin-bottom: 40px;
 }
 .page-logo {
   border-radius: 10px;
