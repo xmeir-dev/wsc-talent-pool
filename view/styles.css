@@ -892,28 +892,47 @@ ul {
   }
 }
 /* The TL;DR row right under the title band, then a row each for required skills, nice to have and experience, hairlines edge to edge. */
-.d-fit-verdict {
-  margin: -12px -20px 0;
-  padding: 12px 20px;
-  border-bottom: 1px solid var(--ml-border-subtle);
+/* Job fit card: the header is tinted by the verdict, which sits on the right of the title. */
+.d-fit {
+  --fit-text: var(--ml-color-success);
+  --fit-tint: var(--ml-color-success-muted);
+  --fit-line: color-mix(in srgb, var(--ml-color-success) 28%, transparent);
+  border-color: var(--fit-line);
 }
-.d-fit-verdict > * {
-  display: inline-flex;
+.d-fit.is-review {
+  --fit-text: #9a6700;
+  --fit-tint: color-mix(in srgb, #d4a72c 14%, transparent);
+  --fit-line: color-mix(in srgb, #d4a72c 40%, transparent);
+}
+[data-meirlabs-theme='dark'] .d-fit.is-review {
+  --fit-text: #d29922;
+}
+/* The hover wrapper around the verdict is a flex box, so it centres like the title instead of sitting on a text baseline. */
+.d-card.d-fit .d-label > * {
+  display: flex;
+}
+.d-card.d-fit .d-label {
+  background: var(--fit-tint);
+  border-bottom-color: var(--fit-line);
 }
 .d-verdict {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  font-size: 14px;
   font-weight: 500;
+  white-space: nowrap;
+  color: var(--fit-text);
   cursor: default;
+}
+.d-fit .d-label + .d-fit-row {
+  margin-top: -12px;
+  border-top: 0;
 }
 .d-fit-row {
   margin: 0 -20px;
   padding: 14px 20px 16px;
   border-top: 1px solid var(--ml-border-subtle);
-}
-.d-fit-verdict + .d-fit-row {
-  border-top: 0;
 }
 .d-fit-row:last-child {
   padding-bottom: 0;
@@ -992,6 +1011,41 @@ ul {
   margin: 4px 0 0;
   font-size: 12px;
   color: var(--amber);
+}
+/* The info icon beside a row label shows on hover (or keyboard focus); it holds the rule behind that row. */
+.d-info {
+  display: inline-flex;
+  margin-left: 2px;
+  color: var(--ml-text-faint);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+.d-fit-row:hover .d-info,
+.d-info:focus-visible,
+.d-info:focus-within {
+  opacity: 1;
+}
+.d-info:hover {
+  color: var(--ml-text);
+}
+@media (hover: none) {
+  .d-info {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .d-info {
+    transition: none;
+  }
+}
+.rule-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 300px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
 }
 .d-chips {
   list-style: none;

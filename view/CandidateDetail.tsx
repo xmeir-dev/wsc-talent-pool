@@ -10,6 +10,7 @@ import {
   Cancel01Icon,
   CheckmarkBadge01Icon,
   HelpCircleIcon,
+  InformationCircleIcon,
   Linkedin01Icon,
   Mail01Icon,
   StarIcon,
@@ -133,15 +134,52 @@ function SkillRows({ a, job }: { a: CandidateAssessment; job: Job }) {
   const minYears = minYearsFor(job);
   return (
     <>
-      <FitRow label="Required skills" count={`${has(required)}/${required.length}`} tip={`Needs ${a.tally.requiredNeeded} on the profile`}>
+      <FitRow
+        label="Required skills"
+        count={`${has(required)}/${required.length}`}
+        tip={`Needs ${a.tally.requiredNeeded} on the profile`}
+        info={
+          <RuleTip
+            lines={[
+              `The ${required.length} skills this job lists as required. Each is matched against the skills on their LinkedIn profile.`,
+              `The shortlist needs ${a.tally.requiredNeeded} of ${required.length} on the profile by name (60%, rounded up; one rule for every job), plus every must-have (star).`,
+              'Green: on the profile. Amber: only a related skill, to confirm; it never counts toward the shortlist. Red: not on the profile.',
+            ]}
+          />
+        }
+      >
         <ul className="d-chips">{required.map(chip)}</ul>
       </FitRow>
       {nice.length > 0 && (
-        <FitRow label="Nice to have" count={`${nice.filter((s) => s.match !== 'none').length}/${nice.length}`}>
+        <FitRow
+          label="Nice to have"
+          count={`${nice.filter((s) => s.match !== 'none').length}/${nice.length}`}
+          info={
+            <RuleTip
+              lines={[
+                'The skills this job lists as nice to have, on the profile by name or a related skill.',
+                'They never decide the shortlist. They only order people who have the same required skills.',
+              ]}
+            />
+          }
+        >
           <ul className="d-chips">{nice.map(chip)}</ul>
         </FitRow>
       )}
-      <FitRow label="Experience" count={minYears === null ? 'No minimum' : undefined}>
+      <FitRow
+        label="Experience"
+        count={minYears === null ? 'No minimum' : undefined}
+        info={
+          <RuleTip
+            lines={[
+              'Total years on their LinkedIn profile, internships and junior roles included.',
+              minYears === null
+                ? `No minimum: the job's seniority, "${job.seniority}", has no years rule.`
+                : `The minimum, ${minYears} years, comes from the job's seniority, "${job.seniority}": Senior 5, Mid-Senior 4, Mid 3. WSC did not set years; this is our assumption.`,
+            ]}
+          />
+        }
+      >
         <YearsBar years={years} minYears={minYears} />
         {minYears !== null && a.seniority.earlyCareerRoles.length > 0 && (
           <p className="d-years-note">Includes intern or junior roles; confirm non-intern years</p>
@@ -177,12 +215,30 @@ function YearsBar({ years, minYears }: { years: number | null; minYears: number 
   );
 }
 
-/** One row of a job card: a caps label with a count on the right, then its content. */
-function FitRow({ label, count, tip, children }: { label: string; count?: string; tip?: string; children: ReactNode }) {
+/** How a row's result was worked out, one short paragraph per point. */
+function RuleTip({ lines }: { lines: string[] }) {
+  return (
+    <span className="rule-tip">
+      {lines.map((l) => (
+        <span key={l}>{l}</span>
+      ))}
+    </span>
+  );
+}
+
+/** One row of a job card: a caps label (with an info icon on hover that explains the rule) and a count on the right, then its content. */
+function FitRow({ label, count, tip, info, children }: { label: string; count?: string; tip?: string; info?: ReactNode; children: ReactNode }) {
   return (
     <div className="d-fit-row">
       <p className="d-fit-row-head">
-        <span className="d-label-name">{label}</span>
+        <span className="d-label-name">
+          {label}
+          {info && (
+            <Hint tip={info} className="d-info">
+              <HugeiconsIcon icon={InformationCircleIcon} size={14} strokeWidth={1.75} aria-label={`How ${label.toLowerCase()} is worked out`} />
+            </Hint>
+          )}
+        </span>
         {count !== undefined &&
           (tip ? (
             <Hint tip={tip} focusable={false}>
@@ -205,21 +261,20 @@ function JobFit({ a, job, outcome, onJob }: { a: CandidateAssessment; job: Job; 
   const verdictTip = shortlisted ? a.tieNote && upperFirst(a.tieNote) : checks.filter((k) => !k.ok).map((k) => k.tip).join('. ');
   const verdict = (
     <span className="d-verdict">
-      <span className={`fit-check${shortlisted ? ' is-ok' : ''}`} aria-hidden="true">
-        <HugeiconsIcon icon={shortlisted ? CheckmarkBadge01Icon : HelpCircleIcon} size={14} strokeWidth={1.75} />
-      </span>
-      <span>{shortlisted ? `Shortlisted${a.shortlistRank !== null ? `, #${a.shortlistRank}` : ''}` : 'Maybe relevant'}</span>
+      <HugeiconsIcon icon={shortlisted ? CheckmarkBadge01Icon : HelpCircleIcon} size={16} strokeWidth={1.75} aria-hidden="true" />
+      {shortlisted ? `Shortlisted${a.shortlistRank !== null ? ` · #${a.shortlistRank}` : ''}` : 'Maybe relevant'}
     </span>
   );
+  // The verdict sits in the card's header, which is tinted green (shortlisted) or amber (maybe relevant).
   return (
-    <section className="d-card">
+    <section className={`d-card d-fit ${shortlisted ? 'is-shortlist' : 'is-review'}`}>
       <div className="d-label">
         <button type="button" className="d-job" onClick={() => onJob(job.jobId)} aria-label={`${job.title}: see all candidates`}>
           {job.title}
           <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
         </button>
+        {verdictTip ? <Hint tip={verdictTip}>{verdict}</Hint> : verdict}
       </div>
-      <div className="d-fit-verdict">{verdictTip ? <Hint tip={verdictTip}>{verdict}</Hint> : verdict}</div>
       {profile && profile.skills.length > 0 ? (
         <SkillRows a={a} job={job} />
       ) : (
