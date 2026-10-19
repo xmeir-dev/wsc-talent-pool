@@ -834,7 +834,12 @@ ul {
 .d-skill-groups {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+}
+/* A hairline, edge to edge, between Required skills and Nice to have. */
+.d-skill-groups > * + * {
+  margin: 16px -20px 0;
+  padding: 16px 20px 0;
+  border-top: 1px solid var(--ml-border-subtle);
 }
 .d-skill-groups .d-label-name {
   margin: 0 0 8px;
@@ -1067,6 +1072,23 @@ ul {
 }
 [data-meirlabs-theme='dark'] .overview-mark {
   color: #a371f7;
+}
+.skill-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 260px;
+}
+.skill-tip-name {
+  font-weight: 600;
+}
+.skill-tip-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+}
+.skill-tip-rows > :nth-child(odd) {
+  opacity: 0.65;
 }
 .note-tip {
   display: flex;

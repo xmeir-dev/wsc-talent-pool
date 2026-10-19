@@ -47,14 +47,40 @@ function skillState(s: SkillMatch): SkillState {
   return 'likely';
 }
 
-const STATE_WORDS: Record<SkillState, string> = { has: 'has it', likely: 'likely', missing: 'missing' };
+const KIND_WORDS = { must: 'Must-have', required: 'Required', nice_to_have: 'Nice to have' } as const;
 
-/** What the hover says: the kind of skill, then whether they have it (and, for a likely match, why). */
-function skillTip(s: SkillMatch, must: boolean): string {
-  const kind = must ? 'Must-have' : s.kind === 'required' ? 'Required' : 'Nice to have';
+/** One line for screen readers: the kind of skill, then whether they have it. */
+function skillLabel(s: SkillMatch, must: boolean): string {
   const state = skillState(s);
-  if (state !== 'likely') return `${kind}, ${STATE_WORDS[state]}`;
-  return `${kind}, likely: ${s.match === 'inferred' ? 'profile lists' : 'related skill on profile:'} ${s.evidence}`;
+  return `${KIND_WORDS[must ? 'must' : s.kind]}, ${state === 'has' ? 'has it' : state === 'missing' ? 'missing' : 'likely'}`;
+}
+
+/** The hover card for a skill chip: the skill, what kind it is, what the profile shows, and the points it earned. */
+function SkillTip({ s, must }: { s: SkillMatch; must: boolean }) {
+  const state = skillState(s);
+  const found =
+    state === 'has'
+      ? 'On their profile'
+      : state === 'missing'
+        ? 'Not on their profile'
+        : s.match === 'inferred'
+          ? `Likely: profile lists ${s.evidence}`
+          : `Related skill on profile: ${s.evidence}`;
+  return (
+    <span className="skill-tip">
+      <span className="skill-tip-name">{s.skill}</span>
+      <span className="skill-tip-rows">
+        <span>Type</span>
+        <span>{KIND_WORDS[must ? 'must' : s.kind]}</span>
+        <span>Profile</span>
+        <span>{found}</span>
+        <span>Points</span>
+        <span>
+          {s.points} of {s.kind === 'required' ? 2 : 1}
+        </span>
+      </span>
+    </span>
+  );
 }
 
 function Label({ icon, children, meta }: { icon: IconSvgElement; children: ReactNode; meta?: ReactNode }) {
@@ -84,11 +110,13 @@ function SkillChips({ a, job }: { a: CandidateAssessment; job: Job }) {
   const chip = (s: SkillMatch) => {
     const state = skillState(s);
     const must = musts.has(s.skill);
-    const tip = skillTip(s, must);
     return (
       <li key={s.skill}>
-        <Hint tip={tip} focusable={false}>
-          <span className={`d-chip is-${state} is-${s.kind === 'required' ? 'required' : 'nice'}`} aria-label={`${s.skill}: ${tip}`}>
+        <Hint tip={<SkillTip s={s} must={must} />} focusable={false}>
+          <span
+            className={`d-chip is-${state} is-${s.kind === 'required' ? 'required' : 'nice'}`}
+            aria-label={`${s.skill}: ${skillLabel(s, must)}`}
+          >
             <HugeiconsIcon icon={must ? StarIcon : STATE_ICON[state]} size={14} strokeWidth={1.75} aria-hidden="true" />
             {s.skill}
           </span>
@@ -97,7 +125,7 @@ function SkillChips({ a, job }: { a: CandidateAssessment; job: Job }) {
     );
   };
   const groups = [
-    { label: 'Required', skills: a.skills.filter((s) => s.kind === 'required') },
+    { label: 'Required skills', skills: a.skills.filter((s) => s.kind === 'required') },
     { label: 'Nice to have', skills: a.skills.filter((s) => s.kind === 'nice_to_have') },
   ].filter((g) => g.skills.length > 0);
   return (
