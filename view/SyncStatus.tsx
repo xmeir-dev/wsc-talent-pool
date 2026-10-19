@@ -15,7 +15,16 @@ const ext = (href: string, text: string) => (
 );
 
 /** Each source and how WSC would connect it for real (checked against each tool's docs, 2026-10-19). Connecting here is a demo. */
-const SOURCES: { key: string; name: string; icon: string; steps: ReactNode[] }[] = [
+/** What Connect asks for. `secret` fields are masked; nothing typed here is stored or sent (demo). */
+interface Field {
+  id: string;
+  label: string;
+  placeholder: string;
+  secret?: boolean;
+  optional?: boolean;
+}
+
+const SOURCES: { key: string; name: string; icon: string; steps: ReactNode[]; fields: Field[]; google?: boolean }[] = [
   {
     key: 'hubspot',
     name: 'HubSpot',
@@ -34,6 +43,7 @@ const SOURCES: { key: string; name: string; icon: string; steps: ReactNode[] }[]
       <>Click Create, copy the key, then click Connect here and paste it.</>,
       <>Contacts start syncing; new conference contacts are assessed as they arrive.</>,
     ],
+    fields: [{ id: 'key', label: 'Service key', placeholder: 'pat-eu1-…', secret: true }],
   },
   {
     key: 'comeet',
@@ -56,6 +66,11 @@ const SOURCES: { key: string; name: string; icon: string; steps: ReactNode[] }[]
       </>,
       <>Click Connect here and paste the UID, the Token and the Recruiting API key.</>,
     ],
+    fields: [
+      { id: 'uid', label: 'Company UID', placeholder: 'e.g. 30.005' },
+      { id: 'token', label: 'Token', placeholder: 'From Careers website settings', secret: true },
+      { id: 'api', label: 'Recruiting API key', placeholder: 'From Comeet support', secret: true, optional: true },
+    ],
   },
   {
     key: 'forms',
@@ -74,6 +89,8 @@ const SOURCES: { key: string; name: string; icon: string; steps: ReactNode[] }[]
         minutes. Forms outside the folder are ignored.
       </>,
     ],
+    google: true,
+    fields: [{ id: 'folder', label: 'Event sign-ups folder', placeholder: 'https://drive.google.com/drive/folders/…' }],
   },
 ];
 
@@ -92,7 +109,10 @@ export function SyncStatus() {
   // Last sync per connected source; missing means not connected.
   const [last, setLast] = useState<Record<string, number>>({});
   const [connecting, setConnecting] = useState<string | null>(null);
-  const [howTo, setHowTo] = useState<string | null>(null);
+  // One panel under the cards at a time: a source's how-to steps, or its Connect form.
+  const [panel, setPanel] = useState<{ key: string; kind: 'steps' | 'form' } | null>(null);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [googleSignedIn, setGoogleSignedIn] = useState(false);
   const [syncing, setSyncing] = useState(false);
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -108,7 +128,8 @@ export function SyncStatus() {
       setLast((l) => ({ ...l, [key]: t }));
       setNow(t);
       setConnecting(null);
-      setHowTo((h) => (h === key ? null : h));
+      setPanel(null);
+      setValues({});
     }, 1100);
   };
   const syncNow = () => {
@@ -120,7 +141,13 @@ export function SyncStatus() {
       setSyncing(false);
     }, 1400);
   };
-  const shown = SOURCES.find((s) => s.key === howTo);
+  const shown = panel && SOURCES.find((s) => s.key === panel.key);
+  const toggle = (key: string, kind: 'steps' | 'form') => {
+    setPanel((p) => (p?.key === key && p.kind === kind ? null : { key, kind }));
+    setValues({});
+  };
+  const ready =
+    !!shown && shown.fields.every((f) => f.optional || values[f.id]?.trim()) && (!shown.google || googleSignedIn);
 
   return (
     <Popover placement="bottom-end" open={open} onOpenChange={setOpen}>
@@ -141,8 +168,8 @@ export function SyncStatus() {
                       type="button"
                       className="sync-how"
                       aria-label={`How to connect ${s.name}`}
-                      aria-expanded={howTo === s.key}
-                      onClick={() => setHowTo((h) => (h === s.key ? null : s.key))}
+                      aria-expanded={panel?.key === s.key && panel.kind === 'steps'}
+                      onClick={() => toggle(s.key, 'steps')}
                     >
                       <HugeiconsIcon icon={HelpCircleIcon} size={16} strokeWidth={1.75} />
                     </button>
@@ -159,15 +186,72 @@ export function SyncStatus() {
                   )}
                 </span>
                 {at === undefined && (
-                  <Button size="sm" variant="secondary" disabled={connecting !== null} onClick={() => connect(s.key)}>
-                    {connecting === s.key ? 'Connecting…' : 'Connect'}
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    aria-expanded={panel?.key === s.key && panel.kind === 'form'}
+                    disabled={connecting !== null}
+                    onClick={() => toggle(s.key, 'form')}
+                  >
+                    Connect
                   </Button>
                 )}
               </section>
             );
           })}
         </div>
-        {shown && (
+        {shown && panel?.kind === 'form' && (
+          <form
+            className="sync-steps sync-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (ready) connect(shown.key);
+            }}
+          >
+            <p className="sync-steps-title">Connect {shown.name}</p>
+            {/* Connect opens the how-to too, so the steps sit right above the fields they fill in. */}
+            <ol>
+              {shown.steps.map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
+            </ol>
+            {shown.google && (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="sync-google"
+                disabled={googleSignedIn}
+                onClick={() => setGoogleSignedIn(true)}
+                leftIcon={<img src={googleFormsIcon} alt="" width={16} height={16} />}
+              >
+                {googleSignedIn ? 'Signed in with Google' : 'Sign in with Google'}
+              </Button>
+            )}
+            {shown.fields.map((f) => (
+              <label key={f.id} className="sync-field">
+                <span>
+                  {f.label}
+                  {f.optional && <span className="muted"> (optional)</span>}
+                </span>
+                <input
+                  type={f.secret ? 'password' : 'text'}
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder={f.placeholder}
+                  value={values[f.id] ?? ''}
+                  onChange={(e) => setValues((v) => ({ ...v, [f.id]: e.target.value }))}
+                />
+              </label>
+            ))}
+            <div className="sync-form-actions">
+              <Button type="submit" size="sm" variant="primary" disabled={!ready || connecting !== null}>
+                {connecting === shown.key ? 'Connecting…' : `Connect ${shown.name}`}
+              </Button>
+            </div>
+          </form>
+        )}
+        {shown && panel?.kind === 'steps' && (
           <div className="sync-steps">
             <p className="sync-steps-title">Connect {shown.name}</p>
             <ol>

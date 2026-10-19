@@ -432,6 +432,8 @@
 .sync-pop.sync-pop {
   width: min(620px, calc(100vw - 32px));
   max-width: none;
+  max-height: calc(100vh - 96px);
+  overflow-y: auto;
   display: grid;
   gap: 6px;
   padding: 6px;
@@ -525,6 +527,45 @@
   padding: 0 4px;
   border-radius: 4px;
   background: var(--ml-bg-card);
+}
+/* The Connect form sits where the steps do: labelled fields, then Connect. */
+.sync-form {
+  display: grid;
+  gap: 10px;
+}
+.sync-form .sync-steps-title {
+  margin: 0;
+}
+.sync-form ol {
+  margin-bottom: 4px;
+}
+.sync-google {
+  justify-self: start;
+}
+.sync-field {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ml-text-muted);
+}
+.sync-field input {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--ml-border);
+  border-radius: 8px;
+  background: var(--ml-bg-card);
+  color: var(--ml-text);
+  font: inherit;
+  font-size: 13px;
+}
+.sync-field input:focus {
+  outline: none;
+  border-color: var(--ml-text-muted);
+}
+.sync-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 @media (max-width: 720px) {
   .sync-cards {
