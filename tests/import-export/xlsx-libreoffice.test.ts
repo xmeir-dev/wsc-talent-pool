@@ -5,7 +5,7 @@
  *
  * Needs LibreOffice. Without it the check is skipped with a message, so a fresh checkout still passes `npm test`;
  * set XLSX_READER_REQUIRED=1 to make a missing LibreOffice fail instead. Point SOFFICE at the binary if it is not
- * on the usual paths. Supported reader and tested format: docs/export-formats.md.
+ * on the usual paths. Supported reader and tested format: docs/additional-info/export-formats.md.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';

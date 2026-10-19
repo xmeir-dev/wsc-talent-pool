@@ -1,6 +1,6 @@
 # Context from the discovery call
 
-The call set out a fictional recruiting scenario. It supplies context; the [written assignment](../assignment/index.html) specifies the deliverables.
+The call set out a fictional recruiting scenario. It supplies context; the [written assignment](../../assignment/index.html) specifies the deliverables.
 
 ## The recruiting problem
 

@@ -13,7 +13,7 @@ Why it matters:
 - **No unwanted or repeated contact.** Five recruiters share one pool. Without a record, two of them can invite the same person, approach someone already interviewing, or ask the same colleague twice. The call was explicit that unwanted messages to attendees "feel weird"; repeats are worse.
 - **The pool only pays off if it is worked.** Her own example: a product meetup five months ago, a product role opening today, and "I won't go back to look." A status per role turns the pool into a worklist: who for this role have we not contacted yet?
 - **Bulk actions need guard rails.** The view now has Invite to jobs and Ask WSC connections for many people at once. Without them, one click can reach people who declined or are mid-process.
-- **Managers can see progress.** Contacted, responded and declined per conference and per role is the first honest measure of whether conference contacts turn into hires (the [design doc](design.md#measuring-success)'s success measures need this data).
+- **Managers can see progress.** Contacted, responded and declined per conference and per role is the first honest measure of whether conference contacts turn into hires (the [design doc](../design.md#measuring-success)'s success measures need this data).
 - **It keeps people in fewer tools.** HubSpot holds the pool and shows the history; Comeet keeps owning recruitment progress after handoff, as the call asked ("data should move between systems").
 
 ## Design requirements
@@ -96,7 +96,7 @@ HubSpot holds the pool and displays the history; Comeet owns progress after hand
 | Reference request | Simulated entry; copy and email are Prepared | Slack bot direct message, Sent on API success; email Prepared until confirmed |
 | Deletion | Clear the browser history for that person | Delete across HubSpot, the assessment store and Comeet, keeping only a dated record that a deletion happened, with no personal data |
 
-Nothing new is collected about the person beyond WSC's own actions and recruiters' notes. Retention and deletion follow [Assumptions](assumptions.md#privacy).
+Nothing new is collected about the person beyond WSC's own actions and recruiters' notes. Retention and deletion follow [Assumptions](../assumptions.md#privacy).
 
 ## Scope for the assignment
 

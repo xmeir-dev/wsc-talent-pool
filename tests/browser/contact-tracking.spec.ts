@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-/** Contact tracking (docs/contact-tracking-plan.md): simulated history, per-role status, block rules. */
+/** Contact tracking (docs/additional-info/contact-tracking-plan.md): simulated history, per-role status, block rules. */
 
 function watchErrors(page: Page): string[] {
   const errors: string[] = [];

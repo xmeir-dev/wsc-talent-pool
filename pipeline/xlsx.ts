@@ -11,7 +11,7 @@
  * The column decides the type, never the look of a value: "007" in a text column stays the text "007".
  * Text longer than the format's 32,767-character cell limit is cut with a visible marker (fitCell).
  *
- * Verified by opening and re-saving in LibreOffice (tests/import-export/xlsx-libreoffice.test.ts; docs/export-formats.md
+ * Verified by opening and re-saving in LibreOffice (tests/import-export/xlsx-libreoffice.test.ts; docs/additional-info/export-formats.md
  * names the version). This is not a claim about every spreadsheet program.
  *
  * Output is deterministic: the same rows give the same bytes (fixed zip timestamps, no compression).

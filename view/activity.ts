@@ -1,5 +1,5 @@
 /**
- * Outreach history (docs/contact-tracking-plan.md): who was contacted, how, and for which role.
+ * Outreach history (docs/additional-info/contact-tracking-plan.md): who was contacted, how, and for which role.
  *
  * Everything here is simulated: nothing is sent. Entries live in this browser only (view/actionStore.ts),
  * plus a few seeded examples. The rules are pure functions so they can be tested without the view; the

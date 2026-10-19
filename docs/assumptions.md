@@ -1,6 +1,6 @@
 # Assumptions
 
-The [written assignment](../assignment/index.html) defines the scope; the [discovery call](discovery-call-context.md) supplies context. Build against synthetic CSVs, with HubSpot-ready output. The brief makes a recruiter view optional; one is included. Live connections and outreach are outside this exercise.
+The [written assignment](../assignment/index.html) defines the scope; the [discovery call](additional-info/discovery-call-context.md) supplies context. Build against synthetic CSVs, with HubSpot-ready output. The brief makes a recruiter view optional; one is included. Live connections and outreach are outside this exercise.
 
 ## Where recruiters work
 
@@ -46,7 +46,7 @@ None of this feeds the ranking. Each item is made up because the supplied files 
 - **Ask a WSC connection.** **Send in Slack** records the request as sent (WSC uses Slack, confirmed 2026-10-19; production sends it as a direct message from a Slack app). **Copy** and **Email** only prepare it, because neither proves anything was sent.
 - **Invite to job** drafts an invite from the recruiter who met the person; **Send invite** records it. In production the person is added to that position in Comeet, and it counts as sent only once a message is confirmed.
 - **Bulk actions.** Ticking rows shows a bar above and below the table: **Ask WSC connections** sends one request per colleague, and **Invite to jobs** sends each person to their own best-fit job, skipping and listing anyone the rules block.
-- **Outreach history** ([contact tracking plan](contact-tracking-plan.md)) is kept in this browser only, in a store that is safe with several tabs open and tied to each person's durable ID ([identity and history](identity-and-history.md)). Each role's status shows inside its job chip in the table, the profile has an **Activity** card, and the same rules block unwanted or repeated contact everywhere. Seeded examples: Noah Anderson declined Backend Engineer (still invitable for Data Engineer, with a warning), Ryan Patel is in process in Comeet (blocked), a reference request about Alex Turner was copied but never sent (**Mark sent** confirms it), and Scarlett Green is an uncontacted lead (not blocked).
+- **Outreach history** ([contact tracking plan](additional-info/contact-tracking-plan.md)) is kept in this browser only, in a store that is safe with several tabs open and tied to each person's durable ID ([identity and history](additional-info/identity-and-history.md)). Each role's status shows inside its job chip in the table, the profile has an **Activity** card, and the same rules block unwanted or repeated contact everywhere. Seeded examples: Noah Anderson declined Backend Engineer (still invitable for Data Engineer, with a warning), Ryan Patel is in process in Comeet (blocked), a reference request about Alex Turner was copied but never sent (**Mark sent** confirms it), and Scarlett Green is an uncontacted lead (not blocked).
 
 **Sources**
 
@@ -67,7 +67,7 @@ None of this feeds the ranking. Each item is made up because the supplied files 
 2. **A shared folder** (Google Drive or SharePoint, "Conference lists"). A new file starts the same import. Outside organizers usually cannot write to it, so someone at WSC copies the file in.
 3. **The event platform's own HubSpot integration,** where the organizer uses one and agrees to share, usually for sponsors. Attendees arrive with no file.
 
-**Fallbacks:** HubSpot's Import button for one-off files, and WSC's sign-up form at the booth for events that will not share a list. A file missing required columns, or with broken CSV structure, imports nothing and the sender is told what is wrong and where, as the demo's import does ([importing and events](importing-and-events.md)).
+**Fallbacks:** HubSpot's Import button for one-off files, and WSC's sign-up form at the booth for events that will not share a list. A file missing required columns, or with broken CSV structure, imports nothing and the sender is told what is wrong and where, as the demo's import does ([importing and events](additional-info/importing-and-events.md)).
 
 ## People already in Comeet
 

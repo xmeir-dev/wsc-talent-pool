@@ -1,7 +1,7 @@
 /**
  * Event editions: "SportsTech Innovation Summit" is a name; its 2024 and 2026 runs are two editions.
  *
- * Three identities stay separate (see docs/identity-and-history.md):
+ * Three identities stay separate (see docs/additional-info/identity-and-history.md):
  * - a person (Candidate.candidateKey, from identity.ts),
  * - an event edition (EventEdition.key, here),
  * - an attendance: one person at one edition (Attendance.attendanceId = attendanceIdFor(person, edition)).
