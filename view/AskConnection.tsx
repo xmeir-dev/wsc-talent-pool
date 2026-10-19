@@ -278,7 +278,7 @@ export function AskConnection({
             </Disclosure>
           </div>
         ) : (
-          <p className="muted ask-context">LinkedIn connection</p>
+          <p className="muted ask-context">No shared work history</p>
         )}
         {overlap && showTimeline && <Timeline o={overlap} theirName={theirFirst} myName={myFirst} />}
         <textarea
