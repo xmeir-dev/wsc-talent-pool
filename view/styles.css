@@ -712,18 +712,14 @@ ul {
 .d-card > p {
   padding-top: 8px;
 }
-.d-sub {
-  margin-top: 20px;
-}
 /* Each card's title row is a header band, like the table's header row. */
 .d-card .d-label {
+  box-sizing: border-box;
+  height: 40px;
   margin: 0 -20px 12px;
-  padding: 12px 20px;
+  padding: 0 20px;
   background: var(--ml-bg-surface);
   border-bottom: 1px solid var(--ml-border);
-}
-.d-card .d-sub .d-label {
-  border-top: 1px solid var(--ml-border);
 }
 .d-label {
   display: flex;

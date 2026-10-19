@@ -141,6 +141,80 @@ export function CandidateDetail({ a, row, job, jobPicker, onBack }: Props) {
   };
   const connectionCount = people.length + conn.unresolvedIds.length;
 
+  const careerCard = profile && (
+    <section className="d-card">
+      <Label icon={Briefcase01Icon} meta={a.seniority.totalYears === null ? 'Years not stated' : `${a.seniority.totalYears} years`}>
+        Career
+      </Label>
+      <ol className="d-timeline">
+        <li className="now">
+          <span>{profile.currentCompany}</span>
+          <span className="muted">{profile.currentTitle} · now</span>
+        </li>
+        {a.seniority.roles.map((r) => {
+          const worked = a.possibleReferences.filter((p) => sameCompany(r, p));
+          return (
+            <li key={r.raw}>
+              <span>{r.company}</span>
+              <span className="muted">{[r.title, spellYears(r)].filter(Boolean).join(' · ')}</span>
+              {worked.length > 0 && (
+                <span className="d-with">Worked with {worked.map((p) => p.employeeName).join(', ')}</span>
+              )}
+              {r.isEarlyCareer && <span className="d-intern">Intern or junior role, counted in the total</span>}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+  const metCard = (
+    <section className="d-card">
+      <Label icon={Calendar03Icon}>Met at</Label>
+      <ul className="d-rows">
+        {a.events.map((e) => (
+          <li key={e.attendance.hubspotId}>
+            <span>{e.attendance.conferenceName}</span>
+            <span className="muted">{shortDate(e.attendance.conferenceDate)}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+  const connCard = (
+    <section className="d-card">
+      <Label icon={UserMultipleIcon}>{connectionCount === 1 ? 'WSC connection' : 'WSC connections'}</Label>
+      {conn.status === 'unknown' && people.length === 0 ? (
+        <p className="unknown">Unknown: no profile to read connections from.</p>
+      ) : connectionCount === 0 ? (
+        <p className="muted">No one at WSC is connected to them</p>
+      ) : (
+        <ul className="d-people">
+          {people.map(({ employee, refs }) => {
+            const ref = refs[0];
+            return (
+              <li key={employee.employeeId}>
+                <Avatar size="md" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
+                <span className="d-person">
+                  <span>{employee.fullName}</span>
+                  <span className="muted">{ref ? `${employee.title} · both at ${ref.company}` : employee.title}</span>
+                </span>
+                <AskConnection employee={employee} refs={refs} ctx={ctx} asButton />
+              </li>
+            );
+          })}
+          {conn.unresolvedIds.map((id) => (
+            <li key={id}>
+              <span className="d-person">
+                <span>{id}</span>
+                <span className="unknown">Not in the employee roster</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+
   return (
     <div className="detail">
       <header className="page-head d-head">
@@ -176,6 +250,14 @@ export function CandidateDetail({ a, row, job, jobPicker, onBack }: Props) {
 
       <Lead a={a} />
 
+      <div className="d-grid">
+        {profile ? careerCard : metCard}
+        <div className="d-col">
+          {profile && metCard}
+          {connCard}
+        </div>
+      </div>
+
       <section className="d-fit">
         <div className="d-fit-head">
           {jobPicker}
@@ -205,103 +287,29 @@ export function CandidateDetail({ a, row, job, jobPicker, onBack }: Props) {
       </section>
 
       <div className="d-grid">
-        <section className="d-card">
-          {!profile ? (
-            <>
-              <Label icon={CheckListIcon}>Required skills</Label>
-              <p className="unknown">Unknown: no usable LinkedIn profile. Missing information is not a negative finding.</p>
-            </>
-          ) : (
-            <>
+        {!profile ? (
+          <section className="d-card">
+            <Label icon={CheckListIcon}>Required skills</Label>
+            <p className="unknown">Unknown: no usable LinkedIn profile. Missing information is not a negative finding.</p>
+          </section>
+        ) : (
+          <>
+            <section className="d-card">
               <Label icon={CheckListIcon} meta={`${has(required)} of ${required.length}`}>
                 Required skills
               </Label>
               <SkillList skills={required} />
-              {nice.length > 0 && (
-                <div className="d-sub">
-                  <Label icon={StarIcon} meta={`${has(nice)} of ${nice.length}`}>
-                    Nice to have
-                  </Label>
-                  <SkillList skills={nice} />
-                </div>
-              )}
-            </>
-          )}
-        </section>
-
-        <div className="d-col">
-          {profile && (
-            <section className="d-card">
-              <Label icon={Briefcase01Icon} meta={a.seniority.totalYears === null ? 'Years not stated' : `${a.seniority.totalYears} years`}>
-                Career
-              </Label>
-              <ol className="d-timeline">
-                <li className="now">
-                  <span>{profile.currentCompany}</span>
-                  <span className="muted">{profile.currentTitle} · now</span>
-                </li>
-                {a.seniority.roles.map((r) => {
-                  const worked = a.possibleReferences.filter((p) => sameCompany(r, p));
-                  return (
-                    <li key={r.raw}>
-                      <span>{r.company}</span>
-                      <span className="muted">{[r.title, spellYears(r)].filter(Boolean).join(' · ')}</span>
-                      {worked.length > 0 && (
-                        <span className="d-with">Worked with {worked.map((p) => p.employeeName).join(', ')}</span>
-                      )}
-                      {r.isEarlyCareer && <span className="d-intern">Intern or junior role, counted in the total</span>}
-                    </li>
-                  );
-                })}
-              </ol>
             </section>
-          )}
-
-          <section className="d-card">
-            <Label icon={Calendar03Icon}>Met at</Label>
-            <ul className="d-rows">
-              {a.events.map((e) => (
-                <li key={e.attendance.hubspotId}>
-                  <span>{e.attendance.conferenceName}</span>
-                  <span className="muted">{shortDate(e.attendance.conferenceDate)}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="d-card">
-            <Label icon={UserMultipleIcon}>{connectionCount === 1 ? 'WSC connection' : 'WSC connections'}</Label>
-            {conn.status === 'unknown' && people.length === 0 ? (
-              <p className="unknown">Unknown: no profile to read connections from.</p>
-            ) : connectionCount === 0 ? (
-              <p className="muted">No one at WSC is connected to them</p>
-            ) : (
-              <ul className="d-people">
-                {people.map(({ employee, refs }) => {
-                  const ref = refs[0];
-                  return (
-                    <li key={employee.employeeId}>
-                      <Avatar size="md" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
-                      <span className="d-person">
-                        <span>{employee.fullName}</span>
-                        <span className="muted">{ref ? `${employee.title} · both at ${ref.company}` : employee.title}</span>
-                      </span>
-                      <AskConnection employee={employee} refs={refs} ctx={ctx} asButton />
-                    </li>
-                  );
-                })}
-                {conn.unresolvedIds.map((id) => (
-                  <li key={id}>
-                    <span className="d-person">
-                      <span>{id}</span>
-                      <span className="unknown">Not in the employee roster</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+            {nice.length > 0 && (
+              <section className="d-card">
+                <Label icon={StarIcon} meta={`${has(nice)} of ${nice.length}`}>
+                  Nice to have
+                </Label>
+                <SkillList skills={nice} />
+              </section>
             )}
-          </section>
-        </div>
+          </>
+        )}
       </div>
 
       {a.dataQualityFlags.length > 0 && (
