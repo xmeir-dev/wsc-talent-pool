@@ -49,6 +49,9 @@ describe("Ryan re-imported without his LinkedIn URL, or with a country-subdomain
     ['his email only', { full_name: RYAN, email: ryanEmail, conference_name: 'Synthetic review event', conference_date: '2026-10-19' }],
     ['a uk.linkedin.com URL only', { full_name: RYAN, linkedin_url: 'https://uk.linkedin.com/in/ryan-patel-dazn', conference_name: 'Synthetic review event', conference_date: '2026-10-19' }],
     ['an m.linkedin.com URL and a new email', { full_name: RYAN, email: 'ryan@elsewhere.test', linkedin_url: 'm.linkedin.com/in/ryan-patel-dazn/', conference_name: 'Synthetic review event', conference_date: '2026-10-19' }],
+    ['a /en profile page URL', { full_name: RYAN, linkedin_url: 'https://www.linkedin.com/in/ryan-patel-dazn/en', conference_name: 'Synthetic review event', conference_date: '2026-10-19' }],
+    ['a /details/experience/ URL', { full_name: RYAN, linkedin_url: 'linkedin.com/in/ryan-patel-dazn/details/experience/', conference_name: 'Synthetic review event', conference_date: '2026-10-19' }],
+    ['a percent-encoded slug', { full_name: RYAN, linkedin_url: 'https://linkedin.com/in/ryan%2Dpatel%2Ddazn%20', conference_name: 'Synthetic review event', conference_date: '2026-10-19' }],
   ];
   for (const [label, row] of variants) {
     it(`with ${label}: is Ryan himself (one person, C-HS017), so his Data Engineer process still blocks JOB001`, async () => {
@@ -73,6 +76,20 @@ describe("Ryan re-imported without his LinkedIn URL, or with a country-subdomain
     // The same with a subdomain spelling of his LinkedIn URL and no email.
     const viaUrl = { ...alias, email: '', linkedinUrl: 'https://uk.linkedin.com/in/ryan-patel-dazn' };
     expect((await s.comeet.handoff(viaUrl)).kind).toBe('conflict');
+    expect(s.comeet.list('POS-ML-001')).toHaveLength(0);
+  });
+});
+
+describe('the same full name with no identifier in common (a mistyped email)', () => {
+  it('stays a separate person, but both records are possible duplicates: the new one cannot be handed off past Ryan', async () => {
+    const s = session(imported([{ full_name: 'ryan  patel', email: 'ryan.patel@dazn.co', conference_name: 'Synthetic review event', conference_date: '2026-10-19' }]));
+    const ryans = s.store.dataset.candidates.filter((c) => /^ryan\s+patel$/i.test(c.fullName));
+    expect(ryans).toHaveLength(2);
+    for (const c of ryans) expect(c.identity.status).toBe('possible_duplicate');
+    const typo = ryans.find((c) => c.candidateKey !== 'C-HS017')!;
+    expect(typo.identity.relatedPersonIds).toEqual(['C-HS017']);
+    expect(s.comeet.check(typo.candidateKey, 'JOB001').block).toMatch(/Possible duplicate/);
+    expect((await s.comeet.handoff(s.payload(typo, 'JOB001'))).kind).toBe('blocked');
     expect(s.comeet.list('POS-ML-001')).toHaveLength(0);
   });
 });

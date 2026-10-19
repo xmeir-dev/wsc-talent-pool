@@ -14,7 +14,7 @@ Each person has one durable ID, `candidateKey` in code and `candidate_key` in th
 
 **Which rows are one person** (`resolvePeople` in `pipeline/identity.ts`). Only strong identifiers join rows, never a name:
 
-- the same LinkedIn URL, in canonical form: scheme, any subdomain (`www.`, `uk.`, `m.`…), case, query and trailing slash are ignored, so `https://uk.linkedin.com/in/ryan-patel-dazn` is Ryan's `linkedin.com/in/ryan-patel-dazn`. The simulated Comeet compares URLs with the same function;
+- the same LinkedIn URL, in canonical form `linkedin.com/in/<slug>`: scheme, any subdomain (`www.`, `uk.`, `m.`…), case, query, anything after the slug (`/en`, `/details/experience/`) and percent-encoding in the slug (`%2D`) are ignored, so `https://www.linkedin.com/in/ryan-patel-dazn/en` is Ryan's `linkedin.com/in/ryan-patel-dazn`. Lookalike domains (`linkedin.com.example.test`) are not LinkedIn. The simulated Comeet compares URLs with the same function;
 - a row with an email and no LinkedIn URL joins the one person whose LinkedIn rows carry that email (a supplied person re-imported with only their email stays one person). If several LinkedIn people share that email it joins none of them and is a `conflict`;
 - rows with no LinkedIn URL and no email join only rows with the same source ID **and** the same name. Different names that share only a source ID (`X Alice`, `X Bob`) stay different people, flagged `possible_duplicate`.
 
@@ -23,7 +23,7 @@ Each person has one durable ID, `candidateKey` in code and `candidate_key` in th
 What follows from that:
 
 - **Durable.** Another attendance, reordered rows, an added LinkedIn profile, or a LinkedIn URL or email added to someone with saved history never changes the ID. Nothing depends on row order or on which source ID sorts first (the old key was `C-<first source ID>`, so adding `HS1000` to a person known as `HS999` changed it).
-- **Distinct.** Different people get different IDs. Repeated or suffix-like source IDs (`X`, `X`, `X-2`) cannot collide, with or without emails. The build checks every person ID and attendance ID is unique before any map is keyed by them and stops with a `DataValidationError` on a clash; nothing is silently overwritten.
+- **Distinct.** Different people get different IDs. Repeated or suffix-like source IDs (`X`, `X`, `X-2`) cannot collide, with or without emails, and a record whose anchor is on record for someone else gets its own ID (and is a `conflict`), never theirs. The build still checks every person ID and attendance ID is unique before any map is keyed by them; a clash stops it with a plain message ("Two different records would share one person ID…, so nothing was changed") and an import is refused; nothing is silently overwritten.
 - **Deterministic.** The same files give the same IDs in the CLI and every browser with no saved history. Saved history only ever makes a person keep an earlier ID. No random IDs.
 - **Never a name.** A name alone never forms an ID, joins two records or owns history.
 - **Belt and braces.** If a person is shown under a new ID while one of their identifiers is on record under another (for example before the store finished loading), the store refuses any action for them ("Saved history for this person is under another record") instead of starting a second history.
@@ -38,7 +38,7 @@ Separate from the person ID:
 | Status | When | Actions |
 |---|---|---|
 | `resolved` | One anchor, no clash with anyone | Allowed (subject to the contact rules) |
-| `possible_duplicate` | Shares an email or source ID with another person who has a different LinkedIn URL or name (they are never merged) | Blocked until the source data is fixed |
+| `possible_duplicate` | Shares an email or source ID with another person who has a different LinkedIn URL or name, or has exactly the same full name (case and spacing ignored) as another person with no identifier in common. They are never merged, and both records are flagged, because nothing says which one is real: a namesake with a mistyped email must not get past the real person's process, and the real person waits too | Blocked until the source data is fixed |
 | `conflict` | Their own records disagree: different names on one URL or email, a profile naming someone else, several profiles or URLs; or an email on several LinkedIn people; or identifiers on record for two different people | Blocked |
 | `unanchored` | No LinkedIn URL, email or source ID | Blocked: nothing durable to hold history against |
 

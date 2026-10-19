@@ -251,6 +251,7 @@ test('F9: the handoff carries the recorded history; a decline is shown, not hidd
 for (const [label, file] of [
   ['his email only', 'full_name,email,conference_name,conference_date\nRyan Patel,ryan.patel@dazn.com,Synthetic review event,2026-10-19\n'],
   ['a uk.linkedin.com spelling of his URL', 'full_name,linkedin_url,conference_name,conference_date\nRyan Patel,https://uk.linkedin.com/in/ryan-patel-dazn,Synthetic review event,2026-10-19\n'],
+  ['a /en profile-page URL', 'full_name,linkedin_url,conference_name,conference_date\nRyan Patel,https://www.linkedin.com/in/ryan-patel-dazn/en,Synthetic review event,2026-10-19\n'],
 ] as const) {
   test(`F3: Ryan re-imported with ${label} is still Ryan, so he cannot be handed off past his active process`, async ({ page }) => {
     const errors = watchErrors(page);

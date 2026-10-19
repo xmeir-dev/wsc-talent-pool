@@ -167,7 +167,7 @@ describe('published IDs and validation', () => {
 
   it('refuses duplicate IDs instead of keeping the last one', () => {
     expect(() => assertUnique(['P-1', 'P-2', 'P-1'], 'person IDs')).toThrow(DataValidationError);
-    expect(() => indexByPersonId([{ id: 'a' }, { id: 'a' }], (x) => x.id)).toThrow(/same ID is used more than once: a/);
+    expect(() => indexByPersonId([{ id: 'a' }, { id: 'a' }], (x) => x.id)).toThrow(/Two different records would share one person ID \(a\), so nothing was changed/);
   });
 
   it('is deterministic: the same files give the same IDs in every build', () => {
@@ -268,8 +268,37 @@ describe('a person keeps their ID when a LinkedIn URL or email is added or dropp
   });
 });
 
+describe('an identifier on record for another person never makes two records share an ID', () => {
+  it('Kim (b@, l9), Lee (a@, l2), Mo (a@, l3), Ned (a@ only) after history for a@ + l9: imports, Ned is a conflict', () => {
+    const real = loadSources(DATA_DIR);
+    const first = byName(buildDataset(withRows(real, [{ hubspot_id: '', full_name: 'Kim', email: 'a@x.test', conference_name: 'E', conference_date: '2026-10-19' }])), 'Kim');
+    const known = new Map([
+      ['email:a@x.test', first.candidateKey],
+      ['linkedin:linkedin.com/in/l9', first.candidateKey],
+    ]);
+    const row = (name: string, email: string, url = ''): Row => ({ hubspot_id: '', full_name: name, email, linkedin_url: url, conference_name: 'E', conference_date: '2026-10-19' });
+    const d = buildDataset(
+      withRows(real, [row('Kim', 'b@x.test', 'linkedin.com/in/l9'), row('Lee', 'a@x.test', 'linkedin.com/in/l2'), row('Mo', 'a@x.test', 'linkedin.com/in/l3'), row('Ned', 'a@x.test')]),
+      { knownPeople: known },
+    );
+    expect(byName(d, 'Kim').candidateKey).toBe(first.candidateKey);
+    expect(byName(d, 'Ned').identity.status).toBe('conflict');
+    expect(byName(d, 'Ned').candidateKey).not.toBe(first.candidateKey);
+    expect(new Set(d.candidates.map((c) => c.candidateKey)).size).toBe(d.candidates.length);
+  });
+});
+
 describe('LinkedIn URLs in any spelling are one profile (verifier break 3)', () => {
-  it.each(['https://uk.linkedin.com/in/priya-anand-cv', 'm.linkedin.com/in/priya-anand-cv/', 'https://www.LinkedIn.com/in/Priya-Anand-CV?trk=x', 'http://de.linkedin.com/in/priya-anand-cv#top'])(
+  it.each([
+    'https://uk.linkedin.com/in/priya-anand-cv',
+    'm.linkedin.com/in/priya-anand-cv/',
+    'https://www.LinkedIn.com/in/Priya-Anand-CV?trk=x',
+    'http://de.linkedin.com/in/priya-anand-cv#top',
+    'https://www.linkedin.com/in/priya-anand-cv/en',
+    'linkedin.com/in/priya-anand-cv/details/experience/',
+    'https://linkedin.com/in/priya%2Danand%2Dcv',
+    'https://linkedin.com/in/priya-anand-cv%20',
+  ])(
     '%s → linkedin.com/in/priya-anand-cv',
     (url) => {
       expect(normalizeLinkedinUrl(url)).toBe('linkedin.com/in/priya-anand-cv');

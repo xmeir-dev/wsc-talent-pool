@@ -54,12 +54,23 @@ export function containsTerm(text: string, term: string): boolean {
 
 /** "linkedin.com/in/jane-doe/" and "https://www.LinkedIn.com/in/jane-doe" → "linkedin.com/in/jane-doe". */
 export function normalizeLinkedinUrl(url: string): string {
-  return normalize(url)
+  const bare = normalize(url)
     .replace(/^https?:\/\//, '')
     // Any subdomain is the same profile: www., uk., m., mobile. … linkedin.com/in/<slug>.
     .replace(/^(?:[a-z0-9-]+\.)+(?=linkedin\.com\/)/, '')
     .replace(/[?#].*$/, '')
     .replace(/\/+$/, '');
+  // A profile link is linkedin.com/in/<slug>: anything after the slug (/en, /details/experience) is a page of
+  // that same profile, and a percent-encoded slug (%2D) is the same slug.
+  const profile = /^linkedin\.com\/in\/([^/]+)/.exec(bare);
+  if (!profile) return bare;
+  let slug = profile[1]!;
+  try {
+    slug = decodeURIComponent(slug);
+  } catch {
+    // Not valid percent-encoding: keep it as written (it will not pass isValidLinkedinUrl if it is broken).
+  }
+  return `linkedin.com/in/${normalize(slug)}`;
 }
 
 export function isValidLinkedinUrl(url: string): boolean {

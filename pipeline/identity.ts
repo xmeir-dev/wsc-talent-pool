@@ -98,7 +98,10 @@ export function assertUnique(ids: Iterable<string>, what: string): void {
   const seen = new Set<string>();
   const clashes = new Set<string>();
   for (const id of ids) (seen.has(id) ? clashes : seen).add(id);
-  if (clashes.size > 0) throw new DataValidationError([`${what}: the same ID is used more than once: ${[...clashes].join(', ')}`]);
+  if (clashes.size > 0)
+    throw new DataValidationError([
+      `Two different records would share one ${what.replace(/s$/, '')} (${[...clashes].join(', ')}), so nothing was changed. Check the file for LinkedIn URLs or emails that belong to different people.`,
+    ]);
 }
 
 /** A Map keyed by person ID that refuses duplicates. */
@@ -233,6 +236,8 @@ export function resolvePeople<T>(rows: readonly T[], keyOf: (r: T) => IdentityRo
   }
   groups = collect();
 
+  // IDs already taken: by known people (even through an identifier this group shares) and by linked groups.
+  const taken = new Set(known.values());
   return [...groups.values()].map((g) => {
     const k = (i: number) => keys[i]!;
     const ids = knownIds(g);
@@ -250,6 +255,11 @@ export function resolvePeople<T>(rows: readonly T[], keyOf: (r: T) => IdentityRo
         g.identifiers.find((id) => id.startsWith('email:')) ??
         (first.sourceId ? `source_id:${first.sourceId}|${normalize(first.name)}` : `row:${hash64(first.signature)}`);
       personId = `P-${hash64(anchor)}`;
+      if (taken.has(personId)) {
+        // The anchor is on record for someone else (an email this group shares with them): never take their ID.
+        reasons.push(`${anchor.slice(anchor.indexOf(':') + 1)} is on record for another person`);
+        personId = `P-${hash64(`${anchor}|${g.identifiers.join('|')}|unlinked`)}`;
+      }
     }
     const kind = (anchor.slice(0, anchor.indexOf(':')) as AnchorKind);
     return { rows: g.members.map((i) => rows[i]!), personId, anchor, kind, identifiers: g.identifiers, reasons };

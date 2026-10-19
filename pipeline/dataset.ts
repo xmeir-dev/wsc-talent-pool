@@ -332,6 +332,9 @@ export function buildDataset(sources: SourceTexts, options: BuildOptions = {}): 
     for (const at of c.attendances) if (at.hubspotId) share(`source ID ${at.hubspotId}`, c);
     for (const e of rowEmails.get(c) ?? []) share(`email ${e}`, c);
     if (c.linkedinUrl) share(`LinkedIn ${c.linkedinUrl}`, c);
+    // Same full name, nothing else in common: never merged, but neither record is trusted until someone checks
+    // (e.g. "Ryan Patel" with a mistyped email must not slip past the real Ryan's active process).
+    if (normalize(c.fullName)) share(`the name "${normalize(c.fullName)}"`, c);
   }
   for (const c of candidates) {
     const related = new Set<string>();
