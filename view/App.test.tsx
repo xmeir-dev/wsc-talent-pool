@@ -259,7 +259,7 @@ describe('recruiter view: profile', () => {
     expect(main.textContent).toContain('Required skills');
     expect(main.textContent).toContain('Nice to have');
     expect(main.textContent).toContain('Career7 years');
-    await user.click(screen.getByRole('button', { name: 'WSC talent pool' }));
+    await user.click(screen.getByRole('button', { name: 'Back' }));
     await waitFor(() => expect(screen.getByRole('table')).toBeTruthy());
     expect(heading()).toBe('12 of 75 attendees');
     expect(value('Job')).toBe('Senior ML Engineer');

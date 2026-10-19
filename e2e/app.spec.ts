@@ -144,7 +144,7 @@ test('a row opens a profile page; Back, Escape and the browser back button retur
   await expect(main).toContainText('Required skills');
   await expect(main).toContainText('Worked with Maya Levi');
 
-  await page.getByRole('button', { name: 'WSC talent pool' }).click();
+  await page.getByRole('button', { name: 'Back' }).click();
   await expect(heading).toHaveCount(0);
   await expect(row).toBeFocused();
   await expect(title(page)).toHaveText('12 of 75 attendees');
@@ -172,7 +172,7 @@ test('with no job chosen, a profile opens on the best job and switches jobs', as
   await expect(page.getByRole('combobox', { name: 'Assessed for' })).toContainText('JOB003');
   await assessFor(page, /^JOB001 ·/);
   await expect(page.getByRole('main')).toContainText('Not recommended for this role');
-  await page.getByRole('button', { name: 'WSC talent pool' }).click();
+  await page.getByRole('button', { name: 'Back' }).click();
   await expect(title(page)).toHaveText('All 75 attendees');
   expect(errors).toEqual([]);
 });
@@ -228,7 +228,7 @@ test.describe('narrow screen', () => {
     await page.getByRole('row', { name: /Priya Anand/ }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Priya Anand' })).toBeVisible();
     expect(await overflow()).toBeLessThanOrEqual(0);
-    await page.getByRole('button', { name: 'WSC talent pool' }).click();
+    await page.getByRole('button', { name: 'Back' }).click();
     await expect(page.getByRole('table')).toBeVisible();
 
     // The filter menu fits the phone, 16px from each edge.

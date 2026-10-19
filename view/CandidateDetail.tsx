@@ -143,42 +143,36 @@ export function CandidateDetail({ a, row, job, jobPicker, onBack }: Props) {
 
   return (
     <div className="detail">
-      <div>
-        <button type="button" className="d-back" onClick={onBack}>
-          <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
-          WSC talent pool
+      <header className="page-head d-head">
+        <button type="button" className="d-back" onClick={onBack} aria-label="Back">
+          <HugeiconsIcon icon={ArrowLeft01Icon} size={24} strokeWidth={1.75} aria-hidden="true" />
         </button>
-        <header className="page-head d-head">
-          <span className="d-mono" aria-hidden="true">
-            {initials(c.fullName)}
-          </span>
-          <div className="page-title">
-            <div className="d-name">
-              <h1>{c.fullName}</h1>
-              <CountryFlag c={c} />
-            </div>
-            <p className="muted">{currentRole(row)}</p>
+        <div className="page-title">
+          <div className="d-name">
+            <h1>{c.fullName}</h1>
+            <CountryFlag c={c} />
           </div>
-          {(c.email || c.linkedinUrl) && (
-            <div className="d-reach">
-              {c.email && (
-                <Button href={`mailto:${c.email}`} leftIcon={<HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.75} />}>
-                  Email
-                </Button>
-              )}
-              {c.linkedinUrl && (
-                // The kit Button has no target prop; same classes, so it matches the Email button.
-                <a className="ml-btn ml-btn-secondary ml-btn-size-md" href={linkedinHref(c.linkedinUrl)} target="_blank" rel="noreferrer">
-                  <span className="ml-btn-icon-slot" aria-hidden="true">
-                    <HugeiconsIcon icon={Linkedin01Icon} size={16} strokeWidth={1.75} />
-                  </span>
-                  <span className="ml-btn-label">LinkedIn</span>
-                </a>
-              )}
-            </div>
-          )}
-        </header>
-      </div>
+          <p className="muted">{currentRole(row)}</p>
+        </div>
+        {(c.email || c.linkedinUrl) && (
+          <div className="d-reach">
+            {c.email && (
+              <Button href={`mailto:${c.email}`} leftIcon={<HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.75} />}>
+                Email
+              </Button>
+            )}
+            {c.linkedinUrl && (
+              // The kit Button has no target prop; same classes, so it matches the Email button.
+              <a className="ml-btn ml-btn-secondary ml-btn-size-md" href={linkedinHref(c.linkedinUrl)} target="_blank" rel="noreferrer">
+                <span className="ml-btn-icon-slot" aria-hidden="true">
+                  <HugeiconsIcon icon={Linkedin01Icon} size={16} strokeWidth={1.75} />
+                </span>
+                <span className="ml-btn-label">LinkedIn</span>
+              </a>
+            )}
+          </div>
+        )}
+      </header>
 
       <Lead a={a} />
 
