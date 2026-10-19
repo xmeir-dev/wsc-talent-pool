@@ -699,7 +699,8 @@ ul {
   gap: var(--ml-space-md);
 }
 .d-card {
-  padding: 20px;
+  overflow: hidden;
+  padding: 0 20px 20px;
   border: 1px solid var(--ml-border-subtle);
   border-radius: 12px;
   background: var(--ml-bg-card);
@@ -708,7 +709,17 @@ ul {
   margin: 0;
 }
 .d-sub {
-  margin-top: 24px;
+  margin-top: 20px;
+}
+/* Each card's title row is a header band, like the table's header row. */
+.d-card .d-label {
+  margin: 0 -20px 12px;
+  padding: 12px 20px;
+  background: var(--ml-bg-surface);
+  border-bottom: 1px solid var(--ml-border);
+}
+.d-card .d-sub .d-label {
+  border-top: 1px solid var(--ml-border);
 }
 .d-label {
   display: flex;
