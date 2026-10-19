@@ -23,13 +23,24 @@ flowchart TB
 
 | Step | Input → action → output |
 |---|---|
-| 1. Select role | `job_id` + `job_openings.csv` → load the role's requirements. An unknown `job_id` stops with the list of valid IDs. |
+| 1. Select role | `job_id` + `job_openings.csv` → load the role's requirements and, when given, its own criteria (below). An unknown `job_id` stops with the list of valid IDs. |
 | 2. Combine evidence | Read each file strictly (a broken quote, a row of the wrong width or an ambiguous header stops with its line and column) and check it has its required columns. Group attendee rows into event editions ([importing and events](additional-info/importing-and-events.md)). Attendees + LinkedIn profiles, matched by normalized profile URL; connections + employees, matched by employee ID; candidate and employee work histories compared for shared employers → candidate records with source evidence. |
 | 3. Assess conference relevance | Skills, industry, and `conference_domain` → relevance and explanation for each event: fit with the event's topic, not with a job. It does not sort the pool or exclude anyone from job matching; it is reported in `event_assessments` and on the integration demo's HubSpot event activities. |
 | 4. Assess job fit | Candidate evidence + role requirements → skill counts, recommendation, reasons, gaps, and next check, using the [scoring rules](scoring.md). |
 | 5. Rank and export | Recommendations → `output/candidates_<job_id>.csv`. All four jobs are included. Identical inputs and rules produce identical files. The recruiter view also offers the same rows as an Excel file for reading ([export formats](additional-info/export-formats.md)). |
 
 Keep one person with all their attendance records: rows sharing a LinkedIn URL (any spelling of it) are one person, and a row with no URL joins the one LinkedIn person with its email. Never merge by name alone. Ambiguous identities stay separate, each with its own durable person ID (`candidate_key`, below) and visible warnings, and are held for review; missing profiles remain eligible for review. One person at one event edition is one attendance ([importing and events](additional-info/importing-and-events.md)).
+
+## Role criteria columns
+
+`job_openings.csv` has two **optional** columns for a role's own criteria. They are what the demo's New position dialog writes after the recruiter confirms the suggested criteria; a role can also carry them in the file.
+
+| Column | Format | Meaning |
+|---|---|---|
+| `core_skills` | Semicolon list, e.g. `Kubernetes;Terraform;CI/CD;Monitoring` | The role's core discipline. Any one on the profile, by name or an accepted alias ([equivalents](scoring.md#accepted-equivalents)), makes the person relevant; none → not recommended for this role. |
+| `must_have_skills` | Semicolon list, e.g. `AWS` | Each must be on the profile, by name or alias, for the shortlist; a related skill is not enough. Checked on the profile even when it is not also a required skill. |
+
+A role uses its written policy in `pipeline/rules.ts` if it has one (JOB001–JOB004), else these columns, else the provisional default ([scoring](scoring.md#the-shortlist-checks)). Absent columns, or empty cells, behave exactly as before: the supplied file has neither, and its four roles score the same either way. Absent columns are not warned about.
 
 ## Output fields
 
@@ -50,7 +61,7 @@ Export UTF-8 CSV with headers. Values are the same normalized values as the asse
 
 ## HubSpot preparation
 
-Map `email` to Email, `firstname` to First name, `lastname` to Last name, and other columns to configured `talent_<column>` contact properties, using Number or text as above. Synthetic `HS...` IDs are source identifiers, not HubSpot Record IDs. Resolve identity/email conflicts before import. [HubSpot import guide](https://knowledge.hubspot.com/import-and-export/understand-the-import-tool).
+Map `email` to Email, `firstname` to First name, `lastname` to Last name, and other columns to configured `talent_<column>` contact properties, using Number or text as above. Synthetic `HS...` IDs are source identifiers, not HubSpot Record IDs. Resolve identity/email conflicts before import. Import talent-only contacts as non-marketing contacts, and do not map Contact owner or Lifecycle stage, so an import never overwrites a sales or marketing owner ([design](design.md#production-version)). [HubSpot import guide](https://knowledge.hubspot.com/import-and-export/understand-the-import-tool).
 
 Contact properties hold one selected-job snapshot: another job can overwrite it. Preserve per-job results. Blank CSV cells do not clear old values, including a former shortlist rank, so production updates need an explicit clearing policy. [HubSpot file requirements](https://knowledge.hubspot.com/import-and-export/set-up-your-import-file).
 

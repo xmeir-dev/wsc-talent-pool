@@ -11,16 +11,15 @@
  */
 
 import { assessEvent } from './conference';
+import { evidenceRule } from './criteria';
 import { NAME_CONFLICT_FLAG } from './dataset';
 import { findPossibleReferences } from './history';
 import {
   MIN_YEARS_BY_SENIORITY,
   ROLE_POLICIES,
   SHORTLIST_REQUIRED_SHARE,
-  SKILL_EVIDENCE,
   SUPPORTED_SENIORITIES,
   type RolePolicy,
-  type SkillEvidenceRule,
 } from './rules';
 import { assessSeniority } from './seniority';
 import { canonicalSkill, containsTerm, jobIdKey, normalize, ownEntry } from './text';
@@ -36,37 +35,32 @@ import type {
   SkillTally,
 } from './types';
 
-/** Fallback for a job added to job_openings.csv without a written policy: core = any required skill named. */
+/**
+ * The policy a role is scored by, in this order: its written ROLE_POLICIES entry; else the criteria it was created
+ * with (job.policy, from core_skills / must_have_skills); else the provisional default (no must-haves, any required
+ * skill named is the core discipline). `isDefault` is true when the core discipline is that provisional fallback.
+ */
 export function policyFor(job: Job): { policy: RolePolicy; isDefault: boolean } {
   // Same comparison as job selection (assessJob), so a source file writing "job001" keeps JOB001's written policy.
   const key = Object.keys(ROLE_POLICIES).find((k) => jobIdKey(k) === jobIdKey(job.jobId));
-  const policy = key === undefined ? undefined : ownEntry(ROLE_POLICIES, key);
-  if (policy) return { policy, isDefault: false };
-  return {
-    isDefault: true,
-    policy: {
-      essentials: [],
-      coreDiscipline: {
-        label: `required (${job.requiredSkills.join(', ')})`,
-        terms: job.requiredSkills.flatMap((s) => evidenceRule(s).named),
-      },
-      industryBonus: null,
-    },
+  const written = key === undefined ? undefined : ownEntry(ROLE_POLICIES, key);
+  if (written) return { policy: written, isDefault: false };
+  const fallbackCore = {
+    label: `required (${job.requiredSkills.join(', ')})`,
+    terms: job.requiredSkills.flatMap((s) => evidenceRule(s).named),
   };
-}
-
-/**
- * Evidence for a job skill, looked up by its canonical skill so every accepted spelling ("Go", "Golang") gets the
- * same rule. The skill's own name always counts as named, before any alias; related and inferred evidence stay as
- * configured. A skill that is not configured matches its own name only.
- */
-export function evidenceRule(skill: string): SkillEvidenceRule {
-  const own = normalize(skill);
-  const key = canonicalSkill(skill);
-  const rule = ownEntry(SKILL_EVIDENCE, key);
-  if (!rule) return { named: [own] };
-  // An alias is already one of the skill's named terms, so the set is the same for every spelling.
-  return { ...rule, named: [key, ...rule.named.filter((t) => t !== key)] };
+  if (job.policy) {
+    const hasCore = job.policy.coreDiscipline.terms.length > 0;
+    return {
+      isDefault: !hasCore,
+      policy: {
+        essentials: job.policy.essentials,
+        coreDiscipline: hasCore ? job.policy.coreDiscipline : fallbackCore,
+        industryBonus: job.policy.industryBonus ?? null,
+      },
+    };
+  }
+  return { isDefault: true, policy: { essentials: [], coreDiscipline: fallbackCore, industryBonus: null } };
 }
 
 /** Best match for one job skill among the profile's skills: named beats equivalent beats inferred. */
@@ -201,13 +195,16 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
 
   // By canonical skill, so a must-have written "Go" is met by a job skill written "Golang".
   const byName = new Map(requiredSkills.map((s) => [canonicalSkill(s.skill), s]));
+  // A must-have the recruiter did not also list as required is checked against the profile directly.
+  const evidenceFor = (skill: string): SkillMatch | undefined =>
+    byName.get(canonicalSkill(skill)) ?? (profile ? { skill, kind: 'required', ...matchSkill(profile.skills, skill) } : undefined);
   const meets = (e: { allowRelated: boolean }, m: SkillMatch | undefined) =>
     !!m && (m.match === 'named' || (e.allowRelated && m.match !== 'none'));
-  const unmet = policy.essentials.filter((e) => !e.anyOf.some((skill) => meets(e, byName.get(canonicalSkill(skill)))));
+  const unmet = policy.essentials.filter((e) => !e.anyOf.some((skill) => meets(e, evidenceFor(skill))));
   const missingEssentials = unmet.map((e) => e.label);
   // Say when related evidence exists but is not enough (e.g. "Sports Broadcasting" for Sports Analytics).
   const missingEssentialDetail = unmet.map((e) => {
-    const partial = e.anyOf.map((skill) => byName.get(canonicalSkill(skill))).find((m) => m && m.match !== 'none');
+    const partial = e.anyOf.map(evidenceFor).find((m) => m && m.match !== 'none');
     return partial ? `${e.label} (only a related skill, ${partial.evidence}, which is not enough)` : e.label;
   });
   const coreEvidence = profile ? profile.skills.filter((s) => policy.coreDiscipline.terms.includes(normalize(s))) : [];
@@ -216,7 +213,13 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
   const seniority = assessSeniority(profile);
   const connections = connectionInfo(candidate, employees);
   const dataQualityFlags = [...candidate.dataQualityFlags];
-  if (isDefault) dataQualityFlags.push(`no written policy for ${job.jobId}; provisional default rules applied (no must-haves)`);
+  if (isDefault) {
+    dataQualityFlags.push(
+      job.policy
+        ? `no core skills for ${job.jobId}; provisional default applied (any required skill counts as the core discipline)`
+        : `no written policy for ${job.jobId}; provisional default rules applied (no must-haves)`,
+    );
+  }
   if (seniorityProblem) dataQualityFlags.push(`${seniorityProblem}; no one is shortlisted until it is set`);
   if (connections.unresolvedIds.length > 0) {
     dataQualityFlags.push(`connection ID(s) not in employee roster: ${connections.unresolvedIds.join(', ')}`);
@@ -262,11 +265,12 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
     recommendation = reasons.length === 0 ? 'shortlist' : 'needs_review';
     if (recommendation === 'shortlist') {
       const early = seniority.earlyCareerRoles.length > 0;
+      const years = profile.yearsExperience === 1 ? '1 year' : `${profile.yearsExperience} years`;
       reasons.push(
         [
-          'Has every must-have skill',
-          `${required} of ${requiredTotal} required skills (needs ${needed})`,
-          `${yearsText(profile.yearsExperience)} experience${early ? ' (includes intern or junior roles; confirm non-intern years)' : ''}`,
+          policy.essentials.length > 0 ? 'Must-haves met' : 'No must-haves set',
+          `${required}/${requiredTotal} listed skills`,
+          `${years} reported${early ? '; experience needs confirmation' : ''}`,
         ].join(' · '),
       );
     }

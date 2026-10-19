@@ -2,6 +2,7 @@
 
 import type { EventEdition } from './events';
 import type { PersonIdentity } from './identity';
+import type { RolePolicy } from './rules';
 
 // ---------- Source records (as supplied in data/) ----------
 
@@ -52,6 +53,10 @@ export interface JobRecord {
   key_domains: string;
   required_skills: string;
   nice_to_have: string;
+  /** Optional: semicolon list; any one on the profile establishes the role's core discipline. */
+  core_skills?: string;
+  /** Optional: semicolon list; each must be on the profile (by name or alias) for the shortlist. */
+  must_have_skills?: string;
 }
 
 /** Raw text of the four supplied files. The browser and the CLI each load these their own way. */
@@ -74,7 +79,15 @@ export interface Job {
   keyDomains: string[];
   requiredSkills: string[];
   niceToHave: string[];
+  /**
+   * The role's own criteria, confirmed when it was created (core_skills / must_have_skills). Used when the role
+   * has no written entry in ROLE_POLICIES; absent when the row has neither column filled.
+   */
+  policy?: JobPolicy;
 }
+
+/** A role's own criteria: the same shape as a written RolePolicy, industry bonus optional. */
+export type JobPolicy = Omit<RolePolicy, 'industryBonus'> & { industryBonus?: RolePolicy['industryBonus'] };
 
 export interface Employee {
   employeeId: string;

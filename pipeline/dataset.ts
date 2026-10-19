@@ -13,6 +13,7 @@
  *   from a name, the row order or which source ID sorts first. Duplicate IDs are an error.
  */
 
+import { criteriaPolicy } from './criteria';
 import { CsvFormatError, parseCsv, type CsvRecord } from './csv';
 import { DataValidationError } from './errors';
 import { assignEditions, isIsoDate } from './events';
@@ -110,6 +111,9 @@ function dedupeExact<T extends CsvRecord>(rows: T[]): { unique: T[]; dropped: T[
 }
 
 function toJob(r: CsvRecord): Job {
+  // Optional columns: a row with neither filled keeps the previous behavior exactly (written or default policy).
+  const core = uniqueSkills(splitList(r.core_skills));
+  const mustHave = uniqueSkills(splitList(r.must_have_skills));
   return {
     jobId: r.job_id ?? '',
     title: r.title ?? '',
@@ -119,6 +123,7 @@ function toJob(r: CsvRecord): Job {
     // Every job, including one created in the demo, enters here: a repeated skill is one requirement.
     requiredSkills: uniqueSkills(splitList(r.required_skills)),
     niceToHave: uniqueSkills(splitList(r.nice_to_have)),
+    ...((core.length > 0 || mustHave.length > 0) && { policy: criteriaPolicy(core, mustHave) }),
   };
 }
 

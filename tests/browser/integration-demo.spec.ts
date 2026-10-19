@@ -15,6 +15,12 @@ const handoff = (page: Page) => page.getByRole('dialog', { name: /Add .* to Come
 const notices = (page: Page) => page.getByRole('dialog', { name: 'Notifications' });
 const card = (page: Page) => page.getByRole('region', { name: 'Talent match' });
 const toApp = (page: Page, name: 'HubSpot' | 'Comeet') => page.getByRole('button', { name, exact: true }).click();
+/** A notification's one link, by the notification's title. */
+const viewResults = (page: Page, title: string) => notices(page).getByRole('button', { name: `View results: ${title}`, exact: true });
+/** One notification, by its title. */
+const notice = (page: Page, title: string) => notices(page).getByRole('listitem').filter({ hasText: title });
+const group = (page: Page, name: 'Shortlist' | 'Needs review') =>
+  page.getByRole('group', { name: 'Talent match' }).getByRole('button', { name: new RegExp(`^${name} \\(`) });
 
 async function openShortlist(page: Page) {
   await page.goto('/');
@@ -33,8 +39,11 @@ test('morning after: the overnight notice leads to the shortlist, then card → 
   await expect(page.getByText('Integration concept · synthetic data · no live connection.')).toBeVisible();
   await expect(notices(page)).toContainText('Talent match ran overnight');
   await expect(notices(page)).toContainText('75 conference contacts from 4 events scored for 4 open roles.');
-  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 6 shortlist' }).click();
+  // One line, one link: the per-role counts live on the saved-view tabs.
+  await expect(notices(page).getByRole('button')).toHaveText(['', 'View results']);
+  await viewResults(page, 'Talent match ran overnight').click();
   await expect(notices(page)).toHaveCount(0);
+  await expect(group(page, 'Shortlist')).toHaveText('Shortlist (6)');
   await expect(shortlist(page).locator('tbody tr')).toHaveCount(6);
   await expect(shortlist(page).locator('tbody tr').first()).toContainText('Priya Anand');
 
@@ -47,15 +56,20 @@ test('morning after: the overnight notice leads to the shortlist, then card → 
   await expect(card(page)).not.toContainText(/worked together/i);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 
+  await expect(card(page).getByTestId('tm-recruiter')).toHaveText('Recruiter for this role: Neta Harel');
   await card(page).getByRole('button', { name: 'Add to Comeet' }).focus();
   await page.keyboard.press('Enter');
   await expect(handoff(page)).toContainText('Senior ML Engineer');
+  await expect(handoff(page).getByTestId('handoff-owner')).toHaveText('Neta Harel');
   await handoff(page).getByRole('button', { name: 'Confirm' }).press('Enter');
   await expect(handoff(page)).toContainText('Added to Senior ML Engineer as Sourced.');
 
   await handoff(page).getByRole('button', { name: 'Open in Comeet' }).press('Enter');
   await expect(page.getByRole('heading', { name: 'Priya Anand' })).toBeFocused();
   await expect(page.getByTestId('cm-status')).toHaveText('Sourced');
+  await expect(page.getByRole('tab', { name: 'Prospects (1)' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('complementary', { name: 'Prospects' }).getByRole('heading')).toHaveText('Prospects · Sourced (1)');
+  await expect(page.getByRole('region', { name: 'Workflow' })).toContainText('Neta reviews the fit and decides on outreach.');
   await expect(page.getByRole('region', { name: 'Custom fields' })).toContainText('Shortlist · #1');
   await expect(page.getByRole('region', { name: 'Custom fields' })).toContainText('rules-v4');
   expect(errors).toEqual([]);
@@ -69,7 +83,7 @@ test('Comeet status flows back to HubSpot: card, record and list', async ({ page
   await handoff(page).getByRole('button', { name: 'Confirm' }).click();
   await handoff(page).getByRole('button', { name: 'Close' }).click();
 
-  await expect(card(page).getByTestId('tm-comeet')).toHaveText('In Comeet: Sourced · Owner: Unassigned');
+  await expect(card(page).getByTestId('tm-comeet')).toHaveText('In Comeet: Sourced');
   await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toHaveCount(0);
   await expect(page.getByTestId('hs-comeet-status')).toHaveText('Sourced');
   // A Comeet record is not contact with the candidate.
@@ -83,16 +97,15 @@ test('Comeet status flows back to HubSpot: card, record and list', async ({ page
   // Open in Comeet from the card goes to the same record: no second handoff.
   await row('Chiara Russo').getByRole('button', { name: 'Chiara Russo' }).click();
   await card(page).getByRole('button', { name: 'Open in Comeet' }).click();
-  await expect(page.getByRole('complementary', { name: 'Candidates' }).getByRole('button', { name: /Chiara Russo/ })).toHaveCount(
-    1,
-  );
+  await expect(page.getByRole('complementary', { name: 'Prospects' }).getByRole('button', { name: /Chiara Russo/ })).toHaveCount(1);
   expect(errors).toEqual([]);
 });
 
 test('outreach from the recruiter app: per-role status on the shortlist, logged on the contact', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
-  await notices(page).getByRole('button', { name: /^Data Engineer: \d+ shortlist/ }).click();
+  await page.getByRole('button', { name: 'Close notifications' }).click();
+  await page.getByRole('tab', { name: 'Data Engineer', exact: true }).click();
   const table = page.getByRole('table', { name: 'Data Engineer — shortlist' });
   const noah = table.getByRole('row', { name: /Noah Anderson/ });
   // He declined Backend Engineer; that must not show on Data Engineer.
@@ -111,7 +124,10 @@ test('role switching reads each stored assessment without losing the first', asy
   const role = card(page).getByRole('combobox', { name: 'Role' });
   await role.selectOption('JOB002');
   await expect(card(page).getByTestId('tm-outcome')).toHaveText('Not recommended for this role');
-  await expect(card(page)).toContainText('JOB002 · rules-v4');
+  // The assessment version sits in the card's Details disclosure, closed by default.
+  await expect(card(page).getByText('JOB002 · rules-v4')).toBeHidden();
+  await card(page).getByText('Details', { exact: true }).click();
+  await expect(card(page).getByText('JOB002 · rules-v4')).toBeVisible();
   await role.selectOption('JOB001');
   await expect(card(page).getByTestId('tm-outcome')).toHaveText('Shortlist · #1');
 
@@ -137,7 +153,8 @@ test('importing a spreadsheet adds contacts, merges a repeat attendee and re-sco
 
   await expect(page.getByText('79 records')).toBeVisible();
   await expect(notices(page)).toContainText('Import finished: sample-conference-import.csv');
-  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 7 shortlist' }).click();
+  await viewResults(page, 'Import finished: sample-conference-import.csv').click();
+  await expect(group(page, 'Shortlist')).toHaveText('Shortlist (7)');
   await expect(shortlist(page).locator('tbody tr').first()).toContainText('Noa Barak');
 
   // A bad file imports nothing.
@@ -170,9 +187,7 @@ test('a new Comeet position is scored and appears in HubSpot as a saved view', a
 
   await toApp(page, 'HubSpot');
   await expect(notices(page)).toContainText('New Comeet position: Computer Vision Engineer');
-  await notices(page)
-    .getByRole('button', { name: /^Computer Vision Engineer: \d+ shortlist/ })
-    .click();
+  await viewResults(page, 'New Comeet position: Computer Vision Engineer').click();
   await expect(page.getByRole('tab', { name: 'Computer Vision Engineer', selected: true })).toBeVisible();
   await expect(
     page.getByRole('table', { name: 'Computer Vision Engineer — shortlist' }).locator('tbody tr').first(),
@@ -186,9 +201,12 @@ async function publishRole(page: Page, title: string, requiredSkills: string) {
   const form = page.getByRole('dialog', { name: 'New position' });
   await form.getByLabel('Position title').fill(title);
   await form.getByLabel('Seniority').selectOption('Mid');
-  await form.getByRole('textbox', { name: /^Key domains/ }).fill('');
-  await form.getByRole('textbox', { name: /^Required skills/ }).fill(requiredSkills);
-  await form.getByRole('textbox', { name: /^Nice to have/ }).fill('');
+  // No description, so no suggested criteria: only the required skills typed here (provisional core).
+  await form.getByLabel('Job description').fill('');
+  for (const [i, skill] of requiredSkills.split(', ').entries()) {
+    await form.getByRole('button', { name: 'Add required skill' }).click();
+    await form.getByRole('textbox', { name: `Required skill ${i + 1}` }).fill(skill);
+  }
   await form.getByRole('button', { name: 'Publish position' }).click();
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
 }
@@ -199,11 +217,9 @@ test('Go, Golang and Golang, Go are the same requirement, so the order never cha
   await publishRole(page, 'Go first', 'Go, Golang');
   await publishRole(page, 'Golang first', 'Golang, Go');
   await toApp(page, 'HubSpot');
-  for (const title of ['Go first', 'Golang first']) {
-    await expect(notices(page).getByRole('button', { name: `${title}: 5 shortlist`, exact: true })).toBeVisible();
-    await expect(notices(page).getByRole('button', { name: `${title}: 0 needs review`, exact: true })).toBeVisible();
-  }
-  await notices(page).getByRole('button', { name: 'Golang first: 5 shortlist', exact: true }).click();
+  for (const title of ['Go first', 'Golang first'])
+    await expect(notice(page, `New Comeet position: ${title}`)).toContainText('5 shortlist · 0 needs review.');
+  await viewResults(page, 'New Comeet position: Golang first').click();
   const table = page.getByRole('table', { name: 'Golang first — shortlist' });
   for (const name of ['Chris Lee', 'Liam Harris', 'Owen Jackson', 'Rachel Kim', 'Sophie Martin']) {
     await expect(table.getByRole('button', { name, exact: true })).toBeVisible();
@@ -216,8 +232,9 @@ test('a SageMaker, AWS role keeps both requirements, so Adaora (AWS, no SageMake
   await page.goto('/');
   await publishRole(page, 'SageMaker AWS', 'SageMaker, AWS');
   await toApp(page, 'HubSpot');
-  await expect(notices(page).getByRole('button', { name: 'SageMaker AWS: 1 shortlist', exact: true })).toBeVisible();
-  await notices(page).getByRole('button', { name: /^SageMaker AWS: \d+ needs review$/ }).click();
+  await expect(notice(page, 'New Comeet position: SageMaker AWS')).toContainText(' 1 shortlist · ');
+  await viewResults(page, 'New Comeet position: SageMaker AWS').click();
+  await group(page, 'Needs review').click();
   await page.getByRole('table', { name: /^SageMaker AWS/ }).getByRole('button', { name: 'Adaora Okafor', exact: true }).click();
   await card(page).getByRole('combobox', { name: 'Role' }).selectOption({ label: 'JOB005 · SageMaker AWS' });
   await expect(card(page).getByTestId('tm-outcome')).toHaveText('Needs review');
@@ -230,7 +247,7 @@ test('a required skill named "constructor" publishes as ordinary text, with no e
   await page.goto('/');
   await publishRole(page, 'Constructor role', 'constructor');
   await toApp(page, 'HubSpot');
-  await expect(notices(page).getByRole('button', { name: 'Constructor role: 0 shortlist', exact: true })).toBeVisible();
+  await expect(notice(page, 'New Comeet position: Constructor role')).toContainText(' 0 shortlist · ');
   expect(errors).toEqual([]);
 });
 
@@ -242,7 +259,7 @@ test('Comeet opens on its own; a person already in a process shows the owner and
   await page.getByRole('complementary', { name: 'Hiring' }).getByRole('button', { name: 'Data Engineer' }).click();
   await page.getByRole('button', { name: /Ryan Patel/ }).click();
   await expect(page.getByTestId('cm-status')).toHaveText('In progress · Phone screen');
-  await expect(page.getByRole('region', { name: 'Workflow' })).toContainText('Check with Dana before contacting Ryan.');
+  await expect(page.getByRole('region', { name: 'Workflow' })).toContainText('Check with Amit before contacting Ryan.');
   expect(errors).toEqual([]);
 });
 
@@ -258,7 +275,8 @@ test('the shared Comeet history blocks an active process, not an uncontacted lea
 
   // In process for Data Engineer: no handoff for any role.
   await row('Ryan Patel').getByRole('button', { name: 'Ryan Patel' }).click();
-  await expect(card(page).getByTestId('tm-comeet')).toHaveText('In Comeet: In progress · Phone screen · Owner: Dana (fictional recruiter)');
+  await expect(card(page).getByTestId('tm-comeet')).toHaveText('In Comeet: In progress · Phone screen');
+  await expect(card(page).getByTestId('tm-recruiter')).toHaveText('Recruiter for this role: Amit Sasson');
   await card(page).getByRole('combobox', { name: 'Role' }).selectOption('JOB001');
   await expect(card(page).getByTestId('tm-blocked')).toHaveText(
     'Already in process for Data Engineer in Comeet (phone screen). The owning recruiter decides.',
@@ -344,7 +362,7 @@ test('Reset demo clears handoffs', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Reset demo' }).click();
   await expect(notices(page)).toContainText('Talent match ran overnight');
-  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 6 shortlist' }).click();
+  await viewResults(page, 'Talent match ran overnight').click();
   await shortlist(page).getByRole('button', { name: 'James Thornton' }).click();
   await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toBeVisible();
   expect(errors).toEqual([]);
@@ -358,9 +376,7 @@ test.describe('narrow screen', () => {
     const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     await page.goto('/');
     expect(await overflow()).toBeLessThanOrEqual(0);
-    await notices(page)
-      .getByRole('button', { name: /^Senior ML Engineer: \d+ shortlist/ })
-      .click();
+    await viewResults(page, 'Talent match ran overnight').click();
     expect(await overflow()).toBeLessThanOrEqual(0);
     await shortlist(page).getByRole('button', { name: 'Priya Anand' }).click();
     expect(await overflow()).toBeLessThanOrEqual(0);

@@ -18,12 +18,16 @@ import {
   Clock01Icon,
 } from '@hugeicons/core-free-icons';
 import { useEffect, useRef } from 'react';
-import type { ComeetCandidate } from './comeet';
+import { ownerInitials, type ComeetCandidate } from './comeet';
 import { Icon } from './Icon';
 import { initials } from './initials';
 
 /** The demo position's hiring steps. Fictional; a real position uses its own configured workflow. */
 export const STEPS = ['Sourced', 'Phone screen', 'Interview / Manager', 'Offer'];
+/** Comeet's documented prospect statuses, in order. */
+export const PROSPECT_STEPS = ['Sourced', 'Contacted', 'Responded', 'Interested'];
+
+export const stepsFor = (c: ComeetCandidate) => (c.kind === 'prospect' ? PROSPECT_STEPS : STEPS);
 
 function Value({ v }: { v: string | undefined }) {
   return v ? <>{v}</> : <span className="unknown">Not set</span>;
@@ -37,7 +41,8 @@ export function ComeetProfile({ c, onClose }: { c: ComeetCandidate; onClose: () 
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => heading.current?.focus(), []);
   const name = `${c.firstName} ${c.lastName}`;
-  const step = Math.max(0, STEPS.indexOf(c.stage));
+  const steps = stepsFor(c);
+  const step = Math.max(0, steps.indexOf(c.stage));
 
   return (
     <section className="cm-profile" aria-label={`${name} profile`} data-uid={c.uid}>
@@ -71,7 +76,7 @@ export function ComeetProfile({ c, onClose }: { c: ComeetCandidate; onClose: () 
           <Icon icon={Briefcase01Icon} size={22} />
           <div className="cm-pposition-text">
             <p className="cm-pposition-name">
-              {c.positionName} <span className="cm-badge">Candidate</span>
+              {c.positionName} <span className="cm-badge">{c.kind === 'prospect' ? 'Prospect' : 'Candidate'}</span>
             </p>
             <p className="muted">
               Location: {c.location || '-'} · Source: <span className="cm-underline">{c.source}</span>
@@ -165,7 +170,7 @@ export function ComeetProfile({ c, onClose }: { c: ComeetCandidate; onClose: () 
             <div className="cm-wf-dots" aria-hidden="true">
               <Icon icon={ArrowLeft01Icon} size={16} />
               <span className="cm-dots cm-dots-lg">
-                {STEPS.map((s, i) => (
+                {steps.map((s, i) => (
                   <span key={s} className={i < step ? 'is-on' : i === step ? 'is-current' : undefined} />
                 ))}
               </span>
@@ -175,11 +180,11 @@ export function ComeetProfile({ c, onClose }: { c: ComeetCandidate; onClose: () 
               <div>
                 <p className="cm-wf-name">{c.stage}</p>
                 <p className="muted">
-                  Step {step + 1} of {STEPS.length}
+                  Step {step + 1} of {steps.length}
                 </p>
               </div>
               <span className="cm-avatar cm-avatar-xs" title={c.owner} aria-hidden="true">
-                {c.owner === 'Unassigned' ? '?' : initials(c.owner)}
+                {ownerInitials(c.owner)}
               </span>
             </div>
             <p className="cm-wf-desc">{c.nextStep}</p>

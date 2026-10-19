@@ -121,8 +121,10 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
               <dd>{payload.email || <span className="unknown">Not set</span>}</dd>
               <dt>Tags</dt>
               <dd>{payload.tags.join(', ') || <span className="unknown">None</span>}</dd>
-              <dt>Status</dt>
+              <dt>Prospect status</dt>
               <dd>{payload.status}</dd>
+              <dt>Owner in Comeet</dt>
+              <dd data-testid="handoff-owner">{payload.owner}</dd>
               <dt>Role fit</dt>
               <dd>{payload.customFields.roleFit}</dd>
               <dt>Evidence</dt>

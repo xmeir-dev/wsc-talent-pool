@@ -81,11 +81,10 @@ describe('recruiter wording', () => {
     for (const name of ['Nathan Brooks', 'James Thornton']) {
       const c = byName(result, name);
       expect(c.recommendation).toBe('shortlist');
-      expect(c.outcomeReasons[0]).toContain('confirm non-intern years');
+      expect(c.outcomeReasons[0]).toMatch(/years reported; experience needs confirmation$/);
+      expect(c.reviewNextStep).toContain('confirm non-intern years');
     }
-    expect(byName(result, 'Chiara Russo').outcomeReasons[0]).toBe(
-      "Has every must-have skill · 4 of 5 required skills (needs 3) · 7 years' experience",
-    );
+    expect(byName(result, 'Chiara Russo').outcomeReasons[0]).toBe('Must-haves met · 4/5 listed skills · 7 years reported');
   });
 });
 

@@ -20,7 +20,18 @@ import {
 import { NAME_CONFLICT_FLAG } from '../pipeline/dataset';
 import { normalize, normalizeEmail, normalizeLinkedinUrl } from '../pipeline/text';
 
-const JOB_COLUMNS = ['job_id', 'title', 'department', 'seniority', 'key_domains', 'required_skills', 'nice_to_have'] as const;
+/** Job columns a new position writes. The two criteria columns are added to the table only when a role uses them. */
+const JOB_COLUMNS = [
+  'job_id',
+  'title',
+  'department',
+  'seniority',
+  'key_domains',
+  'required_skills',
+  'nice_to_have',
+  'core_skills',
+  'must_have_skills',
+] as const;
 
 /** Columns the import template accepts. Profile columns are what the attendee gave at capture. */
 export const IMPORT_COLUMNS = [
@@ -220,6 +231,10 @@ export interface NewRole {
   keyDomains: string;
   requiredSkills: string;
   niceToHave: string;
+  /** Confirmed core skills: any one on the profile makes the person relevant. Empty → provisional default. */
+  coreSkills?: string;
+  /** Confirmed must-haves: each is needed for the shortlist. */
+  mustHaveSkills?: string;
 }
 
 /** Lists are typed comma- or semicolon-separated; the source table uses semicolons. */
@@ -252,6 +267,9 @@ export function addRole(role: NewRole, sources: SourceTexts): { sources: SourceT
     key_domains: toList(role.keyDomains),
     required_skills: toList(role.requiredSkills),
     nice_to_have: toList(role.niceToHave),
+    // Written only when confirmed, so a role without them keeps the previous behavior exactly.
+    ...(toList(role.coreSkills ?? '') && { core_skills: toList(role.coreSkills ?? '') }),
+    ...(toList(role.mustHaveSkills ?? '') && { must_have_skills: toList(role.mustHaveSkills ?? '') }),
   };
   // By column name, so a jobs table with its columns in another order, or without the optional ones, stays valid.
   return { sources: { ...sources, jobs: appendRecords(sources.jobs, [row], JOB_COLUMNS) }, jobId };

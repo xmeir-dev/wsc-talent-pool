@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { SUPPORTED_SENIORITIES } from '../pipeline';
 import { roleProblems, type NewRole } from './sources';
+import { CRITERIA_LISTS, suggestCriteria, type CriteriaList, type CriteriaRow } from './suggestCriteria';
 import { useDialog } from './useDialog';
 
 interface Props {
@@ -10,36 +11,71 @@ interface Props {
   onCreate: (role: NewRole) => void;
 }
 
-/** Prefilled so the demo runs in one click; every field can be changed. */
-const EXAMPLE: NewRole = {
+interface Draft {
+  title: string;
+  department: string;
+  seniority: string;
+  description: string;
+}
+
+/** The example role, prefilled so the demo runs in one click; every field can be changed. */
+export const EXAMPLE_POSITION: Draft = {
   title: 'Computer Vision Engineer',
   department: 'AI/ML',
   seniority: 'Mid',
-  keyDomains: 'Computer Vision, Sports Video Analysis',
-  requiredSkills: 'Python, Computer Vision, Object Detection, OpenCV',
-  niceToHave: 'PyTorch, Real-time processing',
+  description:
+    "We're hiring an engineer to find the key moments in live sports video. " +
+    'You will build computer vision and object detection models that track players and the ball across broadcast feeds. ' +
+    'Python and computer vision are a must. ' +
+    'Experience with Python, Computer Vision, Object Detection and OpenCV is required. ' +
+    'PyTorch and real-time processing are a plus.',
 };
 
-const FIELDS: { key: keyof NewRole; label: string; hint?: string }[] = [
-  { key: 'title', label: 'Position title' },
-  { key: 'department', label: 'Department' },
-  { key: 'seniority', label: 'Seniority' },
-  { key: 'requiredSkills', label: 'Required skills', hint: 'Comma separated' },
-  { key: 'niceToHave', label: 'Nice to have', hint: 'Comma separated' },
-  { key: 'keyDomains', label: 'Key domains', hint: 'Comma separated' },
-];
+/** The confirmed rows of one list, as the source table writes them. */
+const listText = (rows: CriteriaRow[], list: CriteriaList) =>
+  rows
+    .filter((r) => r.list === list && r.skill.trim())
+    .map((r) => r.skill.trim())
+    .join('; ');
 
 /** Comeet's "new position" form. Publishing fires the webhook that scores the talent pool for it. */
 export function NewPositionDialog({ onClose, onCreate }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
-  const [role, setRole] = useState<NewRole>(EXAMPLE);
+  const [draft, setDraft] = useState<Draft>(EXAMPLE_POSITION);
+  const [rows, setRows] = useState<CriteriaRow[]>(() => suggestCriteria(EXAMPLE_POSITION.title, EXAMPLE_POSITION.description));
+  const [added, setAdded] = useState(0);
   const [problems, setProblems] = useState<string[]>([]);
 
   useDialog(dialog, onClose);
 
+  // A new title or description re-suggests; rows the recruiter added by hand are kept.
+  const edit = (next: Draft) => {
+    setDraft(next);
+    if (next.title !== draft.title || next.description !== draft.description) {
+      setRows((prev) => [...suggestCriteria(next.title, next.description), ...prev.filter((r) => r.origin === 'recruiter')]);
+    }
+  };
+  const setSkill = (id: string, skill: string) => setRows((prev) => prev.map((r) => (r.id === id ? { ...r, skill } : r)));
+  const remove = (id: string) => setRows((prev) => prev.filter((r) => r.id !== id));
+  const add = (list: CriteriaList) => {
+    setRows((prev) => [...prev, { id: `added-${added}`, list, skill: '', quote: '', origin: 'recruiter' }]);
+    setAdded(added + 1);
+  };
+
+  const role: NewRole = {
+    title: draft.title,
+    department: draft.department,
+    seniority: draft.seniority,
+    keyDomains: '',
+    coreSkills: listText(rows, 'core'),
+    mustHaveSkills: listText(rows, 'mustHave'),
+    requiredSkills: listText(rows, 'required'),
+    niceToHave: listText(rows, 'niceToHave'),
+  };
+
   return (
     <div className="cm-modal-backdrop">
-      <div ref={dialog} className="cm-modal" role="dialog" aria-modal="true" aria-labelledby="np-title" tabIndex={-1}>
+      <div ref={dialog} className="cm-modal cm-modal-wide" role="dialog" aria-modal="true" aria-labelledby="np-title" tabIndex={-1}>
         <div className="cm-modal-head">
           <h2 id="np-title">New position</h2>
           <button type="button" className="handoff-x" aria-label="Dismiss" onClick={onClose}>
@@ -58,25 +94,72 @@ export function NewPositionDialog({ onClose, onCreate }: Props) {
             }
           }}
         >
-          {FIELDS.map((f) => (
-            <label key={f.key} className="cm-field">
-              <span>
-                {f.label}
-                {f.hint && <span className="muted"> · {f.hint}</span>}
-              </span>
-              {f.key === 'seniority' ? (
-                <select value={role.seniority} onChange={(e) => setRole({ ...role, seniority: e.target.value })}>
-                  {SUPPORTED_SENIORITIES.map((level) => (
-                    <option key={level} value={level}>
-                      {level}
-                    </option>
+          <label className="cm-field">
+            <span>Position title</span>
+            <input value={draft.title} onChange={(e) => edit({ ...draft, title: e.target.value })} />
+          </label>
+          <label className="cm-field">
+            <span>Department</span>
+            <input value={draft.department} onChange={(e) => edit({ ...draft, department: e.target.value })} />
+          </label>
+          <label className="cm-field">
+            <span>Seniority</span>
+            <select value={draft.seniority} onChange={(e) => edit({ ...draft, seniority: e.target.value })}>
+              {SUPPORTED_SENIORITIES.map((level) => (
+                <option key={level} value={level}>
+                  {level}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="cm-field">
+            <span>Job description</span>
+            <textarea rows={5} value={draft.description} onChange={(e) => edit({ ...draft, description: e.target.value })} />
+          </label>
+
+          <section className="np-criteria" aria-labelledby="np-criteria">
+            <h3 id="np-criteria">Suggested criteria</h3>
+            <p className="muted">Suggested by AI from the description · simulated · edit before publishing</p>
+            {CRITERIA_LISTS.map(({ list, label, hint, row }) => {
+              const listRows = rows.filter((r) => r.list === list);
+              return (
+                <fieldset key={list} className="np-list">
+                  <legend>
+                    {label}
+                    {hint && <span className="muted"> · {hint}</span>}
+                  </legend>
+                  {listRows.map((r, i) => (
+                    <div key={r.id} className="np-row">
+                      <div className="np-row-main">
+                        <input
+                          aria-label={`${row} ${i + 1}`}
+                          value={r.skill}
+                          autoFocus={r.origin === 'recruiter' && !r.skill}
+                          onChange={(e) => setSkill(r.id, e.target.value)}
+                        />
+                        {r.origin !== 'recruiter' && (
+                          <span className={r.origin === 'ai' ? 'np-origin is-ai' : 'np-origin'}>
+                            {r.origin === 'ai' ? 'AI suggestion' : 'From description'}
+                          </span>
+                        )}
+                        <button type="button" className="np-remove" aria-label={`Remove ${r.skill.trim() || `${row} ${i + 1}`}`} onClick={() => remove(r.id)}>
+                          <Icon icon={Cancel01Icon} size={16} />
+                        </button>
+                      </div>
+                      {r.quote && <q className="np-quote">{r.quote}</q>}
+                    </div>
                   ))}
-                </select>
-              ) : (
-                <input value={role[f.key]} onChange={(e) => setRole({ ...role, [f.key]: e.target.value })} />
-              )}
-            </label>
-          ))}
+                  {list === 'core' && !role.coreSkills && (
+                    <p className="warn">No core skills: any required skill counts as relevant (provisional).</p>
+                  )}
+                  <button type="button" className="np-add" onClick={() => add(list)}>
+                    Add {row.toLowerCase()}
+                  </button>
+                </fieldset>
+              );
+            })}
+          </section>
+
           {problems.length > 0 && (
             <ul className="error-text" role="alert">
               {problems.map((p) => (
