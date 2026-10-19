@@ -320,7 +320,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
   );
   const metCard = (
     <section className="d-card">
-      <Label icon={Calendar03Icon}>Attended</Label>
+      <Label icon={Calendar03Icon}>{a.events.length === 1 ? 'Conference attended' : 'Conferences attended'}</Label>
       <ul className="d-rows">
         {a.events.map((e) => (
           <li key={e.attendance.hubspotId}>
@@ -405,11 +405,11 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
         <SectionTitle>Overview</SectionTitle>
         <div className="d-grid">
           <div className="d-col">
-            {profile ? careerCard : metCard}
             {contactCard}
+            {metCard}
           </div>
           <div className="d-col">
-            {profile && metCard}
+            {careerCard}
             {connCard}
           </div>
         </div>
