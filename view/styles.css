@@ -1009,9 +1009,7 @@ ul {
 .d-years-value.is-short {
   color: var(--ml-color-danger);
 }
-.d-card .d-years-note {
-  margin: 4px 0 0;
-  font-size: 12px;
+.d-fit-row-head .d-years-note {
   color: var(--amber);
 }
 /* The info icon beside a row label shows on hover (or keyboard focus); it holds the rule behind that row. */

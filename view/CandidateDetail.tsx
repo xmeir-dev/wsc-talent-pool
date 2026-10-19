@@ -169,7 +169,13 @@ function SkillRows({ a, job }: { a: CandidateAssessment; job: Job }) {
       )}
       <FitRow
         label="Experience"
-        count={minYears === null ? 'No minimum' : undefined}
+        count={
+          minYears === null ? (
+            'No minimum'
+          ) : a.seniority.earlyCareerRoles.length > 0 ? (
+            <span className="d-years-note">Includes intern or junior roles</span>
+          ) : undefined
+        }
         info={
           <RuleTip
             lines={[
@@ -182,9 +188,6 @@ function SkillRows({ a, job }: { a: CandidateAssessment; job: Job }) {
         }
       >
         <YearsBar years={years} minYears={minYears} />
-        {minYears !== null && a.seniority.earlyCareerRoles.length > 0 && (
-          <p className="d-years-note">Includes intern or junior roles; confirm non-intern years</p>
-        )}
       </FitRow>
     </>
   );
@@ -228,7 +231,19 @@ function RuleTip({ lines }: { lines: string[] }) {
 }
 
 /** One row of a job card: a caps label (with an info icon on hover that explains the rule) and a count on the right, then its content. */
-function FitRow({ label, count, tip, info, children }: { label: string; count?: string; tip?: string; info?: ReactNode; children: ReactNode }) {
+function FitRow({
+  label,
+  count,
+  tip,
+  info,
+  children,
+}: {
+  label: string;
+  count?: ReactNode;
+  tip?: string;
+  info?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div className="d-fit-row">
       <p className="d-fit-row-head">
