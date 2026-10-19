@@ -174,7 +174,7 @@ export function CandidateDetail({ a, row, job, jobPicker, onBack }: Props) {
   );
   const metCard = (
     <section className="d-card">
-      <Label icon={Calendar03Icon}>Met at</Label>
+      <Label icon={Calendar03Icon}>Attended</Label>
       <ul className="d-rows">
         {a.events.map((e) => (
           <li key={e.attendance.hubspotId}>
