@@ -1,6 +1,6 @@
 import { useMemo, useState, type KeyboardEvent, type ReactNode, type SyntheticEvent } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowDown01Icon, ArrowUp01Icon, Cancel01Icon, Copy01Icon, Mail01Icon, SlackIcon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, ArrowUp01Icon, Cancel01Icon, Copy01Icon, Mail01Icon, SlackIcon, Tick02Icon } from '@hugeicons/core-free-icons';
 import { Avatar, Button, Popover, Tag } from '@meir-labs/ui-kit';
 import {
   buildDataset,
@@ -198,6 +198,7 @@ export function AskConnection({
   const [showTimeline, setShowTimeline] = useState(false);
   const [showQuestions, setShowQuestions] = useState(false);
   const [status, setStatus] = useState<ReactNode>(null);
+  const [copied, setCopied] = useState(false);
   const message =
     text ??
     draftMessage(
@@ -306,11 +307,18 @@ export function AskConnection({
           <Button
             size="sm"
             variant="secondary"
-            aria-label="Copy message"
-            title="Copy message"
-            onClick={async () => setStatus((await copy()) ? 'Copied' : 'Select the text and copy it')}
+            className={copied ? 'ask-copied' : undefined}
+            aria-label={copied ? 'Copied' : 'Copy message'}
+            title={copied ? 'Copied' : 'Copy message'}
+            onClick={async () => {
+              if (await copy()) {
+                setStatus(null);
+                setCopied(true);
+                window.setTimeout(() => setCopied(false), 1600);
+              } else setStatus('Select the text and copy it');
+            }}
           >
-            <HugeiconsIcon icon={Copy01Icon} size={16} />
+            <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} size={16} />
           </Button>
           <Button
             size="sm"

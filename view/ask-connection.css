@@ -238,3 +238,9 @@
 .ask-trigger[aria-expanded='true'] .conn-tag2 {
   border-color: var(--ml-text);
 }
+
+/* Copy success: the icon turns into a green tick for a moment. */
+.ask-actions .ask-copied {
+  color: var(--ml-color-success);
+  border-color: var(--ml-color-success);
+}
