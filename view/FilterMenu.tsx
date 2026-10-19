@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import { ArrowDown01Icon } from '@hugeicons/core-free-icons';
+import { ArrowDown01Icon, ArrowUp01Icon } from '@hugeicons/core-free-icons';
 import { Popover } from '@meir-labs/ui-kit';
 
 export interface FilterOption {
@@ -21,19 +21,24 @@ export function summary(options: FilterOption[], selected: readonly string[]): s
   return chosen.length === 1 ? chosen[0]!.short : `${chosen[0]!.short} +${chosen.length - 1}`;
 }
 
-/** A multi-select filter: a quiet trigger opening a panel of toggle chips. Nothing chosen means no filter. */
+/**
+ * A multi-select filter: a quiet trigger opening a panel of toggle chips. Nothing chosen means no filter.
+ * With `featured`, those options come first under a heading, most attendees first, and the rest wait behind "N more".
+ */
 export function FilterMenu({
   label,
   icon,
   options,
   selected,
   onChange,
+  featured,
 }: {
   label: string;
   icon: IconSvgElement;
   options: FilterOption[];
   selected: readonly string[];
   onChange: (next: string[]) => void;
+  featured?: { label: string; values: readonly string[]; more: (n: number) => string };
 }) {
   // Keep the chosen values in list order, whatever order they were clicked in.
   const toggle = (value: string) => {
@@ -43,6 +48,26 @@ export function FilterMenu({
   // The kit focuses the panel before it is positioned (still hidden), which the browser ignores;
   // once it shows, put focus on the first chip so the keyboard can start toggling.
   const [open, setOpen] = useState(false);
+  const top = featured ? options.filter((o) => featured.values.includes(o.value)).sort((x, y) => y.count - x.count) : options;
+  const rest = featured ? options.filter((o) => !featured.values.includes(o.value)) : [];
+  // The rest start open when one of them is already chosen, so a choice is never hidden.
+  const [showRest, setShowRest] = useState(false);
+  useEffect(() => {
+    if (open) setShowRest(rest.some((o) => selected.includes(o.value)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+  const chip = (o: FilterOption) => (
+    <button
+      key={o.value}
+      type="button"
+      className="filter-chip"
+      aria-pressed={selected.includes(o.value)}
+      title={o.title}
+      onClick={() => toggle(o.value)}
+    >
+      {o.label} <em>{o.count}</em>
+    </button>
+  );
   const chipsRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -66,22 +91,18 @@ export function FilterMenu({
         <HugeiconsIcon icon={ArrowDown01Icon} size={14} strokeWidth={1.75} aria-hidden="true" className="filter-icon" />
       </Popover.Trigger>
       <Popover.Content className="filter-menu" aria-label={label}>
-        <div className="filter-chips" ref={chipsRef}>
-          {options.map((o) => {
-            const on = selected.includes(o.value);
-            return (
-              <button
-                key={o.value}
-                type="button"
-                className="filter-chip"
-                aria-pressed={on}
-                title={o.title}
-                onClick={() => toggle(o.value)}
-              >
-                {o.label} <em>{o.count}</em>
+        <div ref={chipsRef}>
+          {featured && <p className="filter-heading">{featured.label}</p>}
+          <div className="filter-chips">{top.map(chip)}</div>
+          {rest.length > 0 && (
+            <>
+              <button type="button" className="filter-more" aria-expanded={showRest} onClick={() => setShowRest(!showRest)}>
+                {featured!.more(rest.length)}
+                <HugeiconsIcon icon={showRest ? ArrowUp01Icon : ArrowDown01Icon} size={14} strokeWidth={1.75} aria-hidden="true" />
               </button>
-            );
-          })}
+              {showRest && <div className="filter-chips">{rest.map(chip)}</div>}
+            </>
+          )}
         </div>
         <div className="filter-foot">
           <button type="button" className="filter-clear" onClick={() => onChange([])}>

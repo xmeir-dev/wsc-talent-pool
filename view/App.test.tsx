@@ -80,6 +80,19 @@ describe('recruiter view: list', () => {
     expect(screen.getByRole('button', { name: 'Export' })).toBeTruthy();
   });
 
+  it('Location puts WSC office countries first, most attendees first; the rest open behind "N more countries"', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(within(document.querySelector<HTMLElement>('.filters')!).getByRole('button', { name: /^Location/ }));
+    const panel = menu('Location')!;
+    const chips = () => within(panel).getAllByRole('button', { pressed: false }).map((b) => b.textContent);
+    expect(chips()).toEqual(['United States 14', 'United Kingdom 12', 'Israel 3', 'Spain 3', 'South Korea 2', 'Australia 1']);
+    await user.click(within(panel).getByRole('button', { name: /21 more countries/ }));
+    expect(chips()).toHaveLength(27);
+    await user.click(within(panel).getByRole('button', { name: /^Germany/ }));
+    expect(heading()).toBe('5 of 75 attendees');
+  });
+
   it('pages the list 12 at a time; a filter starts again at page 1', async () => {
     const user = userEvent.setup();
     render(<App />);

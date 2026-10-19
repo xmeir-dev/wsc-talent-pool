@@ -1,0 +1,19 @@
+{
+  "about": "Countries where WSC Sports has an office or team, from its own pages, checked 2026-10-19. Used only to put these countries first in the recruiter view's Location filter; it does not affect the ranking.",
+  "sources": [
+    "https://wsc-sports.com/contact-us/",
+    "https://wsc-sports.com/blog/news/wsc-sports-expanding-its-global-hq-in-new-york-and-london/",
+    "https://wsc-sports.com/careers/"
+  ],
+  "offices": {
+    "IL": "Ramat Gan, Tel Aviv",
+    "US": "New York",
+    "GB": "London",
+    "AU": "Sydney",
+    "KR": "Seoul",
+    "TH": "Bangkok",
+    "JP": "Tokyo",
+    "CN": "Beijing",
+    "ES": "Madrid (careers page only; may be remote hires, not an office)"
+  }
+}

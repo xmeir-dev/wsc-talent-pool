@@ -303,6 +303,32 @@ ul {
   color: var(--ml-bg);
   opacity: 0.7;
 }
+.filter-heading {
+  margin: 0;
+  padding: 10px 8px 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ml-text-muted);
+}
+.filter-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 8px 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ml-text-faint);
+  cursor: pointer;
+  transition: color 150ms ease-out;
+}
+.filter-more:hover {
+  color: var(--ml-text-muted);
+}
 .filter-foot {
   margin-top: 4px;
   padding: 6px 8px;

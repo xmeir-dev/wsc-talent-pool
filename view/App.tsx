@@ -8,6 +8,7 @@ import { CandidateDetail } from './CandidateDetail';
 import { AttendeeTable } from './CandidateTable';
 import { PoolCards } from './PoolCards';
 import { bundledSources } from './data';
+import offices from '../data/wsc_offices.json';
 import { downloadFile, exportCsv } from './download';
 import { FilterMenu, type FilterOption } from './FilterMenu';
 import { conferenceShort, jobLabel, jobShort } from './format';
@@ -203,7 +204,14 @@ function Workspace({ dataset }: { dataset: Dataset }) {
         onChange={setConferences}
       />
       <FilterMenu label="Job" icon={Briefcase01Icon} options={jobOptions} selected={jobIds} onChange={setJobIds} />
-      <FilterMenu label="Location" icon={Location01Icon} options={countryOptions} selected={countries} onChange={setCountries} />
+      <FilterMenu
+        label="Location"
+        icon={Location01Icon}
+        options={countryOptions}
+        selected={countries}
+        onChange={setCountries}
+        featured={{ label: 'WSC offices', values: Object.keys(offices.offices), more: (n) => `${n} more countries` }}
+      />
       <Button
         variant="secondary"
         className="export"
