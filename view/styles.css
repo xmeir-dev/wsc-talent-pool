@@ -1237,6 +1237,12 @@ ul {
   margin-bottom: var(--ml-space-sm);
 }
 
+/* Column lines: the same subtle colour as the row lines. */
+.candidates .ml-dt th + th,
+.candidates .ml-dt td + td {
+  border-left: 1px solid var(--ml-border-subtle);
+}
+
 /* Phones: the kit table has no stacked mode, so rows become two-column cards here. */
 
 @media (max-width: 720px) {
