@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Add01Icon, ArrowLeft01Icon, Briefcase01Icon, Calendar03Icon, Location01Icon } from '@hugeicons/core-free-icons';
+import { Add01Icon, ArrowLeft01Icon, Download04Icon, Briefcase01Icon, Calendar03Icon, Location01Icon } from '@hugeicons/core-free-icons';
 import { Button, Callout, EmptyState, Select, TopBar, type SortState } from '@meir-labs/ui-kit';
 import { buildDataset, DataValidationError, type Dataset, type SourceTexts } from '../pipeline';
 import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
@@ -198,7 +198,12 @@ function Workspace({ dataset }: { dataset: Dataset }) {
       />
       <FilterMenu label="Job" icon={Briefcase01Icon} options={jobOptions} selected={jobIds} onChange={setJobIds} />
       <FilterMenu label="Location" icon={Location01Icon} options={countryOptions} selected={countries} onChange={setCountries} />
-      <Button variant="secondary" className="export" onClick={onExport}>
+      <Button
+        variant="secondary"
+        className="export"
+        onClick={onExport}
+        leftIcon={<HugeiconsIcon icon={Download04Icon} size={16} strokeWidth={1.75} />}
+      >
         Export
       </Button>
     </div>
