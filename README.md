@@ -51,7 +51,8 @@ Also in the view, with the made-up parts listed in [Assumptions](docs/assumption
 
 - **Add conference** adds an event's attendee list from a file, a Google Form's responses sheet, or a sample meetup; a quiet line explains how forms sync automatically instead.
 - The header's sync panel shows HubSpot, Comeet and Google Forms, each **Not connected** at first, with **Connect** (the setup steps plus the keys or sign-in that tool needs), step-by-step **How to connect** instructions, and **Sync now**.
-- Each profile has a **Contact** card (email, LinkedIn, HubSpot, Comeet with past applications), **Invite to job** (a drafted invite sent through Comeet), and **Ask** on each WSC connection (a drafted request for a reference).
+- Ticking rows in the table opens a bar to **Invite to jobs** (one personalised invite per person, sent through Comeet) or **Ask WSC connections** (one request per colleague, covering everyone selected they know).
+- Each profile has a **Contact** card (email, LinkedIn, HubSpot, Comeet with past applications), **Invite to job** (a drafted invite sent through Comeet), each job card's Comeet status for that role, and **Ask** on each WSC connection (a drafted request for a reference).
 
 The assessment logic in `pipeline/` is plain TypeScript with no file or network access, so a browser view can import it directly (`import { buildDataset, assessJob, assessmentToCsv } from './pipeline'`). The Node command in `cli/` only reads the CSVs and writes the result.
 
