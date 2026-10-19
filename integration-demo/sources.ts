@@ -4,7 +4,7 @@
  * are assessed by exactly the same rules as the supplied data.
  */
 
-import { buildDataset, DataValidationError, parseCsv, toCsv, type Dataset, type SourceTexts } from '../pipeline';
+import { buildDataset, DataValidationError, parseCsv, SUPPORTED_SENIORITIES, toCsv, type Dataset, type SourceTexts } from '../pipeline';
 import { NAME_CONFLICT_FLAG } from '../pipeline/dataset';
 import { normalizeEmail, normalizeLinkedinUrl } from '../pipeline/text';
 
@@ -222,6 +222,9 @@ const toList = (s: string) =>
 export function roleProblems(role: NewRole): string[] {
   const problems: string[] = [];
   if (!role.title.trim()) problems.push('Add a position title.');
+  if (!(SUPPORTED_SENIORITIES as readonly string[]).includes(role.seniority.trim())) {
+    problems.push(`Choose a seniority: ${SUPPORTED_SENIORITIES.join(', ')}.`);
+  }
   if (!toList(role.requiredSkills)) problems.push('Add at least one required skill.');
   return problems;
 }

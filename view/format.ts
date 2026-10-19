@@ -234,8 +234,10 @@ export function fitChecks(a: CandidateAssessment, job: Job): FitCheck[] {
     ),
     check(
       'years',
-      minYears === null || (years !== null && years >= minYears),
-      minYears === null ? 'no minimum for this role' : `${years === null ? 'years not stated' : `${years} years`} (needs ${minYears})`,
+      minYears !== null && years !== null && years >= minYears,
+      minYears === null
+        ? `minimum unknown: role seniority "${job.seniority.trim() || 'not set'}" is not a supported level`
+        : `${years === null ? 'years not stated' : `${years} years`} (needs ${minYears})`,
     ),
   ];
 }

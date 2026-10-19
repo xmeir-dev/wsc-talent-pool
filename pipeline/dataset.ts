@@ -11,7 +11,7 @@
 
 import { parseCsv, type CsvRecord } from './csv';
 import { parseHistory } from './history';
-import { isValidLinkedinUrl, normalize, normalizeEmail, normalizeLinkedinUrl, splitList } from './text';
+import { isValidLinkedinUrl, normalize, normalizeEmail, normalizeLinkedinUrl, splitList, uniqueSkills } from './text';
 import type {
   Attendance,
   AttendeeRecord,
@@ -91,8 +91,9 @@ function toJob(r: CsvRecord): Job {
     department: r.department ?? '',
     seniority: r.seniority ?? '',
     keyDomains: splitList(r.key_domains),
-    requiredSkills: splitList(r.required_skills),
-    niceToHave: splitList(r.nice_to_have),
+    // Every job, including one created in the demo, enters here: a repeated skill is one requirement.
+    requiredSkills: uniqueSkills(splitList(r.required_skills)),
+    niceToHave: uniqueSkills(splitList(r.nice_to_have)),
   };
 }
 
@@ -151,6 +152,10 @@ export function buildDataset(sources: SourceTexts): Dataset {
     if (!job.jobId) warnings.push('jobs: a row without job_id was ignored');
     else if (jobs.some((j) => j.jobId === job.jobId)) warnings.push(`jobs: duplicate ${job.jobId} ignored (first kept)`);
     else jobs.push(job);
+    const listed = splitList(r.required_skills).length + splitList(r.nice_to_have).length;
+    if (job.jobId && listed > job.requiredSkills.length + job.niceToHave.length) {
+      warnings.push(`jobs: ${job.jobId} lists a skill more than once; each skill is counted once`);
+    }
   }
   if (jobs.length === 0) throw new DataValidationError(['jobs: no usable job rows']);
 

@@ -12,6 +12,23 @@ export function splitList(value: string | undefined): string[] {
     .filter((s) => s.length > 0);
 }
 
+/**
+ * A job's skill list as scored: extra spaces collapsed and repeats dropped, compared after normalize(), so
+ * "Python; python ;  Python" is one requirement. The first spelling is kept for display.
+ */
+export function uniqueSkills(skills: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of skills) {
+    const skill = raw.replace(/\s+/g, ' ').trim();
+    const key = normalize(skill);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(skill);
+  }
+  return out;
+}
+
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
 }

@@ -188,7 +188,7 @@ function SkillRows({ a, job }: { a: CandidateAssessment; job: Job }) {
         label="Experience"
         count={
           minYears === null ? (
-            'No minimum'
+            'Minimum unknown'
           ) : a.seniority.earlyCareerRoles.length > 0 ? (
             <span className="d-years-note">Includes intern or junior roles</span>
           ) : undefined
@@ -198,7 +198,7 @@ function SkillRows({ a, job }: { a: CandidateAssessment; job: Job }) {
             lines={[
               'Total years on their LinkedIn profile, internships and junior roles included.',
               minYears === null
-                ? `No minimum: the job's seniority, "${job.seniority}", has no years rule.`
+                ? `Minimum unknown: the job's seniority, "${job.seniority.trim() || 'not set'}", is not Senior, Mid-Senior, Mid or Junior, so no one is shortlisted for it until it is set.`
                 : `The minimum, ${minYears} years, comes from the job's seniority, "${job.seniority}": Senior 5, Mid-Senior 4, Mid 3. WSC did not set years; this is our assumption.`,
             ]}
           />

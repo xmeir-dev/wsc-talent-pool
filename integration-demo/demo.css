@@ -2097,7 +2097,8 @@ button.cm-btn-primary {
   font-weight: 500;
 }
 
-.cm-field input {
+.cm-field input,
+.cm-field select {
   height: 38px;
   padding: 0 10px;
   border: 1px solid var(--cm-border);
@@ -2105,7 +2106,8 @@ button.cm-btn-primary {
   font-weight: 400;
 }
 
-.cm-field input:focus {
+.cm-field input:focus,
+.cm-field select:focus {
   border-color: var(--cm-blue);
   outline: none;
   box-shadow: 0 0 0 3px var(--cm-blue-soft);

@@ -1,6 +1,7 @@
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
+import { SUPPORTED_SENIORITIES } from '../pipeline';
 import { roleProblems, type NewRole } from './sources';
 
 interface Props {
@@ -73,7 +74,17 @@ export function NewPositionDialog({ onClose, onCreate }: Props) {
                 {f.label}
                 {f.hint && <span className="muted"> · {f.hint}</span>}
               </span>
-              <input value={role[f.key]} onChange={(e) => setRole({ ...role, [f.key]: e.target.value })} />
+              {f.key === 'seniority' ? (
+                <select value={role.seniority} onChange={(e) => setRole({ ...role, seniority: e.target.value })}>
+                  {SUPPORTED_SENIORITIES.map((level) => (
+                    <option key={level} value={level}>
+                      {level}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input value={role[f.key]} onChange={(e) => setRole({ ...role, [f.key]: e.target.value })} />
+              )}
             </label>
           ))}
           {problems.length > 0 && (
