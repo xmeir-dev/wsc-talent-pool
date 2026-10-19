@@ -530,6 +530,8 @@ ul {
 .conn-tags {
   display: flex;
   flex-wrap: wrap;
+  /* The "+2" centres on the tag beside it, not its top. */
+  align-items: center;
   gap: 4px;
 }
 .conn-count {
