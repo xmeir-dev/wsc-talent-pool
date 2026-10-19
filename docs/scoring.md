@@ -14,7 +14,7 @@ Missing information is not proof of missing ability. Anyone without a usable Lin
 
 ## How skills are counted
 
-Only the skills listed on the profile count, compared as whole names, ignoring case and extra spaces ("pytorch" = "PyTorch"; "PyTorch Lightning" is not "PyTorch"). A job skill always matches its own name first; the aliases below are extra. A skill repeated in a job's required list, or in its nice-to-have list, counts once ("Python; python ; Python" is one requirement), so repeating it cannot raise anyone's count. Each job skill gets one of three answers:
+Only the skills listed on the profile count, compared as whole names, ignoring case and extra spaces ("pytorch" = "PyTorch"; "PyTorch Lightning" is not "PyTorch"). A job skill always matches its own name first; the aliases below are extra. A skill repeated in a job's required list, or in its nice-to-have list, counts once ("Python; python ; Python" is one requirement), so repeating it cannot raise anyone's count. The same holds for an accepted alias: "Go; Golang" and "Golang; Go" are one requirement, scored exactly like "Go" alone, whichever spelling comes first. Each job skill gets one of three answers:
 
 | What the profile shows | Shown as | Counts toward the shortlist? |
 |---|---|---|
@@ -39,7 +39,7 @@ These three checks decide the outcome. To be shortlisted, a person needs **all**
 2. at least 60% of the job's required skills on the profile, rounded up: 3 of 4, 3 of 5, or 4 of 6. **One rule for every job.** "Likely" skills don't count here; someone who reaches the bar only with them goes to needs review with "please confirm";
 3. at least the minimum total years for the job's seniority: Senior 5, Mid-Senior 4, Mid 3, Junior 0. Missing years never pass this check.
 
-A job's seniority must be one of those four (case and spaces ignored). Anything else (blank, "Staff", "Senior-level", a typo) leaves the minimum unknown: nobody is shortlisted for that role, people who would otherwise qualify stay in needs review with the reason, and the next step is to set the role's seniority. The demo's New position form offers only the four levels.
+A job's seniority must be one of those four (case and spaces ignored). Anything else (blank, "Staff", "Senior-level", a typo, or unusual text such as "constructor") leaves the minimum unknown: nobody is shortlisted for that role, people who would otherwise qualify stay in needs review with the reason, and the next step is to set the role's seniority. The demo's New position form offers only the four levels.
 
 Collecting supporting skills never makes up for a missing must-have.
 
@@ -77,7 +77,7 @@ Every equivalence the code uses. A job skill not in this table counts only when 
 | Sports domain knowledge | Sports, Sports Data, Sports Analytics, Football Analytics, Real-time Sports Data, Sports Data Feeds | | |
 | Product Management, Stakeholder Management, Kafka, Spark, dbt, Airflow, FFmpeg, Redis, Terraform | Their own name only | | |
 
-Every job skill also matches its own name (e.g. a profile listing "OTT platforms" has OTT platforms). The "On profile" column lists the extra names.
+Every job skill also matches its own name (e.g. a profile listing "OTT platforms" has OTT platforms). The "On profile" column lists the extra names. A job skill written as one of a skill's accepted names (e.g. "Golang", "OpenCV") is that skill and uses its whole row, so either spelling gives the same result. A name listed for two different skills (Football Analytics, under both Sports Analytics and Sports domain knowledge) is an alias of neither: as a job skill it matches its own name only. Any other job skill, including unusual text such as "constructor", matches its own name only.
 
 The less obvious ones: highlight and event detection in sports video usually means detecting players, the ball or actions, so it suggests object-detection work but must be confirmed. "Real-time Sports Data" is sports data work: related to Sports Analytics, not the same skill.
 

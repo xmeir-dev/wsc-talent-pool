@@ -14,13 +14,36 @@ export function splitList(value: string | undefined): string[] {
     .filter((s) => s.length > 0);
 }
 
-/** Accepted names for a configured skill ("golang" for Go) → that skill. A configured skill is always its own key. */
-const ALIAS_OF = new Map<string, string>();
-for (const [key, rule] of Object.entries(SKILL_EVIDENCE)) {
-  for (const term of rule.named) if (!(term in SKILL_EVIDENCE) && !ALIAS_OF.has(term)) ALIAS_OF.set(term, key);
+/**
+ * A configured table's own entry for a key from source or typed text, never an inherited property: "constructor",
+ * "__proto__" or "toString" are unknown text, like any other name that is not configured.
+ */
+export function ownEntry<T>(table: Readonly<Record<string, T>>, key: string): T | undefined {
+  return Object.hasOwn(table, key) ? table[key] : undefined;
 }
 
-/** The skill a job skill name stands for: "Golang" and "go" are both Go. Related skills stay distinct. */
+/**
+ * Accepted names for a configured skill ("golang" for Go) → that skill. A configured skill is always its own key.
+ * A name listed for two different skills ("football analytics": Sports Analytics and Sports domain knowledge) is
+ * an alias of neither: it stays its own skill rather than whichever skill happens to be listed first.
+ */
+const ALIAS_OF = (() => {
+  const owners = new Map<string, Set<string>>();
+  for (const [key, rule] of Object.entries(SKILL_EVIDENCE)) {
+    for (const term of rule.named) {
+      if (Object.hasOwn(SKILL_EVIDENCE, term)) continue;
+      owners.set(term, (owners.get(term) ?? new Set()).add(key));
+    }
+  }
+  const alias = new Map<string, string>();
+  for (const [term, keys] of owners) if (keys.size === 1) alias.set(term, [...keys][0]!);
+  return alias;
+})();
+
+/**
+ * The skill a job skill name stands for, used as its scoring key: "Golang" and "go" are both Go, so either
+ * spelling, in any order, scores the same. Related skills stay distinct.
+ */
 export function canonicalSkill(skill: string): string {
   const n = normalize(skill);
   return ALIAS_OF.get(n) ?? n;
@@ -28,7 +51,8 @@ export function canonicalSkill(skill: string): string {
 
 /**
  * A job's skill list as scored: extra spaces collapsed and repeats dropped, compared by canonical skill, so
- * "Python; python ;  Python" and "Go; Golang" are one requirement each. The first spelling is kept for display.
+ * "Python; python ;  Python" and "Go; Golang" are one requirement each. The first spelling is kept for display only;
+ * scoring looks the skill up by canonicalSkill(), so which spelling came first never changes the result.
  */
 export function uniqueSkills(skills: string[]): string[] {
   const seen = new Set<string>();

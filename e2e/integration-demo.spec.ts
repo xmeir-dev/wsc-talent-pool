@@ -180,6 +180,46 @@ test('a new Comeet position is scored and appears in HubSpot as a saved view', a
   expect(errors).toEqual([]);
 });
 
+async function publishRole(page: Page, title: string, requiredSkills: string) {
+  await toApp(page, 'Comeet');
+  await page.getByRole('button', { name: 'New position' }).click();
+  const form = page.getByRole('dialog', { name: 'New position' });
+  await form.getByLabel('Position title').fill(title);
+  await form.getByLabel('Seniority').selectOption('Mid');
+  await form.getByRole('textbox', { name: /^Key domains/ }).fill('');
+  await form.getByRole('textbox', { name: /^Required skills/ }).fill(requiredSkills);
+  await form.getByRole('textbox', { name: /^Nice to have/ }).fill('');
+  await form.getByRole('button', { name: 'Publish position' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
+}
+
+test('F7: Go, Golang and Golang, Go are the same requirement, so the order never changes the shortlist', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/');
+  await publishRole(page, 'Go first', 'Go, Golang');
+  await publishRole(page, 'Golang first', 'Golang, Go');
+  await toApp(page, 'HubSpot');
+  for (const title of ['Go first', 'Golang first']) {
+    await expect(notices(page).getByRole('button', { name: `${title}: 5 shortlist`, exact: true })).toBeVisible();
+    await expect(notices(page).getByRole('button', { name: `${title}: 0 needs review`, exact: true })).toBeVisible();
+  }
+  await notices(page).getByRole('button', { name: 'Golang first: 5 shortlist', exact: true }).click();
+  const table = page.getByRole('table', { name: 'Golang first — shortlist' });
+  for (const name of ['Chris Lee', 'Liam Harris', 'Owen Jackson', 'Rachel Kim', 'Sophie Martin']) {
+    await expect(table.getByRole('button', { name, exact: true })).toBeVisible();
+  }
+  expect(errors).toEqual([]);
+});
+
+test('a required skill named "constructor" publishes as ordinary text, with no error', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/');
+  await publishRole(page, 'Constructor role', 'constructor');
+  await toApp(page, 'HubSpot');
+  await expect(notices(page).getByRole('button', { name: 'Constructor role: 0 shortlist', exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('Comeet opens on its own; a person already in a process shows the owner and next step', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');

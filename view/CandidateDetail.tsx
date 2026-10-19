@@ -27,7 +27,8 @@ import { Avatar, Hint, Tag } from '@meir-labs/ui-kit';
 import { minYearsFor, policyFor, type CandidateAssessment, type EmploymentSpell, type Job, type OutputRow, type PossibleReference, type SkillMatch } from '../pipeline';
 import type { Attendee, Relevant } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
-import { AVATAR, initials } from './avatars';
+import { avatarFor, initials } from './avatars';
+import { canonicalSkill, ownEntry } from '../pipeline/text';
 import comeetHistory from '../data/demo_comeet.json';
 import comeetIcon from './assets/comeet.png';
 import hubspotIcon from './assets/hubspot.png';
@@ -124,15 +125,18 @@ function Label({ icon, children, meta }: { icon: IconSvgElement; children: React
  */
 function SkillRows({ a, job }: { a: CandidateAssessment; job: Job }) {
   // A must-have with alternatives ("Python or Go") is met by any one; the others are then ordinary required skills.
+  // Compared by canonical skill, so a must-have "Go" stars a job skill written "Golang".
   const unmet = new Set(a.missingEssentials);
   const musts = new Set(
     policyFor(job).policy.essentials.flatMap((e) =>
-      e.anyOf.filter((skill) => unmet.has(e.label) || a.skills.some((s) => s.skill === skill && s.match !== 'none')),
+      e.anyOf
+        .map(canonicalSkill)
+        .filter((skill) => unmet.has(e.label) || a.skills.some((s) => canonicalSkill(s.skill) === skill && s.match !== 'none')),
     ),
   );
   const chip = (s: SkillMatch) => {
     const state = skillState(s);
-    const must = musts.has(s.skill);
+    const must = musts.has(canonicalSkill(s.skill));
     return (
       <li key={s.skill}>
         <Hint tip={<SkillTip s={s} must={must} />} focusable={false}>
@@ -380,7 +384,7 @@ function Lead({ a }: { a: CandidateAssessment }) {
       <SectionTitle>{o.source === 'recruiter' ? 'Recruiter note' : 'AI summary'}</SectionTitle>
       <div className="d-lead">
         {o.by ? (
-          <Avatar size="md" src={AVATAR[o.by.id]} fallback={initials(o.by.name)} aria-hidden="true" />
+          <Avatar size="md" src={avatarFor(o.by.id)} fallback={initials(o.by.name)} aria-hidden="true" />
         ) : (
           <span className="d-lead-ai" aria-hidden="true">
             <HugeiconsIcon icon={AiFileIcon} size={16} strokeWidth={1.75} />
@@ -445,7 +449,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
     </section>
   );
   const hubspotId = c.attendances.map((at) => at.hubspotId).find(Boolean);
-  const applications = COMEET[c.candidateKey] ?? [];
+  const applications = ownEntry(COMEET, c.candidateKey) ?? [];
   const activity = useActivityState();
   const { entries } = activity;
   const comeet = comeetFor(c.candidateKey);
@@ -542,7 +546,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
             const ref = latestRef(refs);
             return (
               <li key={employee.employeeId}>
-                <Avatar size="md" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
+                <Avatar size="md" src={avatarFor(employee.employeeId)} fallback={initials(employee.fullName)} aria-hidden="true" />
                 <span className="d-person">
                   <span className="d-person-name">
                     {employee.fullName}

@@ -6,6 +6,9 @@ export const AVATAR: Record<string, string> = Object.fromEntries(
   ]),
 );
 
+/** The avatar for an employee or recruiter ID; undefined (initials shown) for any ID without one. */
+export const avatarFor = (id: string): string | undefined => (Object.hasOwn(AVATAR, id) ? AVATAR[id] : undefined);
+
 export const initials = (name: string) =>
   name
     .split(/\s+/)

@@ -1,4 +1,5 @@
 import type { Candidate } from '../pipeline';
+import { ownEntry } from '../pipeline/text';
 import ai from '../data/ai_summaries.json';
 import recruiters from '../data/demo_recruiters.json';
 
@@ -21,7 +22,7 @@ const AI_SUMMARIES: Record<string, string> = ai.summaries;
 export function overviewFor(c: Candidate): OverviewLine | null {
   const noted = c.attendances.find((at) => at.notes.trim());
   if (noted) {
-    const r = RECRUITERS[noted.conferenceName];
+    const r = ownEntry(RECRUITERS, noted.conferenceName);
     return {
       text: noted.notes.trim(),
       source: 'recruiter',
@@ -30,7 +31,7 @@ export function overviewFor(c: Candidate): OverviewLine | null {
     };
   }
   for (const id of c.sourceContactIds) {
-    const text = AI_SUMMARIES[id];
+    const text = ownEntry(AI_SUMMARIES, id);
     if (text) return { text, source: 'ai', origin: 'AI-written from the LinkedIn profile' };
   }
   return null;

@@ -9,7 +9,7 @@
  */
 import comeetHistory from '../data/demo_comeet.json';
 import { identityBlock, mayOwnLegacyKey, type Candidate } from '../pipeline';
-import { normalize } from '../pipeline/text';
+import { normalize, ownEntry } from '../pipeline/text';
 
 export type Channel = 'comeet' | 'slack' | 'email' | 'copy';
 /** Prepared = drafted, copied or opened in an email app; only Sent and Confirmed count as contact. */
@@ -44,7 +44,7 @@ export interface ComeetRecord {
   outreach?: 'Not Contacted' | 'Contacted' | 'Responded';
 }
 const COMEET: Record<string, ComeetRecord[]> = comeetHistory.byCandidate as Record<string, ComeetRecord[]>;
-export const comeetFor = (candidateKey: string): ComeetRecord[] => COMEET[candidateKey] ?? [];
+export const comeetFor = (candidateKey: string): ComeetRecord[] => ownEntry(COMEET, candidateKey) ?? [];
 
 /**
  * In process = an active candidacy, or a lead that has been contacted. A new Comeet lead comes back as

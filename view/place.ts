@@ -21,7 +21,7 @@ export function placeOf(c: Candidate): Place | null {
   if (!m) return null;
   const [, city, suffix] = m as unknown as [string, string, string];
   // "IL" is Israel, except Chicago IL (Illinois).
-  const code = CHICAGO.test(location) || US_STATES.has(suffix) ? 'US' : (SUFFIX[suffix] ?? suffix);
+  const code = CHICAGO.test(location) || US_STATES.has(suffix) ? 'US' : ((Object.hasOwn(SUFFIX, suffix) ? SUFFIX[suffix] : undefined) ?? suffix);
   const country = regionNames.of(code);
   return country && country !== code ? { city, code, country } : null;
 }

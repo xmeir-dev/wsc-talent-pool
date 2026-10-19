@@ -24,7 +24,7 @@ import {
 import type { Relevant } from './attendees';
 import { referenceCheck } from './activity';
 import { recordActions, useActivityState } from './actionStore';
-import { AVATAR, initials } from './avatars';
+import { avatarFor, initials } from './avatars';
 import { connectionPeople as sharedConnectionPeople, latestRef, type ConnectionPerson } from './format';
 import { bundledSources } from './data';
 import './ask-connection.css';
@@ -245,7 +245,7 @@ export function AskConnection({
           </>
         ) : latest ? (
           <span className="conn-tag2">
-            <Avatar size="sm" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
+            <Avatar size="sm" src={avatarFor(employee.employeeId)} fallback={initials(employee.fullName)} aria-hidden="true" />
             <span className="conn-tag2-name">{employee.fullName}</span>
             <span className="conn-tag2-where">
               {latest.company} {shortSpan(latest)}
@@ -253,7 +253,7 @@ export function AskConnection({
           </span>
         ) : (
           <Tag size="sm" className="conn-tag">
-            <Avatar size="xs" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
+            <Avatar size="xs" src={avatarFor(employee.employeeId)} fallback={initials(employee.fullName)} aria-hidden="true" />
             {employee.fullName}
           </Tag>
         )}
@@ -266,7 +266,7 @@ export function AskConnection({
       >
         <div className="ask-head">
           <span className="ask-to">
-            <Avatar size="sm" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
+            <Avatar size="sm" src={avatarFor(employee.employeeId)} fallback={initials(employee.fullName)} aria-hidden="true" />
             {employee.fullName}
           </span>
           <Button variant="icon" size="sm" aria-label="Close" onClick={() => setOpen(false)}>

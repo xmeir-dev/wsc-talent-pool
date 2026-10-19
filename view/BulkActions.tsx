@@ -10,7 +10,7 @@ import comeetIcon from './assets/comeet.png';
 import { DemoBadge } from './DemoBadge';
 import { actionGate, comeetFor, inviteCheck, personFlags, referenceCheck } from './activity';
 import { recordActions, useActivityState, type ActionResult } from './actionStore';
-import { AVATAR, initials } from './avatars';
+import { avatarFor, initials } from './avatars';
 
 const firstName = (name: string) => name.split(' ')[0] ?? name;
 const joinNames = (ns: string[]) => (ns.length <= 2 ? ns.join(' and ') : `${ns.slice(0, -1).join(', ')} and ${ns.at(-1)!}`);
@@ -178,7 +178,7 @@ export function BulkActions({
               <ul className="bulk-asks">
                 {asks.map(({ employee, people }) => (
                   <li key={employee.employeeId}>
-                    <Avatar size="sm" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
+                    <Avatar size="sm" src={avatarFor(employee.employeeId)} fallback={initials(employee.fullName)} aria-hidden="true" />
                     <span className="bulk-ask-who">
                       <span>{employee.fullName}</span>
                       <span className="muted">about {names(people)}</span>

@@ -23,7 +23,7 @@ import {
   type SkillEvidenceRule,
 } from './rules';
 import { assessSeniority } from './seniority';
-import { containsTerm, normalize } from './text';
+import { canonicalSkill, containsTerm, normalize, ownEntry } from './text';
 import type {
   Candidate,
   CandidateAssessment,
@@ -38,7 +38,7 @@ import type {
 
 /** Fallback for a job added to job_openings.csv without a written policy: core = any required skill named. */
 export function policyFor(job: Job): { policy: RolePolicy; isDefault: boolean } {
-  const policy = ROLE_POLICIES[job.jobId];
+  const policy = ownEntry(ROLE_POLICIES, job.jobId);
   if (policy) return { policy, isDefault: false };
   return {
     isDefault: true,
@@ -53,12 +53,18 @@ export function policyFor(job: Job): { policy: RolePolicy; isDefault: boolean } 
   };
 }
 
-/** The job skill's own name always counts as named, before any alias; related and inferred evidence stay as configured. */
+/**
+ * Evidence for a job skill, looked up by its canonical skill so every accepted spelling ("Go", "Golang") gets the
+ * same rule. The skill's own name always counts as named, before any alias; related and inferred evidence stay as
+ * configured. A skill that is not configured matches its own name only.
+ */
 export function evidenceRule(skill: string): SkillEvidenceRule {
   const own = normalize(skill);
-  const rule = SKILL_EVIDENCE[own];
+  const key = canonicalSkill(skill);
+  const rule = ownEntry(SKILL_EVIDENCE, key);
   if (!rule) return { named: [own] };
-  return { ...rule, named: [own, ...rule.named.filter((t) => t !== own)] };
+  // An alias is already one of the skill's named terms, so the set is the same for every spelling.
+  return { ...rule, named: [key, ...rule.named.filter((t) => t !== key)] };
 }
 
 /** Best match for one job skill among the profile's skills: named beats equivalent beats inferred. */
@@ -90,7 +96,8 @@ export function scoreSkills(profileSkills: string[], job: Job): SkillMatch[] {
 
 /** Minimum total years for the job's seniority; null when the seniority is blank or not a supported level. */
 export function minYearsFor(job: Job): number | null {
-  return MIN_YEARS_BY_SENIORITY[normalize(job.seniority)] ?? null;
+  const min = ownEntry(MIN_YEARS_BY_SENIORITY, normalize(job.seniority));
+  return typeof min === 'number' && Number.isFinite(min) ? min : null;
 }
 
 /** Why the years minimum is unknown, or null when the job's seniority is supported. */
@@ -190,14 +197,15 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
     industryMatch: bonus.match,
   };
 
-  const byName = new Map(requiredSkills.map((s) => [normalize(s.skill), s]));
+  // By canonical skill, so a must-have written "Go" is met by a job skill written "Golang".
+  const byName = new Map(requiredSkills.map((s) => [canonicalSkill(s.skill), s]));
   const meets = (e: { allowRelated: boolean }, m: SkillMatch | undefined) =>
     !!m && (m.match === 'named' || (e.allowRelated && m.match !== 'none'));
-  const unmet = policy.essentials.filter((e) => !e.anyOf.some((skill) => meets(e, byName.get(normalize(skill)))));
+  const unmet = policy.essentials.filter((e) => !e.anyOf.some((skill) => meets(e, byName.get(canonicalSkill(skill)))));
   const missingEssentials = unmet.map((e) => e.label);
   // Say when related evidence exists but is not enough (e.g. "Sports Broadcasting" for Sports Analytics).
   const missingEssentialDetail = unmet.map((e) => {
-    const partial = e.anyOf.map((skill) => byName.get(normalize(skill))).find((m) => m && m.match !== 'none');
+    const partial = e.anyOf.map((skill) => byName.get(canonicalSkill(skill))).find((m) => m && m.match !== 'none');
     return partial ? `${e.label} (only a related skill, ${partial.evidence}, which is not enough)` : e.label;
   });
   const coreEvidence = profile ? profile.skills.filter((s) => policy.coreDiscipline.terms.includes(normalize(s))) : [];
