@@ -790,6 +790,34 @@ ul {
 .d-rows li:last-child {
   border-bottom: 0;
 }
+.d-contact a {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ml-text-muted);
+  text-decoration: none;
+}
+.d-contact a:hover,
+.d-contact a:focus-visible {
+  color: var(--ml-text);
+  text-decoration: underline;
+}
+.d-contact-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.d-contact-icon {
+  display: grid;
+  place-items: center;
+  color: var(--ml-text-muted);
+}
+.d-contact-icon img {
+  display: block;
+  border-radius: 4px;
+}
 
 /* A job they may fit: title in the band, the three checks, then the job's skills. */
 .d-job {

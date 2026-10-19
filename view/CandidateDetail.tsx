@@ -21,6 +21,8 @@ import type { Attendee, Relevant } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
 import { AVATAR, initials } from './avatars';
 import { CHECK_ICON } from './CandidateTable';
+import comeetIcon from './assets/comeet.png';
+import hubspotIcon from './assets/hubspot.png';
 import { CountryFlag } from './Location';
 import { overviewFor } from './Overview';
 import { currentRole, fitChecks, shortDate, years } from './format';
@@ -200,6 +202,9 @@ function spellYears(spell: EmploymentSpell): string {
 }
 
 const linkedinHref = (url: string) => (/^https?:\/\//.test(url) ? url : `https://${url}`);
+/** Assumed record links: the snapshot's HS… IDs are source IDs, not HubSpot record IDs, and Comeet is searched by email. */
+const hubspotRecord = (id: string) => `https://app.hubspot.com/contacts/record/0-1/${id}`;
+const comeetSearch = (q: string) => `https://app.comeet.co/app/candidates?search=${encodeURIComponent(q)}`;
 const upperFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** A section heading with a hairline running to the right edge. */
@@ -284,6 +289,37 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
           );
         })}
       </ol>
+    </section>
+  );
+  const hubspotId = c.attendances.map((at) => at.hubspotId).find(Boolean);
+  const contacts = [
+    c.email && { key: 'email', icon: <HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.75} />, name: 'Email', value: c.email, href: `mailto:${c.email}` },
+    c.linkedinUrl && {
+      key: 'linkedin',
+      icon: <HugeiconsIcon icon={Linkedin01Icon} size={16} strokeWidth={1.75} />,
+      name: 'LinkedIn',
+      value: c.linkedinUrl.replace(/^https?:\/\/(www\.)?/, ''),
+      href: linkedinHref(c.linkedinUrl),
+    },
+    hubspotId && { key: 'hubspot', icon: <img src={hubspotIcon} alt="" width={16} height={16} />, name: 'HubSpot', value: hubspotId, href: hubspotRecord(hubspotId) },
+    { key: 'comeet', icon: <img src={comeetIcon} alt="" width={16} height={16} />, name: 'Comeet', value: 'Look up', href: comeetSearch(c.email || c.fullName) },
+  ].filter((x) => !!x);
+  const contactCard = (
+    <section className="d-card">
+      <Label icon={Mail01Icon}>Contact</Label>
+      <ul className="d-rows d-contact">
+        {contacts.map((x) => (
+          <li key={x.key}>
+            <span className="d-contact-name">
+              <span className="d-contact-icon" aria-hidden="true">{x.icon}</span>
+              {x.name}
+            </span>
+            <a href={x.href} target={x.key === 'email' ? undefined : '_blank'} rel="noreferrer">
+              {x.value}
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
   );
   const metCard = (
@@ -372,7 +408,10 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
       <section>
         <SectionTitle>Overview</SectionTitle>
         <div className="d-grid">
-          {profile ? careerCard : metCard}
+          <div className="d-col">
+            {profile ? careerCard : metCard}
+            {contactCard}
+          </div>
           <div className="d-col">
             {profile && metCard}
             {connCard}
