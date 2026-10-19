@@ -280,7 +280,7 @@ describe('recruiter view: profile', () => {
     expect(jobs).toEqual(['Data Engineer', 'Backend Engineer']);
     const cards = [...document.querySelectorAll('.d-job')].map((e) => e.closest('section')!);
     const chips = (card: Element) =>
-      [...card.querySelectorAll('.d-chip')].map((c) => `${c.textContent} ${c.className.replace('d-chip ', '')}`);
+      [...card.querySelectorAll('.d-chips .d-chip')].map((c) => `${c.textContent} ${c.className.replace('d-chip ', '')}`);
     expect(chips(cards[0]!)).toEqual([
       'Python is-has is-required',
       'Spark is-has is-required',
@@ -292,7 +292,8 @@ describe('recruiter view: profile', () => {
       'Kafka is-has is-nice',
       'Terraform is-missing is-nice',
     ]);
-    expect(cards[1]!.textContent).toContain('2 of 6 required skills (needs 4)');
+    expect(cards[1]!.textContent).toContain('Required skills2/6');
+    expect(cards[1]!.textContent).toContain('ExperienceNeeds 45 years');
     // "Python or Go": Python meets it, so Go is not shown as a missing must-have.
     expect(screen.getByLabelText('Go: Required, missing')).toBeTruthy();
     expect(screen.getAllByLabelText('Python: Must-have, has it')).toHaveLength(2);

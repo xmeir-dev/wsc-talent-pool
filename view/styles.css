@@ -889,52 +889,44 @@ ul {
     transition: none;
   }
 }
-/* TL;DR, points and years in one strip right under the title band, edge to edge. */
-.d-fit-strip {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: -12px -20px 16px;
-  padding: 0;
+/* The TL;DR row right under the title band, then a row each for required skills, nice to have and experience, hairlines edge to edge. */
+.d-fit-verdict {
+  margin: -12px -20px 0;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--ml-border-subtle);
 }
-.d-fit-strip > li {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  min-width: 0;
-  padding: 12px 16px;
-  border-left: 1px solid var(--ml-border-subtle);
-  font-size: 13px;
-}
-.d-fit-strip > li:first-child {
-  padding-left: 20px;
-  border-left: 0;
-}
-.d-fit-strip > li > :first-child {
-  display: flex;
+.d-fit-verdict > * {
+  display: inline-flex;
 }
 .d-verdict {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 500;
   cursor: default;
 }
-.d-skill-groups {
-  display: flex;
-  flex-direction: column;
-}
-/* A hairline, edge to edge, between Required skills and Nice to have. */
-.d-skill-groups > * + * {
-  margin: 16px -20px 0;
-  padding: 16px 20px 0;
+.d-fit-row {
+  margin: 0 -20px;
+  padding: 14px 20px 16px;
   border-top: 1px solid var(--ml-border-subtle);
 }
-.d-skill-groups .d-label-name {
-  margin: 0 0 8px;
+.d-fit-verdict + .d-fit-row {
+  border-top: 0;
+}
+.d-fit-row:last-child {
+  padding-bottom: 0;
+}
+.d-card .d-fit-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+}
+.d-fit-row-head .d-meta {
+  font-size: 12px;
+  color: var(--ml-text-faint);
+  cursor: default;
 }
 .d-chips {
   list-style: none;

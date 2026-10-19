@@ -9,6 +9,7 @@ import {
   Calendar03Icon,
   Cancel01Icon,
   CheckmarkBadge01Icon,
+  Clock01Icon,
   HelpCircleIcon,
   Linkedin01Icon,
   Mail01Icon,
@@ -17,11 +18,10 @@ import {
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
 import { Avatar, Hint } from '@meir-labs/ui-kit';
-import { policyFor, type CandidateAssessment, type EmploymentSpell, type Job, type OutputRow, type PossibleReference, type SkillMatch } from '../pipeline';
+import { minYearsFor, policyFor, type CandidateAssessment, type EmploymentSpell, type Job, type OutputRow, type PossibleReference, type SkillMatch } from '../pipeline';
 import type { Attendee, Relevant } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
 import { AVATAR, initials } from './avatars';
-import { CHECK_ICON } from './CandidateTable';
 import comeetIcon from './assets/comeet.png';
 import hubspotIcon from './assets/hubspot.png';
 import { InviteToJob } from './InviteToJob';
@@ -102,7 +102,7 @@ function Label({ icon, children, meta }: { icon: IconSvgElement; children: React
  * The job's skills as chips, required then nice to have. Four looks: required and has it (green), nice to have and
  * has it (green outline), required and missing (red), nice to have and missing (grey dashed). Must-haves carry a star.
  */
-function SkillChips({ a, job }: { a: CandidateAssessment; job: Job }) {
+function SkillRows({ a, job }: { a: CandidateAssessment; job: Job }) {
   // A must-have with alternatives ("Python or Go") is met by any one; the others are then ordinary required skills.
   const unmet = new Set(a.missingEssentials);
   const musts = new Set(
@@ -127,23 +127,52 @@ function SkillChips({ a, job }: { a: CandidateAssessment; job: Job }) {
       </li>
     );
   };
-  const groups = [
-    { label: 'Required skills', skills: a.skills.filter((s) => s.kind === 'required') },
-    { label: 'Nice to have', skills: a.skills.filter((s) => s.kind === 'nice_to_have') },
-  ].filter((g) => g.skills.length > 0);
+  const required = a.skills.filter((s) => s.kind === 'required');
+  const nice = a.skills.filter((s) => s.kind === 'nice_to_have');
+  const has = (list: SkillMatch[]) => list.filter((s) => s.match === 'named').length;
+  const years = a.candidate.profile?.yearsExperience ?? null;
+  const minYears = minYearsFor(job);
+  const yearsState = minYears === null ? 'has' : years !== null && years >= minYears ? 'has' : 'missing';
   return (
-    <div className="d-skill-groups">
-      {groups.map((g) => (
-        <div key={g.label}>
-          <p className="d-label-name">{g.label}</p>
-          <ul className="d-chips">{g.skills.map(chip)}</ul>
-        </div>
-      ))}
+    <>
+      <FitRow label="Required skills" count={`${has(required)}/${required.length}`} tip={`Needs ${a.tally.requiredNeeded} on the profile`}>
+        <ul className="d-chips">{required.map(chip)}</ul>
+      </FitRow>
+      {nice.length > 0 && (
+        <FitRow label="Nice to have" count={`${nice.filter((s) => s.match !== 'none').length}/${nice.length}`}>
+          <ul className="d-chips">{nice.map(chip)}</ul>
+        </FitRow>
+      )}
+      <FitRow label="Experience" count={minYears === null ? 'No minimum' : `Needs ${minYears}`}>
+        <span className={`d-chip is-${yearsState} is-required`}>
+          <HugeiconsIcon icon={Clock01Icon} size={14} strokeWidth={1.75} aria-hidden="true" />
+          {years === null ? 'Not stated' : `${years} years`}
+        </span>
+      </FitRow>
+    </>
+  );
+}
+
+/** One row of a job card: a caps label with a count on the right, then its content. */
+function FitRow({ label, count, tip, children }: { label: string; count: string; tip?: string; children: ReactNode }) {
+  return (
+    <div className="d-fit-row">
+      <p className="d-fit-row-head">
+        <span className="d-label-name">{label}</span>
+        {tip ? (
+          <Hint tip={tip} focusable={false}>
+            <span className="d-meta">{count}</span>
+          </Hint>
+        ) : (
+          <span className="d-meta">{count}</span>
+        )}
+      </p>
+      {children}
     </div>
   );
 }
 
-/** One job they may fit: a TL;DR (shortlisted, or maybe relevant and why), required skills and years, then the job's skills. */
+/** One job they may fit: a TL;DR (shortlisted, or maybe relevant and why), then rows for required skills, nice to have and experience. */
 function JobFit({ a, job, outcome, onJob }: { a: CandidateAssessment; job: Job; outcome: Relevant; onJob: (jobId: string) => void }) {
   const profile = a.candidate.profile;
   const checks = fitChecks(a, job);
@@ -165,23 +194,9 @@ function JobFit({ a, job, outcome, onJob }: { a: CandidateAssessment; job: Job; 
           <HugeiconsIcon icon={ArrowRight01Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
         </button>
       </div>
-      <ul className="d-fit-strip">
-        <li>{verdictTip ? <Hint tip={verdictTip}>{verdict}</Hint> : verdict}</li>
-        {checks
-          .filter((k) => k.key !== 'must')
-          .map((k) => (
-            <li key={k.key}>
-              <Hint tip={k.name} focusable={false}>
-                <span className={`fit-check${k.ok ? ' is-ok' : ''}`} role="img" aria-label={`${k.name}: ${k.ok ? 'passed' : 'not passed'}`}>
-                  <HugeiconsIcon icon={CHECK_ICON[k.key]} size={14} strokeWidth={1.75} aria-hidden="true" />
-                </span>
-              </Hint>
-              <span>{upperFirst(k.detail)}</span>
-            </li>
-          ))}
-      </ul>
+      <div className="d-fit-verdict">{verdictTip ? <Hint tip={verdictTip}>{verdict}</Hint> : verdict}</div>
       {profile && profile.skills.length > 0 ? (
-        <SkillChips a={a} job={job} />
+        <SkillRows a={a} job={job} />
       ) : (
         <p className="unknown">Unknown: no usable LinkedIn profile. Missing information is not a negative finding.</p>
       )}
