@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /** The HubSpot card shows policy and data warnings, and "Unknown" for missing years (F6). */
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { createElement } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { loadSources } from '../cli/load-sources';
@@ -39,5 +39,36 @@ describe('Talent match card', () => {
     expect(screen.getByText('Experience').nextElementSibling?.textContent).toBe('Unknown');
     expect(screen.getByTestId('tm-flags').textContent).toContain('Role seniority "Staff" is not a supported level');
     expect(document.body.textContent).not.toContain('null year');
+  });
+
+  it('switching back from a role that lists a skill twice shows only the current role\'s evidence', () => {
+    const base = loadSources(DATA_DIR);
+    // Role A never mentions AWS; role B lists it as required and as nice-to-have.
+    const jobs =
+      base.jobs.trimEnd() +
+      '\nJOBA,Role A,Data,Mid,,"Python;SQL;Spark;Airflow;Kafka",' +
+      '\nJOBB,Role B,Data,Mid,,"AWS","AWS;SageMaker"\n';
+    const store = buildAssessmentStore(buildDataset({ ...base, jobs }));
+    const key = store.result('JOBA').candidates.find((c) => c.candidate.fullName === 'Adaora Okafor')!.candidate.candidateKey;
+    const props = (jobId: string) => ({
+      store,
+      entry: store.get(key, jobId)!,
+      jobId,
+      onJobChange: () => {},
+      comeetRecord: null,
+      onHandoff: () => {},
+      onOpenComeet: () => {},
+    });
+    const evidence = () =>
+      within(screen.getByText('Matched evidence').parentElement!)
+        .queryAllByRole('term')
+        .map((dt) => dt.textContent);
+
+    const { rerender } = render(createElement(TalentMatchCard, props('JOBA')));
+    expect(evidence()).toEqual(['Python']);
+    rerender(createElement(TalentMatchCard, props('JOBB')));
+    expect(evidence()).toEqual(['AWS', 'AWS']);
+    rerender(createElement(TalentMatchCard, props('JOBA')));
+    expect(evidence()).toEqual(['Python']);
   });
 });

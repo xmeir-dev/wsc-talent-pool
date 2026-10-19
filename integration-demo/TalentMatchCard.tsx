@@ -147,7 +147,7 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord
           ) : (
             <dl className="tm-list">
               {matched.map((s) => (
-                <div key={s.skill}>
+                <div key={`${s.kind}:${s.skill}`}>
                   <dt>{s.skill}</dt>
                   <dd className={s.match === 'named' ? 'muted' : 'warn'}>{matchLabel(s.skill, s.match, s.evidence)}</dd>
                 </div>
