@@ -32,9 +32,10 @@ npm ci
 
 ```bash
 npm run dev                  # recruiter view at http://localhost:5173 (runs the pipeline in the browser on data/)
-npm run pipeline -- JOB001   # writes output/candidates_JOB001.csv and prints the shortlist
+npm run pipeline -- JOB001   # writes output/candidates_JOB001.csv and prints the shortlist and review queue
 npm run pipeline:all         # every job in data/job_openings.csv
-npm test                     # rule, edge-case, view and export tests (synthetic fixtures in tests/fixtures/)
+npm run pipeline -- --help   # usage; writes nothing
+npm test                     # rule, edge-case, view, export and command-line tests (synthetic fixtures in tests/fixtures/)
 npm run verify:xlsx          # open/save/reopen the Excel downloads in LibreOffice (npm test skips this when it is not installed)
 npm run typecheck
 npm run demo:integrations    # HubSpot → Comeet integration concept (simulated)
@@ -42,7 +43,39 @@ npm run build                # static build of the view into dist/ (npm run prev
 npm run test:all             # npm test + Playwright browser tests (first time: npx playwright install chromium)
 ```
 
-Use `JOB001` (Senior ML Engineer) for the demo. Other IDs: `JOB002`, `JOB003`, `JOB004`. Optional flags: `--data <dir>` and `--out <dir>`.
+Use `JOB001` (Senior ML Engineer) for the demo. Other IDs: `JOB002`, `JOB003`, `JOB004`.
+
+### Command line
+
+```bash
+npm run pipeline -- JOB001                                   # one job
+npm run pipeline -- --all                                    # every job
+npm run pipeline -- JOB001 --data ./data --out ./output      # explicit folders (quote paths with spaces)
+npm run pipeline -- --help                                   # usage; reads and writes no files
+```
+
+The terminal report shows the job, the totals, then every **shortlisted** and **Needs review** person in the same order as the CSV (tied people share a rank). Rejected people appear only as a count; they are in the CSV. Each person shows their role, required skills confirmed on the profile, related or inferred skills (labelled, never counted as confirmed), gaps, experience, possible WSC references and the next step; anything missing reads "Not available". A job with no shortlist, like JOB003, still lists everyone who needs review. The report is plain text, so `npm run pipeline -- JOB001 > report.txt` works.
+
+```text
+JOB003  Senior Product Manager - Sports Data
+0 shortlisted, 5 need review, 70 not recommended for this role (75 people)
+
+SHORTLIST (0)
+  No one meets every shortlist condition; see Needs review below.
+
+NEEDS REVIEW (5)
+
+  - Alex Turner
+    Role: Product Manager - Data at Olympic Channel
+    Required skills: 2 of 4 confirmed on the profile (shortlist needs 3)
+      Confirmed: Product Management; Stakeholder Management
+      Related only: Sports Analytics (related skill: Sports Broadcasting); API Products (related skill: Data Products)
+    Gaps: Sports Analytics: only a related skill (Sports Broadcasting); API Products: only a related skill (Data Products)
+    ...
+    Next step: Look for evidence of Sports Analytics (CV, portfolio or a call) before deciding
+```
+
+Defaults are `./data` for `--data` and `./output` for `--out` (created if missing). An existing `candidates_<job_id>.csv` there is overwritten. Mistakes (unknown option, a missing value, an option given twice, two job IDs, a job ID with `--all`) stop with exit status 2 before anything is written; an unknown job lists the valid IDs, and a missing file or unwritable folder gives a one-line message (exit status 1). The report never changes the CSV, which stays byte-for-byte the same.
 
 Each output row is one person for the chosen role: the recommendation (`shortlist`, `needs_review`, `not_recommended_for_role`), the skill counts behind it, matched skills and gaps, seniority evidence, WSC connections and possible references, every conference they attended, and the next step. Rules: [How candidates are ranked](docs/scoring.md). Columns: [Schema and flow](docs/schema-and-flow.md).
 
@@ -64,7 +97,7 @@ The assessment logic in `pipeline/` is plain TypeScript with no file or network 
 - `data/` — the four CSVs WSC provided (synthetic)
 - `data/demo/` — files added for the demos, none of which feeds the ranking: made-up Comeet history, recruiters and AI summaries, WSC office locations, a sample meetup list (`samples/`), and `person_ids.json`, which keeps each supplied attendee's published ID stable
 - `pipeline/` — assessment rules (`rules.ts`), scoring, ranking, strict CSV reading, event editions, CSV and Excel output
-- `cli/` — the `npm run pipeline` command
+- `cli/` — the `npm run pipeline` command: argument handling (`args.ts`), the terminal report (`report.ts`), and the entry point (`run-pipeline.ts`)
 - `view/` — the recruiter view (React + Vite, plain CSS)
 - `tests/` — Vitest tests and synthetic fixtures; `tests/browser/` holds the Playwright browser tests
 - `integration-demo/` — the simulated HubSpot → Comeet concept
