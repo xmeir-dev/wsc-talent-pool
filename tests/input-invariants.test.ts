@@ -98,7 +98,7 @@ describe('F6: unknown seniority never removes the years check', () => {
     for (const seniority of ['Staff', 'Senior-level', 'Senoir', '']) {
       expect(roleProblems({ ...role, seniority })).toEqual(['Choose a seniority: Junior, Mid, Mid-Senior, Senior.']);
     }
-    for (const seniority of SUPPORTED_SENIORITIES) expect(roleProblems({ ...role, seniority })).toEqual([]);
+    for (const seniority of [...SUPPORTED_SENIORITIES, 'senior', ' mid-senior ', 'JUNIOR']) expect(roleProblems({ ...role, seniority })).toEqual([]);
   });
 });
 
@@ -117,6 +117,17 @@ describe('F7: a repeated job skill is one requirement', () => {
       expect([a.tally.required, a.tally.requiredTotal, a.tally.requiredNeeded]).toEqual([2, 5, 3]);
       expect(a.recommendation).toBe('needs_review');
     }
+  });
+
+  it('an accepted alias is the same requirement (Go; Golang), related or distinct skills are not', () => {
+    const r = assessJob(
+      buildDataset(sources({ seniority: 'Mid', required: 'Go;Golang;Kafka;SQL;Spark;Airflow' }, [{ name: 'Gil Golang', years: '8', skills: 'Golang' }])),
+      'JOB900',
+    );
+    expect(r.job.requiredSkills).toEqual(['Go', 'Kafka', 'SQL', 'Spark', 'Airflow']);
+    expect([byName(r, 'Gil Golang').tally.required, byName(r, 'Gil Golang').tally.requiredTotal]).toEqual([1, 5]);
+    const d = buildDataset(sources({ seniority: 'Mid', required: 'C;C#;C++;Python;Python Basics;PyTorch;TensorFlow' }, []));
+    expect(d.jobs[0]!.requiredSkills).toEqual(['C', 'C#', 'C++', 'Python', 'Python Basics', 'PyTorch', 'TensorFlow']);
   });
 
   it('dedupes nice-to-haves within their own list, keeps distinct skills, and says so', () => {
