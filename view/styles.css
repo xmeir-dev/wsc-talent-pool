@@ -708,6 +708,10 @@ ul {
 .d-card p {
   margin: 0;
 }
+/* A one-line empty state sits where a list's first row would. */
+.d-card > p {
+  padding-top: 8px;
+}
 .d-sub {
   margin-top: 20px;
 }

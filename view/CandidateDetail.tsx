@@ -139,7 +139,7 @@ export function CandidateDetail({ a, row, job, jobPicker, onBack }: Props) {
     candidate: c,
     job: a.recommendation === 'not_recommended_for_role' ? null : { job, outcome: a.recommendation },
   };
-  const showConnections = conn.status === 'unknown' || people.length > 0 || conn.unresolvedIds.length > 0;
+  const connectionCount = people.length + conn.unresolvedIds.length;
 
   return (
     <div className="detail">
@@ -269,38 +269,38 @@ export function CandidateDetail({ a, row, job, jobPicker, onBack }: Props) {
             </ul>
           </section>
 
-          {showConnections && (
-            <section className="d-card">
-              <Label icon={UserMultipleIcon}>{people.length + conn.unresolvedIds.length > 1 ? 'WSC connections' : 'WSC connection'}</Label>
-              {conn.status === 'unknown' && people.length === 0 ? (
-                <p className="unknown">Unknown: no profile to read connections from.</p>
-              ) : (
-                <ul className="d-people">
-                  {people.map(({ employee, refs }) => {
-                    const ref = refs[0];
-                    return (
-                      <li key={employee.employeeId}>
-                        <Avatar size="md" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
-                        <span className="d-person">
-                          <span>{employee.fullName}</span>
-                          <span className="muted">{ref ? `${employee.title} · both at ${ref.company}` : employee.title}</span>
-                        </span>
-                        <AskConnection employee={employee} refs={refs} ctx={ctx} asButton />
-                      </li>
-                    );
-                  })}
-                  {conn.unresolvedIds.map((id) => (
-                    <li key={id}>
+          <section className="d-card">
+            <Label icon={UserMultipleIcon}>{connectionCount === 1 ? 'WSC connection' : 'WSC connections'}</Label>
+            {conn.status === 'unknown' && people.length === 0 ? (
+              <p className="unknown">Unknown: no profile to read connections from.</p>
+            ) : connectionCount === 0 ? (
+              <p className="muted">No one at WSC is connected to them</p>
+            ) : (
+              <ul className="d-people">
+                {people.map(({ employee, refs }) => {
+                  const ref = refs[0];
+                  return (
+                    <li key={employee.employeeId}>
+                      <Avatar size="md" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
                       <span className="d-person">
-                        <span>{id}</span>
-                        <span className="unknown">Not in the employee roster</span>
+                        <span>{employee.fullName}</span>
+                        <span className="muted">{ref ? `${employee.title} · both at ${ref.company}` : employee.title}</span>
                       </span>
+                      <AskConnection employee={employee} refs={refs} ctx={ctx} asButton />
                     </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          )}
+                  );
+                })}
+                {conn.unresolvedIds.map((id) => (
+                  <li key={id}>
+                    <span className="d-person">
+                      <span>{id}</span>
+                      <span className="unknown">Not in the employee roster</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
       </div>
 
