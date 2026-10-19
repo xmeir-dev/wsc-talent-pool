@@ -1,6 +1,6 @@
 # How candidates are ranked
 
-**For each role, the tool counts how many of the job's skills a person's LinkedIn profile shows. Three checks then decide whether they are shortlisted, need a recruiter's look, or don't fit this role.** There are no points: every number is a count of skills or years. Connections to WSC employees never change that decision. Every row in the output explains its result in words, so nothing is a black box. Rule version: `rules-v3`. Every rule below lives in `pipeline/rules.ts`; this page and that file change together.
+**For each role, the tool counts how many of the job's skills a person's LinkedIn profile shows. Three checks then decide whether they are shortlisted, need a recruiter's look, or don't fit this role.** There are no points: every number is a count of skills or years. Connections to WSC employees never change that decision. Every row in the output explains its result in words, so nothing is a black box. Rule version: `rules-v4`. Every rule below lives in `pipeline/rules.ts`; this page and that file change together.
 
 ## The three outcomes
 
@@ -14,7 +14,7 @@ Missing information is not proof of missing ability. Anyone without a usable Lin
 
 ## How skills are counted
 
-Only the skills listed on the profile count, compared as whole names, ignoring case and extra spaces ("pytorch" = "PyTorch"; "PyTorch Lightning" is not "PyTorch"). Each job skill gets one of three answers:
+Only the skills listed on the profile count, compared as whole names, ignoring case and extra spaces ("pytorch" = "PyTorch"; "PyTorch Lightning" is not "PyTorch"). A job skill always matches its own name first; the aliases below are extra. A skill repeated in a job's required list, or in its nice-to-have list, counts once ("Python; python ; Python" is one requirement), so repeating it cannot raise anyone's count. Each job skill gets one of three answers:
 
 | What the profile shows | Shown as | Counts toward the shortlist? |
 |---|---|---|
@@ -37,7 +37,9 @@ These three checks decide the outcome. To be shortlisted, a person needs **all**
 
 1. every must-have skill for the role (below);
 2. at least 60% of the job's required skills on the profile, rounded up: 3 of 4, 3 of 5, or 4 of 6. **One rule for every job.** "Likely" skills don't count here; someone who reaches the bar only with them goes to needs review with "please confirm";
-3. at least the minimum total years for the job's seniority: Senior 5, Mid-Senior 4, Mid 3, Junior 0.
+3. at least the minimum total years for the job's seniority: Senior 5, Mid-Senior 4, Mid 3, Junior 0. Missing years never pass this check.
+
+A job's seniority must be one of those four (case and spaces ignored). Anything else (blank, "Staff", "Senior-level", a typo) leaves the minimum unknown: nobody is shortlisted for that role, people who would otherwise qualify stay in needs review with the reason, and the next step is to set the role's seniority. The demo's New position form offers only the four levels.
 
 Collecting supporting skills never makes up for a missing must-have.
 
@@ -48,7 +50,7 @@ Collecting supporting skills never makes up for a missing must-have.
 | JOB003 Senior Product Manager – Sports Data | Product Management and Sports Analytics, both on profile. Sports broadcasting or data-product experience counts only as a related skill, so it can earn needs review but never the shortlist. | Product Management |
 | JOB004 Data Engineer | Python, on profile | Any of: Spark, dbt, Airflow |
 
-Missing AWS alone does not keep anyone off the JOB001 shortlist; it appears as a gap to confirm. A role added to `job_openings.csv` without its own policy has no must-haves, treats any required skill on the profile as its core discipline, and is flagged "default rules applied".
+Missing AWS alone does not keep anyone off the JOB001 shortlist; it appears as a gap to confirm. A role added to `job_openings.csv` without its own policy has no must-haves, treats any required skill on the profile as its core discipline, and is flagged "provisional default rules applied (no must-haves)", which the HubSpot card shows with the person's other data warnings.
 
 ## Accepted equivalents
 
@@ -74,6 +76,8 @@ Every equivalence the code uses. A job skill not in this table counts only when 
 | SQL | SQL | Snowflake, PostgreSQL | |
 | Sports domain knowledge | Sports, Sports Data, Sports Analytics, Football Analytics, Real-time Sports Data, Sports Data Feeds | | |
 | Product Management, Stakeholder Management, Kafka, Spark, dbt, Airflow, FFmpeg, Redis, Terraform | Their own name only | | |
+
+Every job skill also matches its own name (e.g. a profile listing "OTT platforms" has OTT platforms). The "On profile" column lists the extra names.
 
 The less obvious ones: highlight and event detection in sports video usually means detecting players, the ball or actions, so it suggests object-detection work but must be confirmed. "Real-time Sports Data" is sports data work: related to Sports Analytics, not the same skill.
 
@@ -101,6 +105,8 @@ Each event a person attended is marked relevant, adjacent, or not relevant, base
 | No LinkedIn URL, a non-profile URL, or no matching profile | Kept; needs review; "find their profile" as the next step |
 | The same person at several events | One row listing every event |
 | An exact duplicate row | Dropped and noted |
+| A skill repeated within a job's required or nice-to-have list | Counted once; noted |
+| A job seniority that is blank or not Junior, Mid, Mid-Senior or Senior | Nobody shortlisted for that role; flagged on every row |
 | One LinkedIn URL with different names, or a name that differs from the profile | Flagged; needs review, never shortlisted |
 | One LinkedIn URL and name with different emails (e.g. work and personal) | One row; email left blank and flagged; scored normally |
 | Two LinkedIn URLs sharing an email | Kept separate; flagged as a possible duplicate |

@@ -5,6 +5,7 @@
  * 1. No usable profile, or a conflicting one → needs_review (missing info is not missing ability).
  * 2. No evidence of the role's core discipline → not_recommended_for_role.
  * 3. Every essential present, at least 60% of the required skills on the profile by name, and minimum years → shortlist.
+ *    A role whose seniority is not a supported level has no known minimum, so nobody is shortlisted for it.
  * 4. Anything else → needs_review. A related skill counts as "likely": it sends someone to review, never to the shortlist.
  * Connections never enter this function.
  */
@@ -17,6 +18,7 @@ import {
   ROLE_POLICIES,
   SHORTLIST_REQUIRED_SHARE,
   SKILL_EVIDENCE,
+  SUPPORTED_SENIORITIES,
   type RolePolicy,
   type SkillEvidenceRule,
 } from './rules';
@@ -51,8 +53,12 @@ export function policyFor(job: Job): { policy: RolePolicy; isDefault: boolean } 
   };
 }
 
+/** The job skill's own name always counts as named, before any alias; related and inferred evidence stay as configured. */
 export function evidenceRule(skill: string): SkillEvidenceRule {
-  return SKILL_EVIDENCE[normalize(skill)] ?? { named: [normalize(skill)] };
+  const own = normalize(skill);
+  const rule = SKILL_EVIDENCE[own];
+  if (!rule) return { named: [own] };
+  return { ...rule, named: [own, ...rule.named.filter((t) => t !== own)] };
 }
 
 /** Best match for one job skill among the profile's skills: named beats equivalent beats inferred. */
@@ -82,8 +88,18 @@ export function scoreSkills(profileSkills: string[], job: Job): SkillMatch[] {
   return [...required, ...nice];
 }
 
+/** Minimum total years for the job's seniority; null when the seniority is blank or not a supported level. */
 export function minYearsFor(job: Job): number | null {
   return MIN_YEARS_BY_SENIORITY[normalize(job.seniority)] ?? null;
+}
+
+/** Why the years minimum is unknown, or null when the job's seniority is supported. */
+export function unresolvedSeniority(job: Job): string | null {
+  if (minYearsFor(job) !== null) return null;
+  const supported = SUPPORTED_SENIORITIES.join(', ');
+  return job.seniority.trim()
+    ? `Role seniority "${job.seniority.trim()}" is not a supported level (${supported}), so the minimum years is unknown`
+    : `Role has no seniority (${supported}), so the minimum years is unknown`;
 }
 
 /** Named required skills the shortlist needs: SHORTLIST_REQUIRED_SHARE of them, rounded up. */
@@ -146,7 +162,8 @@ function skillGaps(skills: SkillMatch[]): string[] {
     );
 }
 
-function yearsText(n: number): string {
+function yearsText(n: number | null): string {
+  if (n === null) return 'Unknown';
   return n === 1 ? "1 year's" : `${n} years'`;
 }
 
@@ -185,11 +202,12 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
   });
   const coreEvidence = profile ? profile.skills.filter((s) => policy.coreDiscipline.terms.includes(normalize(s))) : [];
   const minYears = minYearsFor(job);
+  const seniorityProblem = unresolvedSeniority(job);
   const seniority = assessSeniority(profile);
   const connections = connectionInfo(candidate, employees);
   const dataQualityFlags = [...candidate.dataQualityFlags];
-  if (isDefault) dataQualityFlags.push(`no written policy for ${job.jobId}; default rules applied`);
-  if (minYears === null) dataQualityFlags.push(`seniority "${job.seniority}" has no minimum-years rule; years not checked`);
+  if (isDefault) dataQualityFlags.push(`no written policy for ${job.jobId}; provisional default rules applied (no must-haves)`);
+  if (seniorityProblem) dataQualityFlags.push(`${seniorityProblem}; no one is shortlisted until it is set`);
   if (connections.unresolvedIds.length > 0) {
     dataQualityFlags.push(`connection ID(s) not in employee roster: ${connections.unresolvedIds.join(', ')}`);
   }
@@ -223,6 +241,7 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
           : `Only ${required} of ${requiredTotal} required skills on the profile (needs ${needed})`,
       );
     }
+    if (seniorityProblem) reasons.push(`${seniorityProblem}; not shortlisted until the role's seniority is set`);
     if (yearsShort) {
       reasons.push(
         profile.yearsExperience === null
@@ -237,7 +256,7 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
         [
           'Has every must-have skill',
           `${required} of ${requiredTotal} required skills (needs ${needed})`,
-          `${yearsText(profile.yearsExperience!)} experience${early ? ' (includes intern or junior roles; confirm non-intern years)' : ''}`,
+          `${yearsText(profile.yearsExperience)} experience${early ? ' (includes intern or junior roles; confirm non-intern years)' : ''}`,
         ].join(' · '),
       );
     }
@@ -268,6 +287,7 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
       seniority.seniorTitleFlag,
       seniority.earlyCareerRoles.length > 0,
       yearsShort,
+      seniorityProblem !== null,
     ),
     dataQualityFlags,
   };
@@ -286,6 +306,7 @@ function nextStep(
   seniorFlag: string | null,
   hasEarlyCareer: boolean,
   yearsShort: boolean,
+  seniorityUnknown: boolean,
 ): string {
   if (recommendation === 'not_recommended_for_role') return `No action for ${job.title}; keep in the talent pool for other roles`;
   if (!candidate.profile) {
@@ -307,6 +328,7 @@ function nextStep(
   } else {
     steps.push(unconfirmed.length > 0 ? `Screening call: confirm ${unconfirmed.join(', ')}` : 'Screening call: confirm depth of hands-on work');
   }
+  if (seniorityUnknown) steps.push(`set the role's seniority (${SUPPORTED_SENIORITIES.join(', ')}), then re-run`);
   if (seniorFlag) steps.push('confirm they still work hands-on');
   // One instruction about years, even when both apply.
   if (yearsShort && hasEarlyCareer) steps.push('confirm non-intern years in the specialty');

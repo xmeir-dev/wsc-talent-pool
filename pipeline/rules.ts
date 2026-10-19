@@ -5,7 +5,7 @@
  * All terms are compared after normalize(): lower case, trimmed, single spaces.
  */
 
-export const ASSESSMENT_VERSION = 'rules-v3';
+export const ASSESSMENT_VERSION = 'rules-v4';
 
 // ---------- Skill counts ----------
 
@@ -15,13 +15,20 @@ export const ASSESSMENT_VERSION = 'rules-v3';
  */
 export const SHORTLIST_REQUIRED_SHARE = 0.6;
 
-/** Stated assumption, not a validated hiring standard: minimum total years by the job's seniority label. */
+/**
+ * Stated assumption, not a validated hiring standard: minimum total years by the job's seniority label.
+ * Any other label (blank, "Staff", "Senior-level", a typo) is unresolved: years cannot be checked, so
+ * no one is shortlisted for that role until its seniority is one of these.
+ */
 export const MIN_YEARS_BY_SENIORITY: Record<string, number> = {
   junior: 0,
   mid: 3,
   'mid-senior': 4,
   senior: 5,
 };
+
+/** The seniority labels a role can use, as written in job_openings.csv and offered by the demo's role form. */
+export const SUPPORTED_SENIORITIES = ['Junior', 'Mid', 'Mid-Senior', 'Senior'] as const;
 
 // ---------- Skill evidence ----------
 
@@ -34,7 +41,10 @@ export interface SkillEvidenceRule {
   inferred?: string[];
 }
 
-/** Keyed by the job's skill name, normalized. A job skill missing here matches its own name only. */
+/**
+ * Keyed by the job's skill name, normalized. A job skill always matches its own name on the profile first
+ * (see evidenceRule); these add aliases, related and inferred evidence. A skill missing here matches its own name only.
+ */
 export const SKILL_EVIDENCE: Record<string, SkillEvidenceRule> = {
   python: { named: ['python'], equivalent: ['python basics'] },
   pytorch: { named: ['pytorch'], equivalent: ['tensorflow', 'keras', 'deep learning', 'machine learning'] },

@@ -57,7 +57,7 @@ test('morning after: the overnight notice leads to the shortlist, then card → 
   await expect(page.getByRole('heading', { name: 'Priya Anand' })).toBeFocused();
   await expect(page.getByTestId('cm-status')).toHaveText('Sourced');
   await expect(page.getByRole('region', { name: 'Custom fields' })).toContainText('Shortlist · #1');
-  await expect(page.getByRole('region', { name: 'Custom fields' })).toContainText('rules-v3');
+  await expect(page.getByRole('region', { name: 'Custom fields' })).toContainText('rules-v4');
   expect(errors).toEqual([]);
 });
 
@@ -111,7 +111,7 @@ test('role switching reads each stored assessment without losing the first', asy
   const role = card(page).getByRole('combobox', { name: 'Role' });
   await role.selectOption('JOB002');
   await expect(card(page).getByTestId('tm-outcome')).toHaveText('Not recommended for this role');
-  await expect(card(page)).toContainText('JOB002 · rules-v3');
+  await expect(card(page)).toContainText('JOB002 · rules-v4');
   await role.selectOption('JOB001');
   await expect(card(page).getByTestId('tm-outcome')).toHaveText('Shortlist · #1');
 
@@ -159,6 +159,8 @@ test('a new Comeet position is scored and appears in HubSpot as a saved view', a
   await toApp(page, 'Comeet');
   await page.getByRole('button', { name: 'New position' }).click();
   const form = page.getByRole('dialog', { name: 'New position' });
+  // Only supported levels can be chosen, so a role never loses its minimum-years check.
+  await expect(form.getByLabel('Seniority').locator('option')).toHaveText(['Junior', 'Mid', 'Mid-Senior', 'Senior']);
   await form.getByLabel('Position title').fill('');
   await form.getByRole('button', { name: 'Publish position' }).click();
   await expect(form).toContainText('Add a position title.');

@@ -110,7 +110,7 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord
         </div>
         <div className="tm-stat">
           <span className="tm-stat-label">Experience</span>
-          <span className="tm-stat-value">{a.seniority.totalYears === null ? '--' : `${a.seniority.totalYears} yrs`}</span>
+          <span className="tm-stat-value">{a.seniority.totalYears === null ? 'Unknown' : `${a.seniority.totalYears} yrs`}</span>
         </div>
         <div className="tm-stat">
           <span className="tm-stat-label">WSC connections</span>
@@ -127,6 +127,15 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord
         <p>
           <span className="label">Next step:</span> {a.reviewNextStep}
         </p>
+        {a.dataQualityFlags.length > 0 && (
+          <ul className="tm-plain" data-testid="tm-flags">
+            {a.dataQualityFlags.map((f) => (
+              <li key={f} className="warn">
+                {f}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="tm-grid">
