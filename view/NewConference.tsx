@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Add01Icon, Cancel01Icon, File01Icon } from '@hugeicons/core-free-icons';
+import { CalendarAdd01Icon, Cancel01Icon, File01Icon } from '@hugeicons/core-free-icons';
 import { Button, Popover } from '@meir-labs/ui-kit';
 import { parseCsv } from '../pipeline';
 import sample from '../data/samples/wsc_product_meetup.csv?raw';
@@ -67,7 +67,7 @@ export function NewConference({
     <Popover placement="bottom-end" open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
       <Popover.Trigger className="ml-btn ml-btn-secondary ml-btn-size-md">
         <span className="ml-btn-icon-slot" aria-hidden="true">
-          <HugeiconsIcon icon={Add01Icon} size={16} strokeWidth={1.75} />
+          <HugeiconsIcon icon={CalendarAdd01Icon} size={16} strokeWidth={1.75} />
         </span>
         <span className="ml-btn-label">Add conference</span>
       </Popover.Trigger>
