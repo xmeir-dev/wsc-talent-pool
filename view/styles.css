@@ -218,7 +218,12 @@ ul {
 }
 
 .page-foot {
-  margin-top: 60px;
+  /* Pulls into the page's 60px bottom padding so the space under it matches the space above. */
+  margin: 40px 0 calc(var(--ml-space-lg) - 60px);
+  padding-top: var(--ml-space-lg);
+  /* Full-width line above, same as the header's bottom line. */
+  border: 0 solid;
+  border-image: linear-gradient(to bottom, var(--ml-border-subtle) 1px, transparent 1px) fill 0 / 0 / 0 100vmax;
   text-align: center;
   font-size: 13px;
   /* Fainter than the faint token: a sign-off, not content. */
