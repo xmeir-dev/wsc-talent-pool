@@ -197,7 +197,7 @@ export function AskConnection({
       >
         <div className="ask-head">
           <span className="ask-to">
-            <HugeiconsIcon icon={SlackIcon} size={16} aria-hidden="true" />
+            <Avatar size="sm" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
             {employee.fullName}
           </span>
           <Button variant="icon" size="sm" aria-label="Close" onClick={() => setOpen(false)}>
