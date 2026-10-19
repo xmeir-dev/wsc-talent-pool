@@ -506,7 +506,7 @@ ul {
   align-items: flex-start;
   gap: 6px;
 }
-/* One pill per job: the title and a status mark, tinted like the profile's job card header (green shortlisted, amber maybe relevant). */
+/* One pill per job: the title and a status mark, tinted like the profile's job card header (green shortlisted, amber needs review). */
 .fit {
   display: inline-flex;
   align-items: center;

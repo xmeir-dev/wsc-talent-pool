@@ -292,7 +292,7 @@ function FitRow({
   );
 }
 
-/** One job they may fit: a TL;DR (shortlisted, or maybe relevant and why), then rows for required skills, nice to have and experience. */
+/** One job they may fit: a TL;DR (shortlisted, or needs review and why), then rows for required skills, nice to have and experience. */
 function JobFit({
   a,
   job,
@@ -310,15 +310,15 @@ function JobFit({
   const profile = a.candidate.profile;
   const checks = fitChecks(a, job);
   const shortlisted = outcome === 'shortlist';
-  // Maybe relevant says why on hover; the rank stays on the list page.
+  // Needs review says why on hover; the rank stays on the list page.
   const verdictTip = shortlisted ? '' : checks.filter((k) => !k.ok).map((k) => k.tip).join('. ');
   const verdict = (
     <span className="d-verdict">
       <HugeiconsIcon icon={shortlisted ? CheckmarkBadge01Icon : HelpCircleIcon} size={16} strokeWidth={1.75} aria-hidden="true" />
-      {shortlisted ? 'Shortlisted' : 'Maybe relevant'}
+      {shortlisted ? 'Shortlisted' : 'Needs review'}
     </span>
   );
-  // The verdict sits in the card's header, which is tinted green (shortlisted) or amber (maybe relevant).
+  // The verdict sits in the card's header, which is tinted green (shortlisted) or amber (needs review).
   return (
     <section className={`d-card d-fit ${shortlisted ? 'is-shortlist' : 'is-review'}`}>
       <div className="d-label">

@@ -18,7 +18,7 @@ import { downloadFile, exportCsv } from './download';
 import { FilterMenu, type FilterOption } from './FilterMenu';
 import { conferenceShort, jobShort } from './format';
 
-/** The list's default order: shortlisted first, then maybe relevant, then everyone else. */
+/** The list's default order: shortlisted first, then needs review, then everyone else. */
 const BY_RELEVANT_JOB: SortState = { columnId: 'relevant', direction: 'asc' };
 
 function keyFromHash(): string | null {

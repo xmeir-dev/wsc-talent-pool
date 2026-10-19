@@ -281,6 +281,7 @@ export function SyncStatus() {
             </ol>
             {/* The fields sit in their own box under the steps. */}
             <div className="sync-fields">
+              <p className="sync-demo-hint">Demo: nothing is saved or sent, so don't paste real keys.</p>
               {shown.google && (
                 <Button
                   type="button"

@@ -101,7 +101,7 @@ function Conferences({ attendances }: { attendances: Attendee['candidate']['atte
   );
 }
 
-/** One pill per job, shortlist first: the title, tinted green (shortlisted) or amber (maybe relevant), with the reason on hover. */
+/** One pill per job, shortlist first: the title, tinted green (shortlisted) or amber (needs review), with the reason on hover. */
 function RelevantFor({
   list,
   candidate,
@@ -122,7 +122,7 @@ function RelevantFor({
         const shortlisted = outcome === 'shortlist';
         const why = (
           <span className="skill-tip">
-            <span className="skill-tip-name">{shortlisted ? 'Shortlisted' : 'Maybe relevant'}</span>
+            <span className="skill-tip-name">{shortlisted ? 'Shortlisted' : 'Needs review'}</span>
             <span className="fit-tip-rows">
               {fitChecks(a, job).map((c) => (
                 <span key={c.key} className={c.ok ? 'is-ok' : 'is-no'}>
