@@ -244,3 +244,12 @@
   color: var(--ml-color-success);
   border-color: var(--ml-color-success);
 }
+
+/* The Timeline toggle stays quiet next to the "Together at" line. */
+.ask-context .ask-disclosure {
+  color: var(--ml-text-faint);
+  font-size: 12px;
+}
+.ask-context .ask-disclosure:hover {
+  color: var(--ml-text-muted);
+}
