@@ -112,8 +112,8 @@ export function SyncStatus() {
   // Last sync per connected source; missing means not connected.
   const [last, setLast] = useState<Record<string, number>>({});
   const [connecting, setConnecting] = useState<string | null>(null);
-  // One panel under the cards at a time: a source's how-to steps, or its Connect form.
-  const [panel, setPanel] = useState<{ key: string; kind: 'steps' | 'form' } | null>(null);
+  // The source whose Connect panel (how-to steps + fields) is open under the cards; ? and Connect both open it.
+  const [panel, setPanel] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
   const [googleSignedIn, setGoogleSignedIn] = useState(false);
   // The Event sign-ups folder entered on Connect, so the Google Forms name opens it.
@@ -147,9 +147,9 @@ export function SyncStatus() {
       setSyncing(false);
     }, 1400);
   };
-  const shown = panel && SOURCES.find((s) => s.key === panel.key);
-  const toggle = (key: string, kind: 'steps' | 'form') => {
-    setPanel((p) => (p?.key === key && p.kind === kind ? null : { key, kind }));
+  const shown = panel && SOURCES.find((s) => s.key === panel);
+  const toggle = (key: string) => {
+    setPanel((p) => (p === key ? null : key));
     setValues({});
   };
   const ready =
@@ -176,8 +176,8 @@ export function SyncStatus() {
                         type="button"
                         className="sync-how"
                         aria-label={`How to connect ${s.name}`}
-                        aria-expanded={panel?.key === s.key && panel.kind === 'steps'}
-                        onClick={() => toggle(s.key, 'steps')}
+                        aria-expanded={panel === s.key}
+                        onClick={() => toggle(s.key)}
                       >
                         <HugeiconsIcon icon={HelpCircleIcon} size={16} strokeWidth={1.75} />
                       </button>
@@ -219,9 +219,9 @@ export function SyncStatus() {
                   <Button
                     size="sm"
                     variant="secondary"
-                    aria-expanded={panel?.key === s.key && panel.kind === 'form'}
+                    aria-expanded={panel === s.key}
                     disabled={connecting !== null}
-                    onClick={() => toggle(s.key, 'form')}
+                    onClick={() => toggle(s.key)}
                   >
                     Connect
                   </Button>
@@ -230,7 +230,7 @@ export function SyncStatus() {
             );
           })}
         </div>
-        {shown && panel?.kind === 'form' && (
+        {shown && (
           <form
             className="sync-steps sync-form"
             onSubmit={(e) => {
@@ -239,7 +239,7 @@ export function SyncStatus() {
             }}
           >
             <p className="sync-steps-title">Connect {shown.name}</p>
-            {/* Connect opens the how-to too, so the steps sit right above the fields they fill in. */}
+            {/* The how-to steps sit right above the fields they fill in. */}
             <ol>
               {shown.steps.map((step, i) => (
                 <li key={i}>{step}</li>
@@ -283,16 +283,6 @@ export function SyncStatus() {
               </div>
             </div>
           </form>
-        )}
-        {shown && panel?.kind === 'steps' && (
-          <div className="sync-steps">
-            <p className="sync-steps-title">Connect {shown.name}</p>
-            <ol>
-              {shown.steps.map((step, i) => (
-                <li key={i}>{step}</li>
-              ))}
-            </ol>
-          </div>
         )}
         <Button
           variant="primary"
