@@ -113,7 +113,12 @@ function Lead({ a }: { a: CandidateAssessment }) {
         {o.by ? (
           <>
             <Avatar size="xs" src={AVATAR[o.by.id]} fallback={initials(o.by.name)} aria-hidden="true" />
-            {o.by.name} met them at {met?.conferenceName} · {shortDate(o.by.date)}
+            <span>
+              Note by {o.by.name} at{' '}
+              <Hint tip={shortDate(o.by.date)} focusable={false}>
+                <span className="d-conf">{met?.conferenceName}</span>
+              </Hint>
+            </span>
           </>
         ) : (
           <>

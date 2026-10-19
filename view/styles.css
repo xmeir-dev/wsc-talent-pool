@@ -638,6 +638,12 @@ ul {
   color: var(--ml-text-muted);
 }
 
+.d-conf {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+  cursor: default;
+}
+
 /* The three shortlist checks in one strip. */
 .d-fit-head {
   display: flex;
