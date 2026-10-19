@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadSources } from '../../cli/load-sources';
@@ -18,6 +18,7 @@ vi.mock('../../view/download', async (importOriginal) => ({
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   vi.mocked(downloadFile).mockClear();
   window.history.replaceState(null, '', '/');
 });
@@ -336,5 +337,37 @@ describe('recruiter view: profile', () => {
     render(<App sources={{ ...bundledSources, jobs: 'job_id,title\nJOB001,Senior ML Engineer\n' }} />);
     expect(screen.getByRole('alert').textContent).toContain('The source data could not be read');
     expect(screen.queryByRole('table')).toBeNull();
+  });
+});
+
+describe('recruiter view: add conference', () => {
+  it('a slow link import that finishes after a sample import adds to it instead of replacing it', async () => {
+    const user = userEvent.setup();
+    let resolveFetch!: (response: Response) => void;
+    const pending = new Promise<Response>((resolve) => {
+      resolveFetch = resolve;
+    });
+    vi.stubGlobal('fetch', vi.fn(() => pending));
+    const csv =
+      'full_name,email,conference_name,conference_date\nReview Async Attendee,review-async@example.test,Review Async Conference,2026-10-18\n';
+
+    render(<App />);
+    await user.click(screen.getByRole('button', { name: 'Add conference' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Attendee list link' }), { target: { value: 'https://example.test/review.csv' } });
+    await user.click(screen.getByRole('button', { name: 'Add list from link' }));
+    expect(fetch).toHaveBeenCalledOnce();
+    // The sample stays usable while the link is still loading.
+    await user.click(screen.getByRole('button', { name: 'Use a sample list' }));
+    await waitFor(() => expect(heading()).toBe('8 of 80 attendees'));
+
+    await act(async () => {
+      resolveFetch({ ok: true, text: async () => csv } as Response);
+      await pending;
+    });
+    // Both lists are in: the filter follows the latest import, and the pool keeps the sample's five people.
+    await waitFor(() => expect(heading()).toBe('1 of 81 attendees'));
+    await toggle(user, 'Conference');
+    await user.click(within(menu('Conference')!).getByRole('button', { name: 'Clear' }));
+    expect(heading()).toBe('All 81 attendees');
   });
 });

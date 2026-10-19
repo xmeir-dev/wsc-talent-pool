@@ -14,7 +14,6 @@ import {
   parseCsv,
   planAttendeeImport,
   SUPPORTED_SENIORITIES,
-  toCsv,
   type Dataset,
   type SourceTexts,
 } from '../pipeline';
@@ -60,8 +59,8 @@ export type ImportPreview =
        */
       merged: number;
       /**
-       * Rows skipped because that person is already recorded at that event edition (in the pool, or earlier in
-       * the file). Importing the same file twice adds nothing the second time.
+       * Rows skipped because they repeat an attendance already recorded (in the pool, or earlier in the file) with
+       * nothing new. Importing the same file twice adds nothing the second time; changed details are kept.
        */
       alreadyRecorded: number;
       /** Contacts the import adds to the pool. */
@@ -73,12 +72,6 @@ export type ImportPreview =
       ignoredColumns: string[];
     }
   | { ok: false; problems: string[] };
-
-function appendRows(base: string, columns: readonly string[], rows: Record<string, string>[]): string {
-  if (rows.length === 0) return base;
-  const body = toCsv(columns, rows).split('\n').slice(1).join('\n');
-  return base.replace(/\s*$/, '\n') + body;
-}
 
 function existingKeys(sources: SourceTexts) {
   const attendees = parseCsv(sources.attendees).records;
@@ -152,7 +145,7 @@ export function previewImport(text: string, sources: SourceTexts, knownPeople?: 
   if (problems.length > 0) return { ok: false, problems };
 
   const all = records.map((r) => Object.fromEntries(IMPORT_COLUMNS.map((c) => [c, (r[c] ?? '').trim()])) as ImportRow);
-  // Same person at the same event edition is already recorded: skip it, so a retried file changes nothing.
+  // An exact repeat of a recorded attendance is skipped, so a retried file changes nothing; new details are kept.
   const plan = planAttendeeImport(sources.attendees, all, { knownPeople });
   const rows = plan.add.map((i) => all[i]!);
   let after: Dataset;
@@ -260,5 +253,6 @@ export function addRole(role: NewRole, sources: SourceTexts): { sources: SourceT
     required_skills: toList(role.requiredSkills),
     nice_to_have: toList(role.niceToHave),
   };
-  return { sources: { ...sources, jobs: appendRows(sources.jobs, JOB_COLUMNS, [row]) }, jobId };
+  // By column name, so a jobs table with its columns in another order, or without the optional ones, stays valid.
+  return { sources: { ...sources, jobs: appendRecords(sources.jobs, [row], JOB_COLUMNS) }, jobId };
 }

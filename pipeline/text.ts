@@ -6,6 +6,9 @@ export function normalize(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
+/** How job IDs compare everywhere (job selection, policy lookup): trimmed, any letter case. */
+export const jobIdKey = (id: string) => id.trim().toUpperCase();
+
 /** Split a semicolon-separated cell into trimmed, non-empty items. */
 export function splitList(value: string | undefined): string[] {
   return (value ?? '')

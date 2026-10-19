@@ -7,7 +7,7 @@ import { InviteToJob } from './InviteToJob';
 import { DataTable, Hint, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee } from './attendees';
-import { AskConnection, connectionPeople } from './AskConnection';
+import { AskConnection } from './AskConnection';
 import { CountryFlag } from './Location';
 import { WscMark } from './WscMark';
 import { conferenceShort, fitChecks, jobShort, shortDate, TABLE_OUTCOME_LABEL } from './format';
@@ -44,10 +44,9 @@ const who = (c: CandidateAssessment['candidate'], role: string) => (
 const empty = <span className="empty-line" role="img" aria-label="None" />;
 
 /** Count, then up to two names as tags that open a drafted request for a recommendation (former colleagues first, with where and when); the rest go in a "+N" tag with the names on hover. */
-const connections = ({ any, candidate, relevantFor }: Attendee) => {
+const connections = ({ any, candidate, relevantFor, connections: people }: Attendee) => {
   const c = any.a.connections;
   if (c.status === 'unknown') return quiet('Unknown', true);
-  const people = connectionPeople(any.a);
   const names = [...people.map((p) => p.employee.fullName), ...c.unresolvedIds];
   if (names.length === 0) return empty;
   const best = [...relevantFor].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1))[0];

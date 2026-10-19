@@ -31,22 +31,31 @@ export function NewConference({
   const [busy, setBusy] = useState(false);
   const [showAuto, setShowAuto] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  // Read by a link import when it finishes: the panel may have closed meanwhile (e.g. a sample import closed it).
+  const openRef = useRef(false);
 
   const close = () => {
+    openRef.current = false;
     setOpen(false);
     setError(null);
     setLink('');
     setShowAuto(false);
   };
-  const add = (text: string, profiles?: string) => {
+  /** Adds the list; returns what to tell the user when nothing was added, or null when it was. */
+  const apply = (text: string, profiles?: string): string | null => {
     const result = onAdd(text, profiles);
     if (!result.ok) {
       const more = result.problems.length - 4;
-      return setError(`Nothing was added. ${result.problems.slice(0, 4).join(' ')}${more > 0 ? ` …and ${more} more.` : ''}`);
+      return `Nothing was added. ${result.problems.slice(0, 4).join(' ')}${more > 0 ? ` …and ${more} more.` : ''}`;
     }
     // Adding the same list again is harmless: say so instead of closing as if something changed.
-    if (result.added === 0) return setError('Everyone on this list is already recorded for this event. Nothing changed.');
-    close();
+    if (result.added === 0) return 'Everyone on this list is already recorded for this event. Nothing changed.';
+    return null;
+  };
+  const add = (text: string, profiles?: string) => {
+    const problem = apply(text, profiles);
+    if (problem) setError(problem);
+    else close();
   };
   const fromLink = async (url: string) => {
     if (!/^https?:\/\//.test(url.trim())) return setError('Paste a full link, starting with https://');
@@ -57,16 +66,30 @@ export function NewConference({
     try {
       const res = await fetch(csvUrl(url.trim()));
       if (!res.ok) throw new Error(String(res.status));
-      add(await res.text());
+      // The user asked for this list, so it is added even if the panel closed meanwhile; only an open panel
+      // shows the outcome, so a closed one never comes back with a stale message.
+      const problem = apply(await res.text());
+      if (openRef.current) {
+        if (problem) setError(problem);
+        else close();
+      }
     } catch {
-      setError("Couldn't open that link. Check that anyone with the link can view it.");
+      if (openRef.current) setError("Couldn't open that link. Check that anyone with the link can view it.");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Popover placement="bottom-end" open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
+    <Popover
+      placement="bottom-end"
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) return close();
+        openRef.current = true;
+        setOpen(true);
+      }}
+    >
       <Popover.Trigger className="ml-btn ml-btn-primary ml-btn-size-md">
         <span className="ml-btn-icon-slot" aria-hidden="true">
           <HugeiconsIcon icon={CalendarAdd01Icon} size={16} strokeWidth={1.75} />

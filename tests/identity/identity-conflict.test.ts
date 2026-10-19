@@ -3,9 +3,9 @@
  * borrow that profile for an automatic shortlist. Synthetic fixtures only.
  */
 import { describe, expect, it } from 'vitest';
-import { buildDataset } from '../../pipeline';
+import { buildDataset, identityBlock } from '../../pipeline';
 import { loadSources } from '../../cli/load-sources';
-import { assessJob, byName, FIXTURE_DIR, shortlistNames } from '../helpers';
+import { assessJob, byName, FIXTURE_DIR, shortlistNames, syntheticPerson, syntheticSources } from '../helpers';
 
 function withAttendees(...rows: string[]) {
   const sources = loadSources(FIXTURE_DIR);
@@ -55,5 +55,24 @@ describe('safe identities are unchanged', () => {
   it('two people with the same name are still never merged', () => {
     const result = withAttendees();
     expect(result.candidates.filter((c) => c.candidate.fullName === 'Chris Same')).toHaveLength(2);
+  });
+});
+
+describe('a shared source ID blocks actions, not only warns', () => {
+  it('two sign-ups of one person at one edition keep every ID in the identity check', () => {
+    const alice = syntheticPerson('A-1', 'Alice');
+    // Alice signed up twice at one edition (A-1, Z-2); Bob's record reuses Z-2.
+    const dataset = buildDataset(syntheticSources([alice, { ...alice, hubspot_id: 'Z-2' }, syntheticPerson('Z-2', 'Bob')]));
+    expect(dataset.candidates).toHaveLength(2);
+    const a = dataset.candidates.find((c) => c.fullName === 'Alice')!;
+    const b = dataset.candidates.find((c) => c.fullName === 'Bob')!;
+    expect(a.sourceContactIds).toEqual(['A-1', 'Z-2']);
+    for (const c of [a, b]) {
+      expect(c.identity.status).toBe('possible_duplicate');
+      expect(identityBlock(c.identity)).toBeDefined();
+      expect(c.dataQualityFlags.some((f) => f.includes('HubSpot ID Z-2 also used by'))).toBe(true);
+    }
+    expect(a.identity.relatedPersonIds).toEqual([b.candidateKey]);
+    expect(b.identity.relatedPersonIds).toEqual([a.candidateKey]);
   });
 });

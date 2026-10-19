@@ -1,8 +1,9 @@
 /**
  * "Add conference" in the recruiter view: check an attendee list completely, then say exactly what it adds.
  * Nothing is applied unless the whole list reads and the merged pool still builds; the caller keeps the old
- * sources otherwise. Re-adding the same list (or a later batch with some of the same people) adds only
- * attendances the pool does not have yet: same person + same event edition is already recorded.
+ * sources otherwise. Re-adding the same list (or a later batch with some of the same people) adds only what the
+ * pool does not have yet: an exact repeat of a recorded attendance is skipped, while a row bringing a new identifier,
+ * name or note joins that attendance and is checked like any other row (pipeline/dataset.ts: planAttendeeImport).
  */
 
 import {

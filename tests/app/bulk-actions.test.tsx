@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildDataset } from '../../pipeline';
-import { connectionPeople } from '../../view/AskConnection';
 import { buildPool } from '../../view/attendees';
 import { BulkActions } from '../../view/BulkActions';
 import { bundledSources } from '../../view/data';
@@ -53,9 +52,19 @@ describe('bulk Invite to jobs', () => {
 });
 
 describe('bulk Ask WSC connections', () => {
+  it('reports one Slack message per colleague actually recorded', async () => {
+    const user = userEvent.setup();
+    expect(person('Priya Anand').connections).toHaveLength(2);
+    const panel = await open('Ask WSC connections', ['Priya Anand']);
+    await user.click(within(panel).getByRole('button', { name: 'Send 2 in Slack' }));
+    await waitFor(() =>
+      expect(document.querySelector('.bulk-status')?.textContent).toBe('Sent · Simulated: 2 Slack messages, one per colleague.'),
+    );
+  });
+
   it('names a person whose requests were all sent, with the reason, and does not call them unconnected', async () => {
     const noah = person('Noah Anderson');
-    const colleagues = connectionPeople(noah.any.a).map((c) => c.employee);
+    const colleagues = noah.connections.map((c) => c.employee);
     expect(colleagues).toHaveLength(2);
     await recordActions(
       colleagues.map((e) => ({
@@ -79,7 +88,7 @@ describe('bulk Ask WSC connections', () => {
 
   it('explains it when everyone selected was already asked', async () => {
     const noah = person('Noah Anderson');
-    const colleagues = connectionPeople(noah.any.a).map((c) => c.employee);
+    const colleagues = noah.connections.map((c) => c.employee);
     await recordActions(
       colleagues.map((e) => ({
         kind: 'reference' as const,

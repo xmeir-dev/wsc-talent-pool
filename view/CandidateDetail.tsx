@@ -26,7 +26,7 @@ import {
 import { Avatar, Hint, Tag } from '@meir-labs/ui-kit';
 import { minYearsFor, policyFor, type CandidateAssessment, type EmploymentSpell, type Job, type OutputRow, type PossibleReference, type SkillMatch } from '../pipeline';
 import type { Attendee, Relevant } from './attendees';
-import { AskConnection, connectionPeople } from './AskConnection';
+import { AskConnection } from './AskConnection';
 import { avatarFor, initials } from './avatars';
 import { canonicalSkill, ownEntry } from '../pipeline/text';
 import comeetHistory from '../data/demo/comeet.json';
@@ -38,7 +38,7 @@ import { recordActions, reviewHeld, reviewStoredPerson, useActivityState } from 
 import { InviteToJob } from './InviteToJob';
 import { CountryFlag } from './Location';
 import { overviewFor } from './Overview';
-import { currentRole, fitChecks, latestRef, overlapTag, shortDate, years } from './format';
+import { currentRole, fitChecks, latestRef, overlapTag, shortDate, years, type ConnectionPerson } from './format';
 
 /** The Activity row's icon: what kind of step it was, tinted red for a decline and green for interest. */
 const activityMark = (e: Entry): { icon: IconSvgElement; tone?: 'bad' | 'good' } => {
@@ -56,6 +56,8 @@ interface Props {
   row: OutputRow;
   /** The jobs they may fit (shortlist or needs review), each with its own assessment. */
   fits: Attendee['relevantFor'];
+  /** WSC people they know, from the active roster (Attendee.connections). */
+  people: ConnectionPerson[];
   onBack: () => void;
   /** Open the list filtered to this job. */
   onJob: (jobId: string) => void;
@@ -411,11 +413,10 @@ function Lead({ a }: { a: CandidateAssessment }) {
 }
 
 /** One candidate's profile page: who, the recruiter's note, career and contacts, then every job they may fit. */
-export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
+export function CandidateDetail({ a, row, fits, people, onBack, onJob }: Props) {
   const c = a.candidate;
   const profile = c.profile;
   const conn = a.connections;
-  const people = connectionPeople(a);
   // Shortlisted jobs first; the best one is what a connection gets asked about.
   const ordered = [...fits].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1));
   const best = ordered[0];

@@ -12,10 +12,8 @@ import {
 } from '@hugeicons/core-free-icons';
 import { Avatar, Button, Popover, Tag } from '@meir-labs/ui-kit';
 import {
-  buildDataset,
   sameEmployer,
   type Candidate,
-  type CandidateAssessment,
   type Employee,
   type Job,
   type Period,
@@ -25,11 +23,12 @@ import type { Relevant } from './attendees';
 import { referenceCheck } from './activity';
 import { recordActions, useActivityState } from './actionStore';
 import { avatarFor, initials } from './avatars';
-import { connectionPeople as sharedConnectionPeople, latestRef, type ConnectionPerson } from './format';
-import { bundledSources } from './data';
+import { latestRef } from './format';
 import './ask-connection.css';
 
 const THIS_YEAR = 2026;
+
+const PREPARED = 'Prepared, not sent: mark it sent on the profile once you send it.';
 
 /** Assumed address pattern: the data has no employee emails. */
 export const employeeEmail = (e: Employee) => `${e.fullName.toLowerCase().replace(/[^a-z]+/g, '.')}@wsc-sports.com`;
@@ -67,13 +66,6 @@ export function overlapFor(candidate: Candidate, employee: Employee, ref: Possib
     together: yearsOf(together),
   };
 }
-
-let roster: Map<string, Employee> | null = null;
-/** Former colleagues who are not listed connections are only known by ID from the reference match. */
-const employeesById = () => (roster ??= buildDataset(bundledSources).employees);
-
-/** One list of WSC people (listed connections and same-company overlaps); see view/format.ts. */
-export const connectionPeople = (a: CandidateAssessment): ConnectionPerson[] => sharedConnectionPeople(a, employeesById());
 
 const shortSpan = (r: PossibleReference) =>
   r.overlapStart === r.overlapEnd
@@ -220,7 +212,11 @@ export function AskConnection({
   const check = referenceCheck(activity, person, employee.employeeId, employee.fullName);
   const ask = (channel: 'copy' | 'email' | 'slack', state: 'prepared' | 'sent') =>
     recordActions([{ kind: 'reference', person, employeeId: employee.employeeId, employeeName: employee.fullName, channel, state }]).then(([r]) => r!);
-  const prepare = (channel: 'copy' | 'email') => void ask(channel, 'prepared');
+  // The message waits for the store: a refused save must not read as a request ready to be marked sent.
+  const prepare = async (channel: 'copy' | 'email') => {
+    const r = await ask(channel, 'prepared');
+    setStatus(r.ok ? PREPARED : `Not recorded: ${r.reason}`);
+  };
 
   return (
     <Popover
@@ -319,13 +315,10 @@ export function AskConnection({
             title={copied ? 'Copied' : 'Copy message'}
             onClick={async () => {
               if (await copy()) {
-                // Already asked (or not to be contacted): a copy is not a new request, so nothing is recorded.
-                if (!check.block) {
-                  prepare('copy');
-                  setStatus('Prepared, not sent: mark it sent on the profile once you send it.');
-                }
                 setCopied(true);
                 window.setTimeout(() => setCopied(false), 1600);
+                // Already asked (or not to be contacted): a copy is not a new request, so nothing is recorded.
+                if (!check.block) void prepare('copy');
               } else setStatus('Select the text and copy it');
             }}
           >
@@ -350,10 +343,7 @@ export function AskConnection({
               size="sm"
               variant="secondary"
               href={email}
-              onClick={() => {
-                prepare('email');
-                setStatus('Prepared, not sent: mark it sent on the profile once you send it.');
-              }}
+              onClick={() => void prepare('email')}
               leftIcon={<HugeiconsIcon icon={Mail01Icon} size={16} aria-hidden="true" />}
             >
               Email {theirFirst}

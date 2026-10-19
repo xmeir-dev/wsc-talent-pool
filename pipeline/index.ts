@@ -13,6 +13,7 @@ import { ASSESSMENT_VERSION } from './rules';
 import type { Dataset, JobAssessment, Recommendation, SourceTexts } from './types';
 import { buildDataset } from './dataset';
 import { assessmentToCsv } from './output';
+import { jobIdKey } from './text';
 
 export class UnknownJobError extends Error {
   constructor(
@@ -25,7 +26,7 @@ export class UnknownJobError extends Error {
 }
 
 export function assessJob(dataset: Dataset, jobId: string): JobAssessment {
-  const job = dataset.jobs.find((j) => j.jobId.toUpperCase() === jobId.trim().toUpperCase());
+  const job = dataset.jobs.find((j) => jobIdKey(j.jobId) === jobIdKey(jobId));
   if (!job) throw new UnknownJobError(jobId, dataset.jobs.map((j) => j.jobId));
   const candidates = rankAssessments(dataset.candidates.map((c) => assessCandidate(c, job, dataset.employees)));
   const counts: Record<Recommendation, number> = { shortlist: 0, needs_review: 0, not_recommended_for_role: 0 };

@@ -50,6 +50,17 @@ export function App({ sources: initial = bundledSources }: { sources?: SourceTex
   useEffect(() => {
     if (loaded.ok) void rememberIdentities(loaded.dataset.candidates);
   }, [loaded]);
+  // The one owner of the data an import builds on. A link import can finish after another import has already
+  // committed; reading this (not the sources of the render that started it) makes every import add to the newest
+  // pool, in whatever order they finish. Each field follows its own state, so a render that changes only the known
+  // people never rolls the sources back.
+  const latest = useRef({ sources, known });
+  useLayoutEffect(() => {
+    latest.current.sources = sources;
+  }, [sources]);
+  useLayoutEffect(() => {
+    latest.current.known = known;
+  }, [known]);
   if (!loaded.ok) {
     return (
       <main className="content">
@@ -67,8 +78,12 @@ export function App({ sources: initial = bundledSources }: { sources?: SourceTex
   // The whole list is checked and the merged pool built before anything changes; a problem leaves the pool as it was.
   // People are resolved with the same known IDs as the pool, so saved history keeps its owner.
   const addAttendees: AddAttendees = (text, profiles) => {
-    const result = importAttendeeList(sources, text, profiles, known);
-    if (result.ok && result.added > 0) setSources(result.sources);
+    const result = importAttendeeList(latest.current.sources, text, profiles, latest.current.known);
+    if (result.ok && result.added > 0) {
+      // Updated before the re-render, so an import finishing right after this one builds on it too.
+      latest.current.sources = result.sources;
+      setSources(result.sources);
+    }
     return result;
   };
   return <Workspace dataset={loaded.dataset} onAddAttendees={addAttendees} />;
@@ -206,6 +221,7 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
           a={open.a}
           row={open.row}
           fits={openAttendee.relevantFor}
+          people={openAttendee.connections}
           onBack={back}
           onJob={(jobId) => {
             // Back to the list, showing that job's candidates in its ranked order.

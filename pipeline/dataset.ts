@@ -356,47 +356,57 @@ export function buildDataset(sources: SourceTexts, options: BuildOptions = {}): 
   assertUnique(candidates.map((c) => c.candidateKey), 'person IDs');
   assertUnique(candidates.flatMap((c) => c.attendances.map((a) => a.attendanceId)), 'attendance IDs');
 
-  // Cross-person checks: never merge, only flag.
-  const byEmail = new Map<string, Candidate[]>();
-  const byId = new Map<string, Candidate[]>();
-  for (const c of candidates) {
-    if (c.email) byEmail.set(normalizeEmail(c.email), [...(byEmail.get(normalizeEmail(c.email)) ?? []), c]);
-    for (const id of c.sourceContactIds) byId.set(id, [...(byId.get(id) ?? []), c]);
-  }
-  for (const [email, list] of byEmail) {
-    if (list.length < 2) continue;
-    for (const c of list) {
-      const others = list.filter((o) => o !== c).map((o) => o.candidateKey);
-      c.dataQualityFlags.push(`shares email ${email} with ${others.join(', ')}; possible duplicate person, not merged`);
-    }
-  }
-  for (const [id, list] of byId) {
-    if (list.length < 2) continue;
-    for (const c of list) {
-      const others = list.filter((o) => o !== c).map((o) => o.candidateKey);
-      c.dataQualityFlags.push(`HubSpot ID ${id} also used by ${others.join(', ')} with different details`);
-    }
-  }
+  markSharedIdentifiers(candidates, rowEmails, conflicts);
 
-  // Identity status. Every email and URL on any of a person's rows counts, so an email-only record of
-  // someone already known by LinkedIn URL is a possible duplicate, not a fresh person.
+  candidates.sort((a, b) => a.candidateKey.localeCompare(b.candidateKey));
+  return { jobs, employees, candidates, editions, warnings };
+}
+
+/**
+ * Cross-person checks: never merge, only flag and hold. The same complete identifier set (every source ID and email
+ * on any of a person's rows, the LinkedIn URL, the name) drives both the data-quality flag and the identity block,
+ * so a shared ID that a consolidated attendance no longer shows (two sign-ups at one edition keep the first row's
+ * ID) still blocks actions instead of only warning. Every email and URL on any row counts, so an email-only record
+ * of someone already known by LinkedIn URL is a possible duplicate, not a fresh person.
+ */
+function markSharedIdentifiers(
+  candidates: Candidate[],
+  rowEmails: ReadonlyMap<Candidate, string[]>,
+  conflicts: ReadonlyMap<Candidate, string[]>,
+): void {
+  type Key = { map: string; flag?: (others: string) => string; reason: string };
+  const keysOf = new Map<Candidate, Key[]>();
   const sharing = new Map<string, Set<Candidate>>();
-  const share = (key: string, c: Candidate) => sharing.set(key, (sharing.get(key) ?? new Set()).add(c));
   for (const c of candidates) {
-    for (const at of c.attendances) if (at.hubspotId) share(`source ID ${at.hubspotId}`, c);
-    for (const e of rowEmails.get(c) ?? []) share(`email ${e}`, c);
-    if (c.linkedinUrl) share(`LinkedIn ${c.linkedinUrl}`, c);
-    // Same full name, nothing else in common: never merged, but neither record is trusted until someone checks
-    // (e.g. "Ryan Patel" with a mistyped email must not slip past the real Ryan's active process).
-    if (normalize(c.fullName)) share(`the name "${normalize(c.fullName)}"`, c);
+    const keys: Key[] = [
+      ...c.sourceContactIds.map((id) => ({
+        map: `id:${id}`,
+        flag: (others: string) => `HubSpot ID ${id} also used by ${others} with different details`,
+        reason: `shares source ID ${id}`,
+      })),
+      ...(rowEmails.get(c) ?? []).map((e) => ({
+        map: `email:${e}`,
+        flag: (others: string) => `shares email ${e} with ${others}; possible duplicate person, not merged`,
+        reason: `shares email ${e}`,
+      })),
+      ...(c.linkedinUrl ? [{ map: `linkedin:${c.linkedinUrl}`, reason: `shares LinkedIn ${c.linkedinUrl}` }] : []),
+      // Same full name, nothing else in common: never merged, but neither record is trusted until someone checks
+      // (e.g. "Ryan Patel" with a mistyped email must not slip past the real Ryan's active process).
+      ...(normalize(c.fullName) ? [{ map: `name:${normalize(c.fullName)}`, reason: `shares the name "${normalize(c.fullName)}"` }] : []),
+    ];
+    keysOf.set(c, keys);
+    for (const k of keys) sharing.set(k.map, (sharing.get(k.map) ?? new Set()).add(c));
   }
   for (const c of candidates) {
     const related = new Set<string>();
     const shared: string[] = [];
-    for (const [what, set] of sharing) {
-      if (set.size < 2 || !set.has(c)) continue;
-      shared.push(`shares ${what}`);
-      for (const o of set) if (o !== c) related.add(o.candidateKey);
+    for (const k of keysOf.get(c)!) {
+      const set = sharing.get(k.map)!;
+      if (set.size < 2) continue;
+      const others = [...set].filter((o) => o !== c).map((o) => o.candidateKey);
+      if (k.flag) c.dataQualityFlags.push(k.flag(others.join(', ')));
+      shared.push(k.reason);
+      for (const o of others) related.add(o);
     }
     const own = conflicts.get(c)!;
     c.identity.relatedPersonIds = [...related].sort();
@@ -404,9 +414,6 @@ export function buildDataset(sources: SourceTexts, options: BuildOptions = {}): 
     else if (shared.length > 0) c.identity = { ...c.identity, status: 'possible_duplicate', reasons: shared };
     else if (c.identity.kind === 'row') c.identity = { ...c.identity, status: 'unanchored', reasons: ['no email, LinkedIn URL or contact ID'] };
   }
-
-  candidates.sort((a, b) => a.candidateKey.localeCompare(b.candidateKey));
-  return { jobs, employees, candidates, editions, warnings };
 }
 
 /** What person resolution (identity.ts: resolvePeople) reads from one attendee row. */
@@ -425,12 +432,13 @@ const knownMap = (knownPeople?: ReadonlyMap<string, string>) =>
   knownPeople ? new Map([...knownPeople, ...REGISTERED_IDS]) : REGISTERED_IDS;
 
 /**
- * Which new attendee rows would add something. A row whose person (resolved exactly as buildDataset does, with the
- * same known people) is already recorded at the same event edition on the same date, with no new LinkedIn URL or
- * email, in the pool or earlier in the same file, adds nothing: re-importing a list is harmless. Every other row is
- * kept (several rows of one person and edition still make one attendance in the build). `added` rows must already
- * be trimmed. People and editions are decided over existing + new rows together, as the build will, and skipping
- * only such rows leaves both unchanged.
+ * Which new attendee rows would add something. Exact retries are skipped: a row whose person (resolved exactly as
+ * buildDataset does, with the same known people) is already recorded at the same event edition on the same date, in
+ * the pool or earlier in the same file, and that brings no new LinkedIn URL, email, source ID, name or note, adds nothing, so
+ * re-importing a list is harmless. A row with new or contradictory information is kept and goes through the same
+ * build checks as any other row: the build flags a differing name and keeps the note (several rows of one person
+ * and edition still make one attendance). `added` rows must already be trimmed. People and editions are decided
+ * over existing + new rows together, as the build will, and skipping only such rows leaves both unchanged.
  */
 export function planAttendeeImport(
   existingAttendees: string,
@@ -450,20 +458,31 @@ export function planAttendeeImport(
   const personOf = new Map<AttendeeRecord, string>();
   for (const g of resolvePeople(all, identityRowOf, knownMap(options.knownPeople))) for (const r of g.rows) personOf.set(r, g.personId);
   // A row is skipped only when it adds nothing at all: the same person, edition and date is already recorded, and
-  // every LinkedIn URL / email on it is already on those rows. Then dropping it changes neither the editions (the
-  // name still has that date) nor who is who, so the preview, the committed pool and the CLI on the same rows agree.
-  // A new day of the same edition, or a row adding an identifier, is kept and joins that one attendance.
+  // every LinkedIn URL, email, source ID, name and note on it is already on those rows. Then dropping it changes neither the
+  // editions (the name still has that date) nor who is who, so the preview, the committed pool and the CLI on the
+  // same rows agree. A new day of the same edition, or a row adding an identifier, a different name (the build must
+  // see it to raise the name conflict) or a new note (the build unions notes per attendance), is kept.
   const seen = new Map<string, Set<string>>();
-  const identifiersOf = (r: AttendeeRecord) => {
+  const factsOf = (r: AttendeeRecord) => {
     const k = identityRowOf(r);
-    return [...(k.linkedinUrl ? [`linkedin:${k.linkedinUrl}`] : []), ...(k.email ? [`email:${k.email}`] : [])];
+    const name = normalize(r.full_name ?? '');
+    const note = (r.notes ?? '').trim();
+    return [
+      ...(k.linkedinUrl ? [`linkedin:${k.linkedinUrl}`] : []),
+      ...(k.email ? [`email:${k.email}`] : []),
+      // A source ID counts too: one the person did not have yet may be shared with someone else, which the build
+      // must see to flag both records.
+      ...(k.sourceId ? [`id:${k.sourceId}`] : []),
+      ...(name ? [`name:${name}`] : []),
+      ...(note ? [`note:${note}`] : []),
+    ];
   };
   const record = (i: number) => {
     const key = `${personOf.get(all[i]!)}|${keys[i]}|${all[i]!.conference_date}`;
-    const ids = seen.get(key) ?? new Set<string>();
-    const isNew = !seen.has(key) || identifiersOf(all[i]!).some((id) => !ids.has(id));
-    for (const id of identifiersOf(all[i]!)) ids.add(id);
-    seen.set(key, ids);
+    const facts = seen.get(key) ?? new Set<string>();
+    const isNew = !seen.has(key) || factsOf(all[i]!).some((f) => !facts.has(f));
+    for (const f of factsOf(all[i]!)) facts.add(f);
+    seen.set(key, facts);
     return isNew;
   };
   existing.forEach((_, i) => record(i));

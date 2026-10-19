@@ -4,7 +4,7 @@
  */
 import { assessJob, compareSkills, indexByPersonId, skillKey, splitName, toOutputRows, toXlsx, XLSX_MIME } from '../pipeline';
 import type { Candidate, CandidateAssessment, Dataset, Job, JobAssessment, OutputRow } from '../pipeline';
-import { currentRole } from './format';
+import { connectionPeople, currentRole, type ConnectionPerson } from './format';
 import { placeOf } from './place';
 
 /** One person's assessment for one job, with its CSV row. */
@@ -22,6 +22,8 @@ export interface Attendee {
   any: Item;
   /** Jobs where the person is shortlist or needs review, in job order. */
   relevantFor: { job: Job; outcome: Relevant; a: CandidateAssessment }[];
+  /** WSC people they know, from this dataset's own roster, so a colleague in a custom roster is not lost. */
+  connections: ConnectionPerson[];
 }
 
 /** One event edition (pipeline/events.ts): the filter value is its key, never the bare name. */
@@ -67,7 +69,7 @@ export function buildPool(dataset: Dataset): Pool {
         const a = items.get(job.jobId)!.get(key)!.a;
         return isRelevant(a) ? [{ job, outcome: a.recommendation, a }] : [];
       });
-      return { candidate, role: currentRole(any.row), any, relevantFor };
+      return { candidate, role: currentRole(any.row), any, relevantFor, connections: connectionPeople(any.a, dataset.employees) };
     })
     .sort(
       (x, y) =>

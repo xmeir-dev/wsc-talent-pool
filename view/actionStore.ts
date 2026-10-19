@@ -70,6 +70,17 @@ export type ActionRequest =
 
 export type ActionResult = { ok: true; entry: Entry } | { ok: false; reason: string };
 
+/** What a batch actually did, so a message never counts a refused request as sent. Reasons are distinct, in order. */
+export function batchOutcome(results: readonly ActionResult[]): { recorded: number; refused: number; reasons: string[] } {
+  const reasons: string[] = [];
+  let recorded = 0;
+  for (const r of results) {
+    if (r.ok) recorded++;
+    else if (!reasons.includes(r.reason)) reasons.push(r.reason);
+  }
+  return { recorded, refused: results.length - recorded, reasons };
+}
+
 interface Saved {
   entries: StoredEntry[];
   people: Map<string, StoredPerson>;

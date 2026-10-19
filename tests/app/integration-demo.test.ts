@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { loadSources } from '../../cli/load-sources';
 import { buildHandoff, createSimulatedComeet, type ComeetService } from '../../integration-demo/comeet';
 import { addRole, applyImport, previewImport, roleProblems } from '../../integration-demo/sources';
-import { buildDataset } from '../../pipeline';
+import { buildDataset, parseCsv, toCsv } from '../../pipeline';
 import { SEEDED } from '../../view/activity';
 import { assessJob, byName, DATA_DIR, realDataset, ROOT } from '../helpers';
 
@@ -126,5 +126,42 @@ describe('spreadsheet import and new roles', () => {
       'Add a position title.',
       'Add at least one required skill.',
     ]);
+  });
+});
+
+describe('adding a role writes by column name', () => {
+  const sources = loadSources(DATA_DIR);
+  const role = { title: 'Vision Engineer', department: 'AI/ML', seniority: 'Mid', keyDomains: 'Computer Vision', requiredSkills: 'Python', niceToHave: '' };
+
+  it('keeps the title and department in their own columns when the jobs table orders them differently', () => {
+    const table = parseCsv(sources.jobs);
+    const header = table.header.map((c) => (c === 'title' ? 'department' : c === 'department' ? 'title' : c));
+    const reordered = { ...sources, jobs: toCsv(header, table.records) };
+    expect(buildDataset(reordered).jobs).toEqual(buildDataset(sources).jobs);
+    const added = addRole(role, reordered);
+    const job = buildDataset(added.sources).jobs.find((j) => j.jobId === added.jobId)!;
+    expect(job.title).toBe(role.title);
+    expect(job.department).toBe(role.department);
+  });
+
+  it('stays valid when the jobs table has no department or key_domains column', () => {
+    const table = parseCsv(sources.jobs);
+    const header = table.header.filter((c) => c !== 'department' && c !== 'key_domains');
+    const without = { ...sources, jobs: toCsv(header, table.records) };
+    const before = buildDataset(without).jobs;
+    const added = addRole(role, without);
+    const after = buildDataset(added.sources).jobs;
+    expect(after).toHaveLength(5);
+    const job = after.find((j) => j.jobId === added.jobId)!;
+    expect(job.title).toBe(role.title);
+    // The missing columns are added at the end: the new role keeps its values, existing roles stay blank.
+    expect(job.department).toBe(role.department);
+    expect(job.keyDomains).toEqual(['Computer Vision']);
+    const existing = after.filter((j) => j.jobId !== added.jobId);
+    expect(existing).toEqual(before);
+    for (const j of existing) {
+      expect(j.department).toBe('');
+      expect(j.keyDomains).toEqual([]);
+    }
   });
 });

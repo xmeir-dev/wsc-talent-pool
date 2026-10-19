@@ -61,21 +61,34 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
     if (!payload || !position || sending.current) return;
     sending.current = true;
     setState({ step: 'sending' });
-    // The preview may be stale: re-read the history and re-check before sending; the service checks again too.
-    const fresh = await refreshActivity();
-    const block = handoffCheck(a.candidate, a.jobId, comeet.positions().map((p) => ({ jobId: p.jobId, title: p.name })), fresh).block;
-    if (block) {
+    // Whether Comeet was called decides the message: before it, nothing was sent; after it, Comeet may have the person.
+    let calledComeet = false;
+    try {
+      // The preview may be stale: re-read the history and re-check before sending; the service checks again too.
+      const fresh = await refreshActivity();
+      const block = handoffCheck(a.candidate, a.jobId, comeet.positions().map((p) => ({ jobId: p.jobId, title: p.name })), fresh).block;
+      if (block) {
+        setState({ step: 'stopped', message: block });
+        return;
+      }
+      calledComeet = true;
+      const r = await comeet.handoff(buildHandoff(a, result.job, version, position, fresh.entries));
+      if (r.kind === 'unavailable') setState({ step: 'unavailable', message: r.message });
+      else if (r.kind === 'conflict' || r.kind === 'blocked') setState({ step: 'stopped', message: r.message });
+      else {
+        setState({ step: r.kind, candidate: r.candidate });
+        onHandedOff();
+      }
+    } catch {
+      // A failure must leave a retry, never a stuck "Adding…" or anything that reads as success.
+      setState({
+        step: 'unavailable',
+        message: calledComeet
+          ? 'Comeet did not answer. Check Comeet before trying again.'
+          : 'Could not read the saved history, so nothing was sent.',
+      });
+    } finally {
       sending.current = false;
-      setState({ step: 'stopped', message: block });
-      return;
-    }
-    const r = await comeet.handoff(buildHandoff(a, result.job, version, position, fresh.entries));
-    sending.current = false;
-    if (r.kind === 'unavailable') setState({ step: 'unavailable', message: r.message });
-    else if (r.kind === 'conflict' || r.kind === 'blocked') setState({ step: 'stopped', message: r.message });
-    else {
-      setState({ step: r.kind, candidate: r.candidate });
-      onHandedOff();
     }
   };
 

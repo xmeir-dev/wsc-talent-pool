@@ -23,7 +23,7 @@ import {
   type SkillEvidenceRule,
 } from './rules';
 import { assessSeniority } from './seniority';
-import { canonicalSkill, containsTerm, normalize, ownEntry } from './text';
+import { canonicalSkill, containsTerm, jobIdKey, normalize, ownEntry } from './text';
 import type {
   Candidate,
   CandidateAssessment,
@@ -38,7 +38,9 @@ import type {
 
 /** Fallback for a job added to job_openings.csv without a written policy: core = any required skill named. */
 export function policyFor(job: Job): { policy: RolePolicy; isDefault: boolean } {
-  const policy = ownEntry(ROLE_POLICIES, job.jobId);
+  // Same comparison as job selection (assessJob), so a source file writing "job001" keeps JOB001's written policy.
+  const key = Object.keys(ROLE_POLICIES).find((k) => jobIdKey(k) === jobIdKey(job.jobId));
+  const policy = key === undefined ? undefined : ownEntry(ROLE_POLICIES, key);
   if (policy) return { policy, isDefault: false };
   return {
     isDefault: true,

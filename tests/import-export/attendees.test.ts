@@ -5,6 +5,8 @@ import { ATTENDEE_COLUMNS, attendeesTable, attendeesXlsx, attended, bestJobId, b
 import { placeOf } from '../../view/place';
 import { fitChecks } from '../../view/format';
 import { bundledSources } from '../../view/data';
+import { loadSources } from '../../cli/load-sources';
+import { FIXTURE_DIR } from '../helpers';
 
 const pool = buildPool(buildDataset(bundledSources));
 /** The edition key of a conference that has one edition in the supplied data. */
@@ -157,5 +159,15 @@ describe('job fit checks', () => {
       [false, 'Required skills: 2 of 4 on the profile (needs 3), 2 likely'],
       [true, 'Experience: 8 years (needs 5)'],
     ]);
+  });
+});
+
+describe('attendee connections', () => {
+  it('come from the active roster, so a former colleague only in a custom dataset is shown', () => {
+    const sources = loadSources(FIXTURE_DIR);
+    const employees = `${sources.employees.trimEnd()}\nWSC777,Review Colleague,Engineer,Engineering,review-colleague,ShopCo (2018-2024)\n`;
+    const dataset = buildDataset({ ...sources, employees });
+    const sam = buildPool(dataset).attendees.find((p) => p.candidate.fullName === 'Sam Strong')!;
+    expect(sam.connections.some((p) => p.employee.employeeId === 'WSC777')).toBe(true);
   });
 });

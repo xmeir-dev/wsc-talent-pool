@@ -4,21 +4,24 @@ import { BubbleChatIcon, Cancel01Icon, MailAdd01Icon, SlackIcon } from '@hugeico
 import { Avatar, Button, Popover } from '@meir-labs/ui-kit';
 import type { Candidate, Employee, Job } from '../pipeline';
 import type { Attendee } from './attendees';
-import { connectionPeople } from './AskConnection';
 import { inviteMessage } from './InviteToJob';
 import comeetIcon from './assets/comeet.png';
 import { DemoBadge } from './DemoBadge';
 import { actionGate, comeetFor, inviteCheck, personFlags, referenceCheck } from './activity';
-import { recordActions, useActivityState, type ActionResult } from './actionStore';
+import { batchOutcome, recordActions, useActivityState, type ActionResult } from './actionStore';
 import { avatarFor, initials } from './avatars';
 
 const firstName = (name: string) => name.split(' ')[0] ?? name;
 const joinNames = (ns: string[]) => (ns.length <= 2 ? ns.join(' and ') : `${ns.slice(0, -1).join(', ')} and ${ns.at(-1)!}`);
 const names = (cs: Candidate[]) => joinNames(cs.map((c) => c.fullName));
-/** Actions another tab made unnecessary since the preview: said, never counted as sent. */
-const skippedNote = (results: ActionResult[]) => {
-  const skipped = results.filter((r) => !r.ok).length;
-  return skipped ? ` ${skipped} not sent: already done in another tab or now blocked.` : '';
+/**
+ * What the batch actually did: only recorded requests count as sent, and refused ones say why
+ * (done in another tab, now blocked, or the save failed). `describe` words the recorded count.
+ */
+const batchStatus = (results: readonly ActionResult[], describe: (recorded: number) => string) => {
+  const { recorded, refused, reasons } = batchOutcome(results);
+  if (recorded === 0) return `Not sent: ${reasons.join(' ')}`;
+  return `Sent · Simulated: ${describe(recorded)}.${refused ? ` ${refused} not sent: ${reasons.join(' ')}` : ''}`;
 };
 
 /** One request per colleague, covering everyone selected who they know. */
@@ -130,7 +133,7 @@ export function BulkActions({
     for (const p of selected) {
       const key = p.candidate.candidateKey;
       const gate = actionGate(activity, p.candidate);
-      const colleagues = connectionPeople(p.any.a);
+      const colleagues = p.connections;
       if (!colleagues.length) unconnected++;
       const asked: string[] = [];
       let personBlock: string | undefined;
@@ -195,19 +198,20 @@ export function BulkActions({
                   variant="primary"
                   leftIcon={<HugeiconsIcon icon={SlackIcon} size={16} aria-hidden="true" />}
                   onClick={async () => {
-                    const results = await recordActions(
-                      asks.flatMap(({ employee, people }) =>
-                        people.map((c) => ({
-                          kind: 'reference' as const,
-                          person: c,
-                          employeeId: employee.employeeId,
-                          employeeName: employee.fullName,
-                          channel: 'slack' as const,
-                          state: 'sent' as const,
-                        })),
-                      ),
+                    const requests = asks.flatMap(({ employee, people }) =>
+                      people.map((c) => ({
+                        kind: 'reference' as const,
+                        person: c,
+                        employeeId: employee.employeeId,
+                        employeeName: employee.fullName,
+                        channel: 'slack' as const,
+                        state: 'sent' as const,
+                      })),
                     );
-                    setStatus(`Sent · Simulated: ${asks.length} Slack ${asks.length === 1 ? 'message' : 'messages'}, one per colleague.${skippedNote(results)}`);
+                    const results = await recordActions(requests);
+                    // One Slack message per colleague with at least one recorded request, not per colleague planned.
+                    const messaged = new Set(requests.filter((_, i) => results[i]?.ok).map((r) => r.employeeId)).size;
+                    setStatus(batchStatus(results, () => `${messaged} Slack ${messaged === 1 ? 'message' : 'messages'}, one per colleague`));
                     close();
                   }}
                 >
@@ -311,8 +315,7 @@ export function BulkActions({
                       })),
                     ),
                   );
-                  const sent = results.filter((r) => r.ok).length;
-                  setStatus(`Sent · Simulated: ${sent} ${sent === 1 ? 'invite' : 'invites'} through Comeet.${skippedNote(results)}`);
+                  setStatus(batchStatus(results, (n) => `${n} ${n === 1 ? 'invite' : 'invites'} through Comeet`));
                   close();
                 }}
               >

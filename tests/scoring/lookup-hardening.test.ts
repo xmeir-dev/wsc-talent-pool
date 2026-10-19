@@ -11,7 +11,7 @@ import { assessEvent, buildDataset, matchSkill, minYearsFor, policyFor, rules, t
 import { conferenceShort } from '../../view/format';
 import { overviewFor } from '../../view/Overview';
 import { comeetFor } from '../../view/activity';
-import { assessJob, DATA_DIR } from '../helpers';
+import { assessJob, DATA_DIR, syntheticPerson, syntheticSources } from '../helpers';
 
 const sources = loadSources(DATA_DIR);
 const OBJECT_NAMES = ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf', 'isPrototypeOf'];
@@ -290,4 +290,17 @@ describe('free-text names that are object properties never crash', () => {
       expect(overviewFor({ attendances: [], sourceContactIds: [name] } as never)).toBeNull();
     });
   }
+});
+
+describe('role policy follows job selection in any letter case', () => {
+  it('a source file writing "job001" keeps the JOB001 written policy', () => {
+    const row = syntheticPerson('A-1', 'Alice');
+    const upper = assessJob(buildDataset(syntheticSources([row], 'JOB001')), 'JOB001').candidates[0]!;
+    const lower = assessJob(buildDataset(syntheticSources([row], 'job001')), 'JOB001').candidates[0]!;
+    for (const a of [upper, lower]) {
+      expect(a.recommendation).toBe('needs_review');
+      expect(a.missingEssentials).toEqual(['PyTorch or related deep learning']);
+      expect(a.dataQualityFlags.some((f) => f.includes('no written policy'))).toBe(false);
+    }
+  });
 });
