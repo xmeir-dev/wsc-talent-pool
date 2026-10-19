@@ -41,7 +41,7 @@ describe('output contract', () => {
     expect(sam.connection_count).toBe('0');
     const mia = parsed.records.find((r) => r.full_name === 'Mia Missing')!;
     expect(mia.connection_count).toBe('');
-    expect(mia.points_total).toBe('');
+    expect(mia.required_skills_on_profile).toBe('');
   });
 });
 
@@ -84,7 +84,7 @@ describe('recruiter wording', () => {
       expect(c.outcomeReasons[0]).toContain('confirm non-intern years');
     }
     expect(byName(result, 'Chiara Russo').outcomeReasons[0]).toBe(
-      "Has every must-have skill · 8 of 10 required-skill points (needs 6) · 7 years' experience",
+      "Has every must-have skill · 4 of 5 required skills (needs 3) · 7 years' experience",
     );
   });
 });
@@ -96,12 +96,12 @@ describe('real JOB001 result', () => {
     expect(result.candidates).toHaveLength(75);
   });
 
-  it('produces 7 shortlist, 5 needs_review, 63 not_recommended_for_role', () => {
-    expect(result.counts).toEqual({ shortlist: 7, needs_review: 5, not_recommended_for_role: 63 });
+  it('produces 6 shortlist, 6 needs_review, 63 not_recommended_for_role', () => {
+    expect(result.counts).toEqual({ shortlist: 6, needs_review: 6, not_recommended_for_role: 63 });
   });
 
   it('shortlists the computer-vision engineers, best first', () => {
-    expect(shortlistNames(result)).toEqual(['Priya Anand', 'Chiara Russo', 'Lucas Evans', 'James Thornton', 'Marcus Reid', 'Nathan Brooks', 'Mason Young']);
+    expect(shortlistNames(result)).toEqual(['Priya Anand', 'Chiara Russo', 'Lucas Evans', 'Marcus Reid', 'Nathan Brooks', 'James Thornton']);
     expect(byName(result, 'Priya Anand').shortlistRank).toBe(1);
   });
 

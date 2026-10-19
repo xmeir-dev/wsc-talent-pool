@@ -40,10 +40,10 @@ export function runPipeline(sources: SourceTexts, jobId: string): { result: JobA
 }
 
 export { buildDataset, DataValidationError } from './dataset';
-export { assessCandidate, matchSkill, minYearsFor, policyFor, requiredThreshold } from './assess';
+export { assessCandidate, matchSkill, minYearsFor, policyFor, requiredNeeded } from './assess';
 export { assessEvent } from './conference';
 export { findPossibleReferences, sameEmployer } from './history';
-export { rankAssessments } from './rank';
+export { compareSkills, rankAssessments, skillKey, skillSummary } from './rank';
 export { assessmentToCsv, outputFileName, OUTPUT_COLUMNS, splitName, toOutputRows, type OutputColumn, type OutputRow } from './output';
 export { parseCsv, toCsv } from './csv';
 export * as rules from './rules';

@@ -153,8 +153,6 @@ export interface SkillMatch {
   skill: string;
   kind: 'required' | 'nice_to_have';
   match: MatchKind;
-  /** Points this skill earned: required 2/1/1/0, nice-to-have 1/0. */
-  points: number;
   /** The profile skill that produced the match, as written on the profile. */
   evidence: string | null;
 }
@@ -194,12 +192,20 @@ export interface EventAssessment {
   explanation: string;
 }
 
-export interface Points {
+/** How many of the job's skills the profile shows. Counts, not points: one rule for every job. */
+export interface SkillTally {
+  /** Required skills on the profile by name. */
   required: number;
-  requiredMax: number;
+  /** Required skills shown only by a related or likely skill: to confirm, not counted for the shortlist. */
+  requiredLikely: number;
+  requiredTotal: number;
+  /** Named required skills the shortlist needs (SHORTLIST_REQUIRED_SHARE of requiredTotal, rounded up). */
+  requiredNeeded: number;
+  /** Nice-to-have skills on the profile, by name or a related skill. */
   niceToHave: number;
-  industryBonus: number;
-  total: number;
+  niceToHaveTotal: number;
+  /** The role's industry (e.g. sports media) shows on the profile; only breaks ties in the ranking. */
+  industryMatch: boolean;
 }
 
 export interface CandidateAssessment {
@@ -210,7 +216,7 @@ export interface CandidateAssessment {
   shortlistRank: number | null;
   /** Explains a tie or a tie-break; empty when the person is not tied. */
   tieNote: string;
-  points: Points;
+  tally: SkillTally;
   skills: SkillMatch[];
   missingEssentials: string[];
   outcomeReasons: string[];

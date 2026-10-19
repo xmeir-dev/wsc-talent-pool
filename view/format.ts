@@ -12,7 +12,7 @@ import type {
   PossibleReference,
   Recommendation,
 } from '../pipeline';
-import { minYearsFor, policyFor, requiredThreshold } from '../pipeline';
+import { minYearsFor, policyFor } from '../pipeline';
 
 /** "JOB001 · Senior ML Engineer": how a job reads in pickers. */
 export function jobLabel(job: Job): string {
@@ -169,7 +169,6 @@ export function fitChecks(a: CandidateAssessment, job: Job): FitCheck[] {
     return (['must', 'skills', 'years'] as const).map((key) => check(key, false, `unknown, ${unknown}`));
   }
   const essentials = policyFor(job).policy.essentials.map((e) => e.label);
-  const threshold = requiredThreshold(a.points.requiredMax);
   const minYears = minYearsFor(job);
   const years = profile.yearsExperience;
   return [
@@ -182,7 +181,11 @@ export function fitChecks(a: CandidateAssessment, job: Job): FitCheck[] {
           ? `missing ${and(a.missingEssentials)}`
           : `has ${and(essentials)}`,
     ),
-    check('skills', a.points.required >= threshold, `${a.points.required} of ${a.points.requiredMax} points (needs ${threshold})`),
+    check(
+      'skills',
+      a.tally.required >= a.tally.requiredNeeded,
+      `${a.tally.required} of ${a.tally.requiredTotal} required skills (needs ${a.tally.requiredNeeded})${a.tally.requiredLikely > 0 ? `, ${a.tally.requiredLikely} likely` : ''}`,
+    ),
     check(
       'years',
       minYears === null || (years !== null && years >= minYears),

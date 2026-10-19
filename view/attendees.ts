@@ -2,7 +2,7 @@
  * The list page's model: every attendee once, with the jobs they are worth a look for.
  * Every decision still comes from the pipeline (assessJob); this file only groups and filters it.
  */
-import { assessJob, splitName, toCsv, toOutputRows } from '../pipeline';
+import { assessJob, compareSkills, skillKey, splitName, toCsv, toOutputRows } from '../pipeline';
 import type { Candidate, CandidateAssessment, Dataset, Job, JobAssessment, OutputRow } from '../pipeline';
 import { currentRole } from './format';
 import { placeOf } from './place';
@@ -126,7 +126,7 @@ export type SortKey = 'candidate' | 'conference' | 'relevant';
 /**
  * The attendee list sorted by a column header; ties keep name order (the list arrives A–Z).
  * Candidate: name. Conference: earliest conference first. Relevant job: best match, shortlist before
- * needs review, in job order, most points first within a job, no relevant job last. Descending reverses the order.
+ * needs review, in job order, best skills first within a job, no relevant job last. Descending reverses the order.
  */
 export function sortAttendees(list: Attendee[], sort: { columnId: string; direction: 'asc' | 'desc' } | null, jobs: Job[]): Attendee[] {
   if (!sort) return list;
@@ -142,10 +142,10 @@ function sortBy(list: Attendee[], by: SortKey, jobs: Job[]): Attendee[] {
       const first = [...p.candidate.attendances].sort((x, y) => x.conferenceDate.localeCompare(y.conferenceDate))[0];
       return first ? [first.conferenceDate, first.conferenceName] : ['~', ''];
     }
-    const scored = p.relevantFor.map((r) => ({ key: rank[r.outcome] * jobs.length + jobs.indexOf(r.job), points: r.a.points.total }));
-    if (scored.length === 0) return [Infinity, 0];
+    const scored = p.relevantFor.map((r) => ({ key: rank[r.outcome] * jobs.length + jobs.indexOf(r.job), skills: skillKey(r.a.tally) }));
+    if (scored.length === 0) return [Infinity];
     const best = scored.reduce((x, y) => (y.key < x.key ? y : x));
-    return [best.key, -best.points];
+    return [best.key, ...best.skills.map((n) => -n)];
   };
   const cmp = (x: (string | number)[], y: (string | number)[]) => {
     for (let i = 0; i < x.length; i++) {
@@ -173,7 +173,7 @@ export function filterCounts(pool: Pool): { conferences: Map<string, number>; jo
 }
 
 /**
- * The job a profile opens on: shortlist before needs review, then points, then job order.
+ * The job a profile opens on: shortlist before needs review, then skills, then job order.
  * Limited to `among` when given (the jobs chosen in the filter), else every job.
  */
 export function bestJobId(pool: Pool, key: string, among: readonly string[] = []): string {
@@ -185,7 +185,7 @@ export function bestJobId(pool: Pool, key: string, among: readonly string[] = []
     const a = pool.items.get(job.jobId)!.get(key)!.a;
     const better =
       order[a.recommendation] < order[bestA.recommendation] ||
-      (order[a.recommendation] === order[bestA.recommendation] && a.points.total > bestA.points.total);
+      (order[a.recommendation] === order[bestA.recommendation] && compareSkills(a.tally, bestA.tally) < 0);
     if (better) {
       best = job.jobId;
       bestA = a;

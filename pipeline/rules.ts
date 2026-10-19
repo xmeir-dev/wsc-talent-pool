@@ -5,19 +5,14 @@
  * All terms are compared after normalize(): lower case, trimmed, single spaces.
  */
 
-export const ASSESSMENT_VERSION = 'rules-v2';
+export const ASSESSMENT_VERSION = 'rules-v3';
 
-// ---------- Points ----------
+// ---------- Skill counts ----------
 
-export const POINTS = {
-  requiredNamed: 2,
-  requiredEquivalent: 1,
-  requiredInferred: 1,
-  niceToHave: 1,
-  industryBonus: 1,
-} as const;
-
-/** Stated assumption, not a validated hiring standard: share of required-skill points needed for the shortlist. */
+/**
+ * Stated assumption, not a validated hiring standard, one rule for every job: the share of a job's required
+ * skills that must be on the profile by name for the shortlist, rounded up (3 of 4, 3 of 5, 4 of 6).
+ */
 export const SHORTLIST_REQUIRED_SHARE = 0.6;
 
 /** Stated assumption, not a validated hiring standard: minimum total years by the job's seniority label. */
@@ -31,11 +26,11 @@ export const MIN_YEARS_BY_SENIORITY: Record<string, number> = {
 // ---------- Skill evidence ----------
 
 export interface SkillEvidenceRule {
-  /** Profile skills that count as the skill itself (2 points when required). */
+  /** Profile skills that count as the skill itself: the skill is on the profile. */
   named: string[];
-  /** Accepted partial matches (1 point when required), e.g. TensorFlow for PyTorch. */
+  /** Related skills, e.g. TensorFlow for PyTorch: "likely", not counted for the shortlist, sends to review. */
   equivalent?: string[];
-  /** Indirect evidence (1 point, labelled "inferred, verify"). */
+  /** Indirect evidence, labelled "likely, please confirm". */
   inferred?: string[];
 }
 
@@ -86,9 +81,9 @@ export const SKILL_EVIDENCE: Record<string, SkillEvidenceRule> = {
 
 export interface Essential {
   label: string;
-  /** Satisfied when ANY of these job skills scores at least minPoints. */
+  /** Satisfied when ANY of these job skills is on the profile by name (or, with allowRelated, by a related skill). */
   anyOf: string[];
-  minPoints: number;
+  allowRelated: boolean;
 }
 
 export interface RolePolicy {
@@ -103,8 +98,8 @@ export interface RolePolicy {
 export const ROLE_POLICIES: Record<string, RolePolicy> = {
   JOB001: {
     essentials: [
-      { label: 'Computer Vision', anyOf: ['Computer Vision'], minPoints: 1 },
-      { label: 'PyTorch or related deep learning', anyOf: ['PyTorch'], minPoints: 1 },
+      { label: 'Computer Vision', anyOf: ['Computer Vision'], allowRelated: true },
+      { label: 'PyTorch or related deep learning', anyOf: ['PyTorch'], allowRelated: true },
     ],
     coreDiscipline: {
       label: 'machine learning or computer vision',
@@ -120,20 +115,20 @@ export const ROLE_POLICIES: Record<string, RolePolicy> = {
     },
   },
   JOB002: {
-    essentials: [{ label: 'Python or Go', anyOf: ['Python', 'Go'], minPoints: 2 }],
+    essentials: [{ label: 'Python or Go', anyOf: ['Python', 'Go'], allowRelated: false }],
     coreDiscipline: { label: 'backend services', terms: ['kafka', 'microservices', 'rest apis', 'rest api'] },
     industryBonus: null,
   },
   JOB003: {
     essentials: [
-      { label: 'Product Management', anyOf: ['Product Management'], minPoints: 2 },
-      { label: 'Sports Analytics', anyOf: ['Sports Analytics'], minPoints: 2 },
+      { label: 'Product Management', anyOf: ['Product Management'], allowRelated: false },
+      { label: 'Sports Analytics', anyOf: ['Sports Analytics'], allowRelated: false },
     ],
     coreDiscipline: { label: 'product management', terms: ['product management'] },
     industryBonus: null,
   },
   JOB004: {
-    essentials: [{ label: 'Python', anyOf: ['Python'], minPoints: 2 }],
+    essentials: [{ label: 'Python', anyOf: ['Python'], allowRelated: false }],
     coreDiscipline: { label: 'data pipelines', terms: ['spark', 'dbt', 'airflow'] },
     industryBonus: null,
   },

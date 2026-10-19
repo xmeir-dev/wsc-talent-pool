@@ -38,13 +38,13 @@ describe('possible references', () => {
     expect(maya).toMatchObject({ employeeId: 'WSC002', alsoListedConnection: true });
   });
 
-  it('never changes points or outcome', () => {
+  it('never changes skill counts or outcome', () => {
     const dataset = fixtureDataset();
     const before = byName(assessJob(dataset, 'JOB001'), 'Rex Reference');
     dataset.employees.clear();
     const after = byName(assessJob(dataset, 'JOB001'), 'Rex Reference');
     expect(after.possibleReferences).toEqual([]);
-    expect(after.points).toEqual(before.points);
+    expect(after.tally).toEqual(before.tally);
     expect(after.recommendation).toBe(before.recommendation);
   });
 });

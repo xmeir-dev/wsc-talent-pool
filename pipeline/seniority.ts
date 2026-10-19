@@ -1,5 +1,5 @@
 /**
- * Seniority evidence. Titles earn no points; history is surfaced so a recruiter can judge
+ * Seniority evidence. Titles do not count toward fit; history is surfaced so a recruiter can judge
  * relevant years (total years include internships and junior roles).
  */
 

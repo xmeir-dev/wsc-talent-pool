@@ -89,8 +89,8 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord
           </span>
         </div>
         <div className="tm-stat">
-          <span className="tm-stat-label">Required-skill points</span>
-          <span className="tm-stat-value">{p ? `${a.points.required} / ${a.points.requiredMax}` : '--'}</span>
+          <span className="tm-stat-label">Required skills</span>
+          <span className="tm-stat-value">{p ? `${a.tally.required} / ${a.tally.requiredTotal}` : '--'}</span>
         </div>
         <div className="tm-stat">
           <span className="tm-stat-label">Experience</span>

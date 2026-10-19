@@ -81,7 +81,7 @@ describe('conflicts stay unresolved and visible', () => {
   it('flags a name that differs from its profile and holds it at needs_review', () => {
     const jon = byName(result, 'Jon Smith');
     expect(jon.candidate.profileStatus).toBe('conflict');
-    expect(jon.points.required).toBe(10); // evidence shown, but not trusted
+    expect(jon.tally.required).toBe(5); // evidence shown, but not trusted
     expect(jon.recommendation).toBe('needs_review');
     expect(jon.dataQualityFlags.join(' ')).toContain('Jonathan Smythe');
   });

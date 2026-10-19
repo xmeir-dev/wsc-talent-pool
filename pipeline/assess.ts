@@ -1,11 +1,11 @@
 /**
  * Job fit for one person and one role. Pure: same inputs, same result.
  *
- * Points rank people; gates decide the outcome:
+ * Skill counts rank people; gates decide the outcome:
  * 1. No usable profile, or a conflicting one → needs_review (missing info is not missing ability).
  * 2. No evidence of the role's core discipline → not_recommended_for_role.
- * 3. Every essential present, required points ≥ 60%, and minimum years → shortlist.
- * 4. Anything else → needs_review.
+ * 3. Every essential present, at least 60% of the required skills on the profile by name, and minimum years → shortlist.
+ * 4. Anything else → needs_review. A related skill counts as "likely": it sends someone to review, never to the shortlist.
  * Connections never enter this function.
  */
 
@@ -13,7 +13,6 @@ import { assessEvent } from './conference';
 import { findPossibleReferences } from './history';
 import {
   MIN_YEARS_BY_SENIORITY,
-  POINTS,
   ROLE_POLICIES,
   SHORTLIST_REQUIRED_SHARE,
   SKILL_EVIDENCE,
@@ -29,9 +28,9 @@ import type {
   Employee,
   Job,
   MatchKind,
-  Points,
   Recommendation,
   SkillMatch,
+  SkillTally,
 } from './types';
 
 /** Fallback for a job added to job_openings.csv without a written policy: core = any required skill named. */
@@ -68,23 +67,16 @@ export function matchSkill(profileSkills: string[], skill: string): { match: Mat
   return { match: 'none', evidence: null };
 }
 
-const REQUIRED_POINTS: Record<MatchKind, number> = {
-  named: POINTS.requiredNamed,
-  equivalent: POINTS.requiredEquivalent,
-  inferred: POINTS.requiredInferred,
-  none: 0,
-};
-
 export function scoreSkills(profileSkills: string[], job: Job): SkillMatch[] {
   const required = job.requiredSkills.map((skill): SkillMatch => {
     const { match, evidence } = matchSkill(profileSkills, skill);
-    return { skill, kind: 'required', match, points: REQUIRED_POINTS[match], evidence };
+    return { skill, kind: 'required', match, evidence };
   });
   const nice = job.niceToHave.map((skill): SkillMatch => {
     const { match, evidence } = matchSkill(profileSkills, skill);
-    // Inferred evidence is too indirect to earn a nice-to-have point.
-    const earns = match === 'named' || match === 'equivalent';
-    return { skill, kind: 'nice_to_have', match: earns ? match : 'none', points: earns ? POINTS.niceToHave : 0, evidence: earns ? evidence : null };
+    // Inferred evidence is too indirect to count for a nice-to-have.
+    const counts = match === 'named' || match === 'equivalent';
+    return { skill, kind: 'nice_to_have', match: counts ? match : 'none', evidence: counts ? evidence : null };
   });
   return [...required, ...nice];
 }
@@ -93,14 +85,15 @@ export function minYearsFor(job: Job): number | null {
   return MIN_YEARS_BY_SENIORITY[normalize(job.seniority)] ?? null;
 }
 
-export function requiredThreshold(requiredMax: number): number {
-  return Math.ceil(requiredMax * SHORTLIST_REQUIRED_SHARE - 1e-9);
+/** Named required skills the shortlist needs: SHORTLIST_REQUIRED_SHARE of them, rounded up. */
+export function requiredNeeded(requiredTotal: number): number {
+  return Math.ceil(requiredTotal * SHORTLIST_REQUIRED_SHARE - 1e-9);
 }
 
-function industryBonus(candidate: Candidate, policy: RolePolicy): { points: number; evidence: string } {
+function industryBonus(candidate: Candidate, policy: RolePolicy): { match: boolean; evidence: string } {
   const p = candidate.profile;
-  if (!policy.industryBonus) return { points: 0, evidence: 'not part of this role' };
-  if (!p) return { points: 0, evidence: 'unknown: no profile' };
+  if (!policy.industryBonus) return { match: false, evidence: 'not part of this role' };
+  if (!p) return { match: false, evidence: 'unknown: no profile' };
   const terms = policy.industryBonus.terms;
   const industryHit = p.industry && terms.some((t) => containsTerm(p.industry, t));
   const skillHits = p.skills.filter((s) => terms.some((t) => containsTerm(s, t)));
@@ -109,9 +102,9 @@ function industryBonus(candidate: Candidate, policy: RolePolicy): { points: numb
       ...(industryHit ? [`industry "${p.industry}"`] : []),
       ...(skillHits.length > 0 ? [`skills ${skillHits.map((s) => `"${s}"`).join(', ')}`] : []),
     ];
-    return { points: POINTS.industryBonus, evidence: `+1: ${parts.join(' and ')}` };
+    return { match: true, evidence: `yes: ${parts.join(' and ')}` };
   }
-  return { points: 0, evidence: `none: industry "${p.industry || 'not given'}" is not ${policy.industryBonus.label}` };
+  return { match: false, evidence: `none: industry "${p.industry || 'not given'}" is not ${policy.industryBonus.label}` };
 }
 
 export function connectionInfo(candidate: Candidate, employees: Map<string, Employee>): ConnectionInfo {
@@ -163,25 +156,34 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
   const { policy, isDefault } = policyFor(job);
   const profile = candidate.profile;
   const skills = profile ? scoreSkills(profile.skills, job) : [];
-  const required = skills.filter((s) => s.kind === 'required').reduce((n, s) => n + s.points, 0);
-  const requiredMax = job.requiredSkills.length * POINTS.requiredNamed;
-  const niceToHave = skills.filter((s) => s.kind === 'nice_to_have').reduce((n, s) => n + s.points, 0);
+  const requiredSkills = skills.filter((s) => s.kind === 'required');
+  const required = requiredSkills.filter((s) => s.match === 'named').length;
+  const requiredLikely = requiredSkills.filter((s) => s.match === 'equivalent' || s.match === 'inferred').length;
+  const requiredTotal = job.requiredSkills.length;
+  const needed = requiredNeeded(requiredTotal);
   const bonus = industryBonus(candidate, policy);
-  const points: Points = { required, requiredMax, niceToHave, industryBonus: bonus.points, total: required + niceToHave + bonus.points };
+  const tally: SkillTally = {
+    required,
+    requiredLikely,
+    requiredTotal,
+    requiredNeeded: needed,
+    niceToHave: skills.filter((s) => s.kind === 'nice_to_have' && s.match !== 'none').length,
+    niceToHaveTotal: job.niceToHave.length,
+    industryMatch: bonus.match,
+  };
 
-  const byName = new Map(skills.filter((s) => s.kind === 'required').map((s) => [normalize(s.skill), s]));
-  const unmet = policy.essentials.filter(
-    (e) => !e.anyOf.some((skill) => (byName.get(normalize(skill))?.points ?? 0) >= e.minPoints),
-  );
+  const byName = new Map(requiredSkills.map((s) => [normalize(s.skill), s]));
+  const meets = (e: { allowRelated: boolean }, m: SkillMatch | undefined) =>
+    !!m && (m.match === 'named' || (e.allowRelated && m.match !== 'none'));
+  const unmet = policy.essentials.filter((e) => !e.anyOf.some((skill) => meets(e, byName.get(normalize(skill)))));
   const missingEssentials = unmet.map((e) => e.label);
   // Say when related evidence exists but is not enough (e.g. "Sports Broadcasting" for Sports Analytics).
   const missingEssentialDetail = unmet.map((e) => {
-    const partial = e.anyOf.map((skill) => byName.get(normalize(skill))).find((m) => m && m.points > 0);
+    const partial = e.anyOf.map((skill) => byName.get(normalize(skill))).find((m) => m && m.match !== 'none');
     return partial ? `${e.label} (only a related skill, ${partial.evidence}, which is not enough)` : e.label;
   });
   const coreEvidence = profile ? profile.skills.filter((s) => policy.coreDiscipline.terms.includes(normalize(s))) : [];
   const minYears = minYearsFor(job);
-  const threshold = requiredThreshold(requiredMax);
   const seniority = assessSeniority(profile);
   const connections = connectionInfo(candidate, employees);
   const dataQualityFlags = [...candidate.dataQualityFlags];
@@ -209,7 +211,13 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
     reasons.push(`No ${policy.coreDiscipline.label} skill on profile; stays in the pool for other roles`);
   } else {
     if (missingEssentials.length > 0) reasons.push(`Missing must-have: ${missingEssentialDetail.join(', ')}`);
-    if (required < threshold) reasons.push(`Only ${required} of ${requiredMax} required-skill points (needs ${threshold})`);
+    if (required < needed) {
+      reasons.push(
+        required + requiredLikely >= needed
+          ? `${required} of ${requiredTotal} required skills on the profile (needs ${needed}); ${requiredLikely} more likely, please confirm`
+          : `Only ${required} of ${requiredTotal} required skills on the profile (needs ${needed})`,
+      );
+    }
     if (yearsShort) {
       reasons.push(
         profile.yearsExperience === null
@@ -223,7 +231,7 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
       reasons.push(
         [
           'Has every must-have skill',
-          `${required} of ${requiredMax} required-skill points (needs ${threshold})`,
+          `${required} of ${requiredTotal} required skills (needs ${needed})`,
           `${yearsText(profile.yearsExperience!)} experience${early ? ' (includes intern or junior roles; confirm non-intern years)' : ''}`,
         ].join(' · '),
       );
@@ -235,7 +243,7 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
     candidate,
     jobId: job.jobId,
     recommendation,
-    points,
+    tally,
     skills,
     missingEssentials: profile ? missingEssentials : [],
     outcomeReasons: reasons,

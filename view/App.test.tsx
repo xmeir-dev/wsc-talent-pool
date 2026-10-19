@@ -183,8 +183,8 @@ describe('recruiter view: list', () => {
     expect(screen.queryByRole('columnheader', { name: /Score/ })).toBeNull();
     expect(screen.getByRole('columnheader', { name: /Relevant job/ })).toBeTruthy();
     const ml = (r: HTMLElement) => [...r.querySelectorAll('.jobs .fit')].find((p) => p.textContent?.startsWith('Senior ML Engineer'))!;
-    expect(rows().slice(0, 7).every((r) => ml(r).textContent?.includes('Shortlist'))).toBe(true);
-    expect(rows().slice(7).every((r) => ml(r).textContent?.includes('Needs review'))).toBe(true);
+    expect(rows().slice(0, 6).every((r) => ml(r).textContent?.includes('Shortlist'))).toBe(true);
+    expect(rows().slice(6).every((r) => ml(r).textContent?.includes('Needs review'))).toBe(true);
 
     // Swap to another single job.
     await pick(user, 'Job', /^Senior ML Engineer/, /^Senior Product Manager/);
@@ -292,7 +292,7 @@ describe('recruiter view: profile', () => {
       'Kafka is-has is-nice',
       'Terraform is-missing is-nice',
     ]);
-    expect(cards[1]!.textContent).toContain('4 of 12 points (needs 8)');
+    expect(cards[1]!.textContent).toContain('2 of 6 required skills (needs 4)');
     // "Python or Go": Python meets it, so Go is not shown as a missing must-have.
     expect(screen.getByLabelText('Go: Required, missing')).toBeTruthy();
     expect(screen.getAllByLabelText('Python: Must-have, has it')).toHaveLength(2);

@@ -13,7 +13,7 @@ The [written assignment](../assignment/index.html) defines the scope; the [disco
 - **A focused shortlist.** Promising candidates with insufficient evidence go into `needs_review`. Missing information is not proof of missing ability.
 - **Expertise first.** Assess skills, responsibilities, and relevant seniority. Conference relevance and job fit are separate; attendance and job titles alone do not establish either.
 - **Allow supporting gaps.** For JOB001, senior ML and computer-vision evidence matter; missing AWS evidence alone does not exclude someone. Keep every unconfirmed requirement visible, including Object Detection.
-- **Industry is a bonus for JOB001.** Sports/media experience can help, but is not required. Other roles retain their own requirements, such as JOB003's Sports Analytics skill.
+- **Industry only breaks ties for JOB001.** Sports/media experience can lift someone above an equal candidate, but is not required. Other roles retain their own requirements, such as JOB003's Sports Analytics skill.
 - **Connections only break close ties.** They cannot lift a clearly weaker candidate above a stronger one. A connection or shared employer suggests a possible reference, not an endorsement. More connections do not automatically mean more value.
 - **Clear mismatches are kept, not dropped.** People with no evidence of a role's core discipline are marked `not_recommended_for_role` for that role and remain available for others.
 
@@ -63,7 +63,7 @@ These are the privacy rules the [design document](design.md#at-scale) relies on:
 
 ## How candidates are ranked
 
-The full rules are in [How candidates are ranked](scoring.md): each role's must-haves and core discipline, skill equivalents, the 60% points bar, minimum years by seniority, and the tie rule. **The bar, the minimum years, the must-haves and the equivalents are stated assumptions for this exercise, not validated hiring standards.** They should be confirmed with hiring managers and tested against past hiring decisions.
+The full rules are in [How candidates are ranked](scoring.md): each role's must-haves and core discipline, skill equivalents, the 60% required-skills bar, minimum years by seniority, and the tie rule. **The bar, the minimum years, the must-haves and the equivalents are stated assumptions for this exercise, not validated hiring standards.** They should be confirmed with hiring managers and tested against past hiring decisions.
 
 Further assumptions behind them:
 

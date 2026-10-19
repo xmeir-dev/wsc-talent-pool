@@ -13,9 +13,9 @@ npx playwright test --project integration-demo
 
 1. **Overnight run.** The demo opens in HubSpot with a notification: the conference contacts were scored overnight for every open Comeet role, with a count per role. In production this runs after the event's contacts land in HubSpot and are enriched.
    ![Morning notification](../docs/screenshots/integration-1-hubspot-morning.png)
-2. **Shortlist.** Click **Senior ML Engineer: 7 shortlist · 5 to review**. The saved view lists the 7 with rank, fit reason, WSC connections and Comeet status. Every open role has its own view.
+2. **Shortlist.** Click **Senior ML Engineer: 6 shortlist · 6 to review**. The saved view lists the 6 with rank, fit reason, WSC connections and Comeet status. Every open role has its own view.
    ![Shortlist](../docs/screenshots/integration-2-hubspot-shortlist.png)
-3. **Contact record.** Open **Priya Anand**. The **Talent match** app card in the Overview tab shows the recommendation, skill points, matched evidence, what is not confirmed, connections and possible references (leads, not endorsements). Switch **Role** to read her other assessments.
+3. **Contact record.** Open **Priya Anand**. The **Talent match** app card in the Overview tab shows the recommendation, required skills on the profile, matched evidence, what is not confirmed, connections and possible references (leads, not endorsements). Switch **Role** to read her other assessments.
    ![Contact card](../docs/screenshots/integration-3-hubspot-contact-card.png)
 4. **Handoff.** **Add to Comeet** previews what will be sent. Nothing is sent until **Confirm**, and no email goes out.
    ![Handoff review](../docs/screenshots/integration-4-handoff-review.png)
@@ -23,7 +23,7 @@ npx playwright test --project integration-demo
    ![Comeet record](../docs/screenshots/integration-5-comeet-candidate.png)
 6. **Status comes back.** Back in HubSpot, the card says "In Comeet: Sourced" with **Open in Comeet** instead of Add, the record shows the Comeet status, and the shortlist's Comeet status column updates. Lucas Evans already shows "In progress · Phone screen", so nobody approaches him twice.
    ![Comeet status in HubSpot](../docs/screenshots/integration-6-comeet-status-in-hubspot.png)
-7. **Manual import.** **Import** in HubSpot takes a spreadsheet from an event (or **Use sample file**). It is checked first: 4 new contacts, 1 repeat attendee merged into his existing record. After import every role is re-scored and a notification reports the new counts (Senior ML Engineer: 8 shortlist, led by Noa Barak). A file with missing columns imports nothing.
+7. **Manual import.** **Import** in HubSpot takes a spreadsheet from an event (or **Use sample file**). It is checked first: 4 new contacts, 1 repeat attendee merged into his existing record. After import every role is re-scored and a notification reports the new counts (Senior ML Engineer: 7 shortlist, led by Noa Barak). A file with missing columns imports nothing.
    ![Import preview](../docs/screenshots/integration-7-import-preview.png)
 8. **New role.** In Comeet, **+** next to Positions opens a new position (prefilled). Publishing it scores the whole pool for that role; HubSpot gets a notification and a new saved view.
    ![New position](../docs/screenshots/integration-8-comeet-new-position.png)

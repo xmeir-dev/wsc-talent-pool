@@ -24,7 +24,7 @@ describe('attendee list model', () => {
   it('a job lists its shortlist then needs review, in pipeline order', () => {
     const job1 = jobItems(pool, 'JOB001', []);
     expect(job1).toHaveLength(12);
-    expect(job1.map(({ a }) => a.recommendation)).toEqual([...Array(7).fill('shortlist'), ...Array(5).fill('needs_review')]);
+    expect(job1.map(({ a }) => a.recommendation)).toEqual([...Array(6).fill('shortlist'), ...Array(6).fill('needs_review')]);
     expect(job1[0]!.a.candidate.fullName).toBe('Priya Anand');
     expect(jobItems(pool, 'JOB003', []).map(({ a }) => a.recommendation)).toEqual(Array(5).fill('needs_review'));
     expect(jobItems(pool, 'JOB001', ['DevOps World 2025'])).toHaveLength(0);
@@ -157,7 +157,7 @@ describe('job fit checks', () => {
     const alex = pool.attendees.find((p) => p.candidate.fullName === 'Alex Turner')!.relevantFor[0]!;
     expect(fitChecks(alex.a, alex.job).map((c) => [c.ok, c.tip])).toEqual([
       [false, 'Must-have skills: missing Sports Analytics'],
-      [true, 'Required skills: 6 of 8 points (needs 5)'],
+      [false, 'Required skills: 2 of 4 required skills (needs 3), 2 likely'],
       [true, 'Experience: 8 years (needs 5)'],
     ]);
   });

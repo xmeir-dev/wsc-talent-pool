@@ -33,9 +33,9 @@ test('morning after: the overnight notice leads to the shortlist, then card → 
   await expect(page.getByText('Integration concept · synthetic data · no live connection.')).toBeVisible();
   await expect(notices(page)).toContainText('Talent match ran overnight');
   await expect(notices(page)).toContainText('75 conference contacts from 4 events scored for 4 open roles.');
-  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 7 shortlist · 5 to review' }).click();
+  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 6 shortlist · 6 to review' }).click();
   await expect(notices(page)).toHaveCount(0);
-  await expect(shortlist(page).locator('tbody tr')).toHaveCount(7);
+  await expect(shortlist(page).locator('tbody tr')).toHaveCount(6);
   await expect(shortlist(page).locator('tbody tr').first()).toContainText('Priya Anand');
 
   await shortlist(page).getByRole('button', { name: 'Priya Anand' }).focus();
@@ -55,7 +55,7 @@ test('morning after: the overnight notice leads to the shortlist, then card → 
   await expect(page.getByRole('heading', { name: 'Priya Anand' })).toBeFocused();
   await expect(page.getByTestId('cm-status')).toHaveText('Sourced');
   await expect(page.getByRole('region', { name: 'Custom fields' })).toContainText('Shortlist · #1');
-  await expect(page.getByRole('region', { name: 'Custom fields' })).toContainText('rules-v2');
+  await expect(page.getByRole('region', { name: 'Custom fields' })).toContainText('rules-v3');
   expect(errors).toEqual([]);
 });
 
@@ -92,7 +92,7 @@ test('role switching reads each stored assessment without losing the first', asy
   const role = card(page).getByRole('combobox', { name: 'Role' });
   await role.selectOption('JOB002');
   await expect(card(page).getByTestId('tm-outcome')).toHaveText('Not recommended for this role');
-  await expect(card(page)).toContainText('JOB002 · rules-v2');
+  await expect(card(page)).toContainText('JOB002 · rules-v3');
   await role.selectOption('JOB001');
   await expect(card(page).getByTestId('tm-outcome')).toHaveText('Shortlist · #1');
 
@@ -118,7 +118,7 @@ test('importing a spreadsheet adds contacts, merges a repeat attendee and re-sco
 
   await expect(page.getByText('79 records')).toBeVisible();
   await expect(notices(page)).toContainText('Import finished: sample-conference-import.csv');
-  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 8 shortlist · 6 to review' }).click();
+  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 7 shortlist · 7 to review' }).click();
   await expect(shortlist(page).locator('tbody tr').first()).toContainText('Noa Barak');
 
   // A bad file imports nothing.
@@ -172,7 +172,7 @@ test('Comeet opens on its own; a person already in a process shows the owner and
 
 test('Reset demo clears handoffs', async ({ page }) => {
   const errors = watchErrors(page);
-  await openContact(page, 'Mason Young');
+  await openContact(page, 'James Thornton');
   await card(page).getByRole('button', { name: 'Add to Comeet' }).click();
   await handoff(page).getByRole('button', { name: 'Confirm' }).click();
   await expect(handoff(page)).toContainText('Added to Senior ML Engineer as Sourced.');
@@ -180,8 +180,8 @@ test('Reset demo clears handoffs', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Reset demo' }).click();
   await expect(notices(page)).toContainText('Talent match ran overnight');
-  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 7 shortlist · 5 to review' }).click();
-  await shortlist(page).getByRole('button', { name: 'Mason Young' }).click();
+  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 6 shortlist · 6 to review' }).click();
+  await shortlist(page).getByRole('button', { name: 'James Thornton' }).click();
   await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toBeVisible();
   expect(errors).toEqual([]);
 });

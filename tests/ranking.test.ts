@@ -1,14 +1,15 @@
 /** Connections, ties and seniority evidence. */
 import { describe, expect, it } from 'vitest';
+import { compareSkills } from '../pipeline';
 import { assessJob, byName, fixtureDataset, realDataset, shortlistNames } from './helpers';
 
 const fixture = assessJob(fixtureDataset(), 'JOB001');
 
-describe('connections never decide the outcome or cross a points gap', () => {
+describe('connections never decide the outcome or cross a skills gap', () => {
   it('ranks an unconnected stronger candidate above a connected weaker one', () => {
-    const sam = byName(fixture, 'Sam Strong'); // 10 points, no connection
-    const connie = byName(fixture, 'Connie Linked'); // 7 points, 3 connections
-    expect(sam.points.total).toBeGreaterThan(connie.points.total);
+    const sam = byName(fixture, 'Sam Strong'); // more skills, no connection
+    const connie = byName(fixture, 'Connie Linked'); // fewer skills, 3 connections
+    expect(compareSkills(sam.tally, connie.tally)).toBeLessThan(0);
     expect(sam.shortlistRank!).toBeLessThan(connie.shortlistRank!);
   });
 
@@ -18,16 +19,16 @@ describe('connections never decide the outcome or cross a points gap', () => {
     for (const c of dataset.candidates) if (c.profile) c.profile.connectionIds = [];
     const after = assessJob(dataset, 'JOB001');
     const outcomes = (r: typeof before) =>
-      Object.fromEntries(r.candidates.map((c) => [c.candidate.candidateKey, [c.recommendation, c.points.total]]));
+      Object.fromEntries(r.candidates.map((c) => [c.candidate.candidateKey, [c.recommendation, c.tally]]));
     expect(outcomes(after)).toEqual(outcomes(before));
   });
 });
 
-describe('close ties (identical points)', () => {
-  it('ranks a connected person above an unconnected one with the same points, and says why', () => {
+describe('close ties (identical skill counts)', () => {
+  it('ranks a connected person above an unconnected one with the same skills, and says why', () => {
     const tia = byName(fixture, 'Tia Tied');
     const ula = byName(fixture, 'Ula Unlinked');
-    expect(tia.points.total).toBe(ula.points.total);
+    expect(tia.tally).toEqual(ula.tally);
     expect(tia.shortlistRank!).toBeLessThan(ula.shortlistRank!);
     expect(tia.tieNote).toContain('ranked above');
     expect(tia.tieNote).toContain('Ula Unlinked');
@@ -75,8 +76,8 @@ describe('ordering', () => {
 });
 
 describe('seniority evidence', () => {
-  it('gives no points for titles', () => {
-    expect(byName(fixture, 'Hal Head').points.total).toBe(byName(fixture, 'Tia Tied').points.total);
+  it('does not count titles toward fit', () => {
+    expect(byName(fixture, 'Hal Head').tally).toEqual(byName(fixture, 'Tia Tied').tally);
   });
 
   it('flags senior titles "confirm hands-on"', () => {

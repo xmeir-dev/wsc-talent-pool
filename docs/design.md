@@ -45,7 +45,7 @@ Contacts followed up, time from a role opening to a qualified shortlist, recruit
 
 ## With more time
 
-1. **Check the rules with hiring managers** against past hires, and tune the 60% bar, minimum years and skill equivalents.
+1. **Check the rules with hiring managers** against past hires, and tune the 60% required-skills bar, minimum years and skill equivalents.
 2. **Connect the real tools:** a HubSpot test account and a Comeet sandbox, to prove the handoff and status sync the demo simulates.
 3. **Record recruiter decisions** (approached, not interested, hired) to learn which recommendations work.
 4. **Future idea, separate from the current rules: an AI step for free text.** A language model could read recruiter notes and full work history to suggest evidence the skill list misses. Its suggestions would be labelled and confirmed by a recruiter before affecting any outcome; the deterministic rules stay the decision-maker.

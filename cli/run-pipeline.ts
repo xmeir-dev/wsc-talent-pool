@@ -23,7 +23,7 @@ function summary(result: JobAssessment, file: string): string {
   const shortlist = result.candidates.filter((c) => c.recommendation === 'shortlist');
   for (const a of shortlist) {
     const tied = shortlist.some((o) => o !== a && o.shortlistRank === a.shortlistRank);
-    lines.push(`  #${a.shortlistRank} ${a.candidate.fullName} (${a.points.total} pts)${tied ? ' [tied]' : ''}`);
+    lines.push(`  #${a.shortlistRank} ${a.candidate.fullName} (${a.tally.required}/${a.tally.requiredTotal} required)${tied ? ' [tied]' : ''}`);
   }
   if (shortlist.length === 0) lines.push('  (no one meets every shortlist condition; see needs_review)');
   lines.push(`  → ${file}`);
