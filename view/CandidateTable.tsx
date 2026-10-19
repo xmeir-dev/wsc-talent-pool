@@ -1,6 +1,6 @@
 import { isValidElement, type ReactElement, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import { Briefcase04Icon, Calendar03Icon, CheckmarkBadge01Icon, HelpCircleIcon, UserIcon } from '@hugeicons/core-free-icons';
+import { Briefcase04Icon, Calendar03Icon, Cancel01Icon, CheckmarkBadge01Icon, HelpCircleIcon, Tick02Icon, UserIcon } from '@hugeicons/core-free-icons';
 import { DataTable, Hint, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee } from './attendees';
@@ -81,12 +81,21 @@ function RelevantFor({ list }: { list: Attendee['relevantFor'] }) {
     <span className="jobs">
       {ordered.map(({ job, outcome, a }) => {
         const shortlisted = outcome === 'shortlist';
-        const why = shortlisted
-          ? 'Shortlisted'
-          : `Maybe relevant: ${fitChecks(a, job)
-              .filter((c) => !c.ok)
-              .map((c) => c.tip)
-              .join('. ')}`;
+        const why = (
+          <span className="skill-tip">
+            <span className="skill-tip-name">{shortlisted ? 'Shortlisted' : 'Maybe relevant'}</span>
+            <span className="fit-tip-rows">
+              {fitChecks(a, job).map((c) => (
+                <span key={c.key} className={c.ok ? 'is-ok' : 'is-no'}>
+                  <HugeiconsIcon icon={c.ok ? Tick02Icon : Cancel01Icon} size={12} strokeWidth={2} aria-hidden="true" />
+                  <span>
+                    {c.name}: {c.detail}
+                  </span>
+                </span>
+              ))}
+            </span>
+          </span>
+        );
         return (
           <Hint key={job.jobId} tip={why} focusable={false}>
             <span className={`fit ${shortlisted ? 'is-shortlist' : 'is-review'}`}>

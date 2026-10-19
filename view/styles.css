@@ -1300,6 +1300,24 @@ ul {
   gap: 6px;
   max-width: 260px;
 }
+/* The job pill's hover: the verdict, then each shortlist check with a tick or a cross. */
+.fit-tip-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.fit-tip-rows > span {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.fit-tip-rows svg {
+  flex-shrink: 0;
+  transform: translateY(1px);
+}
+.fit-tip-rows > .is-no {
+  opacity: 0.7;
+}
 .skill-tip-name {
   font-weight: 600;
 }

@@ -184,7 +184,7 @@ export function fitChecks(a: CandidateAssessment, job: Job): FitCheck[] {
     check(
       'skills',
       a.tally.required >= a.tally.requiredNeeded,
-      `${a.tally.required} of ${a.tally.requiredTotal} required skills (needs ${a.tally.requiredNeeded})${a.tally.requiredLikely > 0 ? `, ${a.tally.requiredLikely} likely` : ''}`,
+      `${a.tally.required} of ${a.tally.requiredTotal} on the profile (needs ${a.tally.requiredNeeded})${a.tally.requiredLikely > 0 ? `, ${a.tally.requiredLikely} likely` : ''}`,
     ),
     check(
       'years',

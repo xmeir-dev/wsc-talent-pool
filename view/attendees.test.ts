@@ -157,7 +157,7 @@ describe('job fit checks', () => {
     const alex = pool.attendees.find((p) => p.candidate.fullName === 'Alex Turner')!.relevantFor[0]!;
     expect(fitChecks(alex.a, alex.job).map((c) => [c.ok, c.tip])).toEqual([
       [false, 'Must-have skills: missing Sports Analytics'],
-      [false, 'Required skills: 2 of 4 required skills (needs 3), 2 likely'],
+      [false, 'Required skills: 2 of 4 on the profile (needs 3), 2 likely'],
       [true, 'Experience: 8 years (needs 5)'],
     ]);
   });
