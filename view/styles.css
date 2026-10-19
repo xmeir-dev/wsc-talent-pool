@@ -863,6 +863,33 @@ ul {
   color: var(--ml-text);
   outline: none;
 }
+/* Comeet applications sit under the Comeet row, indented to the label text, in quiet grey. */
+.d-contact li:has(.d-apps) {
+  flex-wrap: wrap;
+}
+.d-apps {
+  flex-basis: 100%;
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0 0 0 24px;
+  font-size: 13px;
+  color: var(--ml-text-muted);
+}
+.d-rows .d-apps li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding: 3px 0;
+  border-bottom: 0;
+  line-height: 1.4;
+}
+.d-apps li span:first-child {
+  color: var(--ml-text);
+}
+.d-apps li span:last-child {
+  font-size: 12px;
+}
 .d-contact-name {
   display: inline-flex;
   align-items: center;

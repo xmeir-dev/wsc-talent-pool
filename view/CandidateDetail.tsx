@@ -23,6 +23,7 @@ import { minYearsFor, policyFor, type CandidateAssessment, type EmploymentSpell,
 import type { Attendee, Relevant } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
 import { AVATAR, initials } from './avatars';
+import comeetHistory from '../data/demo_comeet.json';
 import comeetIcon from './assets/comeet.png';
 import hubspotIcon from './assets/hubspot.png';
 import { InviteToJob } from './InviteToJob';
@@ -315,6 +316,9 @@ const linkedinHref = (url: string) => (/^https?:\/\//.test(url) ? url : `https:/
 /** Assumed record links: the snapshot's HS… IDs are source IDs, not HubSpot record IDs, and Comeet is searched by email. */
 const hubspotRecord = (id: string) => `https://app.hubspot.com/contacts/record/0-1/${id}`;
 const comeetSearch = (q: string) => `https://app.comeet.co/app/candidates?search=${encodeURIComponent(q)}`;
+/** Past Comeet applications (made up, see data/demo_comeet.json); newest first. */
+const COMEET: Record<string, { job: string; outcome: string; date: string }[]> = comeetHistory.byCandidate;
+const monthYear = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 /** A section heading with a hairline running to the right edge. */
 function SectionTitle({ children }: { children: ReactNode }) {
@@ -401,6 +405,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
     </section>
   );
   const hubspotId = c.attendances.map((at) => at.hubspotId).find(Boolean);
+  const applications = COMEET[c.candidateKey] ?? [];
   const contacts = [
     c.email && { key: 'email', icon: <HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.75} />, name: 'Email', value: c.email, href: `mailto:${c.email}` },
     c.linkedinUrl && {
@@ -411,7 +416,13 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
       href: linkedinHref(c.linkedinUrl),
     },
     hubspotId && { key: 'hubspot', icon: <img src={hubspotIcon} alt="" width={16} height={16} />, name: 'HubSpot', value: hubspotId, href: hubspotRecord(hubspotId) },
-    { key: 'comeet', icon: <img src={comeetIcon} alt="" width={16} height={16} />, name: 'Comeet', value: 'Look up', href: comeetSearch(c.email || c.fullName) },
+    {
+      key: 'comeet',
+      icon: <img src={comeetIcon} alt="" width={16} height={16} />,
+      name: 'Comeet',
+      value: applications.length ? 'Open profile' : 'Look up',
+      href: comeetSearch(c.email || c.fullName),
+    },
   ].filter((x) => !!x);
   const contactCard = (
     <section className="d-card">
@@ -427,6 +438,18 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
               <span>{x.value}</span>
               <HugeiconsIcon icon={ArrowUpRight01Icon} size={14} strokeWidth={1.75} aria-hidden="true" />
             </a>
+            {x.key === 'comeet' && applications.length > 0 && (
+              <ul className="d-apps" aria-label="Comeet applications">
+                {applications.map((ap) => (
+                  <li key={ap.job + ap.date}>
+                    <span>{ap.job}</span>
+                    <span>
+                      {ap.outcome} · {monthYear(ap.date)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </li>
         ))}
       </ul>
