@@ -18,6 +18,7 @@ import {
   Clock01Icon,
 } from '@hugeicons/core-free-icons';
 import { useEffect, useRef } from 'react';
+import { OUTCOME_LABEL } from '../view/format';
 import { ownerInitials, type ComeetCandidate } from './comeet';
 import { Icon } from './Icon';
 import { initials } from './initials';
@@ -121,7 +122,7 @@ export function ComeetProfile({ c, onClose }: { c: ComeetCandidate; onClose: () 
             <h3 id="cm-custom">Custom fields</h3>
             <dl className="cm-fields">
               <dt>Role fit</dt>
-              <dd className="cm-fit">
+              <dd className={c.customFields?.roleFit?.startsWith(OUTCOME_LABEL.shortlist) ? 'cm-fit is-shortlist' : 'cm-fit'}>
                 <Value v={c.customFields?.roleFit} />
               </dd>
               <dt>Evidence</dt>

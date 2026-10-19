@@ -80,7 +80,7 @@ test('group counts follow an import and a new role', async ({ page }) => {
   await page.getByRole('button', { name: 'Import' }).click();
   const dialog = page.getByRole('dialog', { name: 'Import contacts' });
   await dialog.getByRole('button', { name: 'Use sample file' }).click();
-  await dialog.getByRole('button', { name: 'Import 5 contacts' }).click();
+  await dialog.getByRole('button', { name: 'Import 5 rows' }).click();
   await notices(page).getByRole('button', { name: 'View results: Import finished: sample-conference-import.csv' }).click();
   await group(page, 'Needs review').click();
   await expect(group(page, 'Needs review')).toHaveText('Needs review (7)');

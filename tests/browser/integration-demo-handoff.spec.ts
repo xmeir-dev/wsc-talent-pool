@@ -119,7 +119,7 @@ test('the import preview says non-marketing once; an imported new contact gets l
   const dialog = page.getByRole('dialog', { name: 'Import contacts' });
   await dialog.getByRole('button', { name: 'Use sample file' }).click();
   await expect(dialog.getByText(/Imported as non-marketing contacts\./)).toHaveCount(1);
-  await dialog.getByRole('button', { name: 'Import 5 contacts' }).click();
+  await dialog.getByRole('button', { name: 'Import 5 rows' }).click();
   await page.getByRole('button', { name: 'Close notifications' }).click();
   await page.getByRole('table', { name: 'All contacts' }).getByRole('button', { name: 'Noa Barak' }).click();
   await expect(page.getByTestId('hs-lifecycle')).toHaveText('Other');

@@ -33,7 +33,7 @@ test('an unclosed quote is reported with its line and column and imports no one;
 
   await choose(page, 'fixed.csv', csv(ada('"Met at the booth"'), bob));
   await expect(dialog(page)).toContainText('2 new contacts');
-  await dialog(page).getByRole('button', { name: 'Import 2 contacts' }).click();
+  await dialog(page).getByRole('button', { name: 'Import 2 rows' }).click();
   await expect(page.getByText('77 records')).toBeVisible();
 });
 
@@ -44,7 +44,7 @@ test('the 2026 summit imports beside 2024, reads apart in the contact list, and 
   await choose(page, 'summit-2026.csv', file);
   await expect(dialog(page)).toContainText(`2 rows from ${SUMMIT} (2026).`);
   await expect(dialog(page)).toContainText('1 new contacts · 1 added as an event to an existing contact');
-  await dialog(page).getByRole('button', { name: 'Import 2 contacts' }).click();
+  await dialog(page).getByRole('button', { name: 'Import 2 rows' }).click();
   await expect(page.getByText('76 records')).toBeVisible();
 
   const contacts = page.getByRole('table', { name: 'All contacts' });

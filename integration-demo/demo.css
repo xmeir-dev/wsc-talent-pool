@@ -457,6 +457,36 @@ svg {
   text-decoration: underline;
 }
 
+.hs-tablesearch input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--hs-text);
+  font: inherit;
+}
+
+.hs-tablesearch input::placeholder {
+  color: var(--hs-muted);
+}
+
+.hs-tablesearch input:focus {
+  outline: none;
+}
+
+.hs-tablesearch:focus-within {
+  border-color: var(--hs-text);
+}
+
+.hs-table tbody tr.hs-nomatch {
+  cursor: default;
+  background: none;
+}
+
+.hs-nomatch td {
+  color: var(--hs-muted);
+}
+
 /* The host's decorative filters; the group switch next to them is the live control. */
 .hs-fake {
   display: contents;
@@ -530,7 +560,7 @@ svg {
 }
 
 @media (hover: hover) {
-  .hs-table tbody tr:hover {
+  .hs-table tbody tr:not(.hs-nomatch):hover {
     background: #f7f7f7;
   }
 }
@@ -1706,6 +1736,9 @@ button.cm-tab {
 
 .cm-fit {
   font-weight: 700;
+}
+
+.cm-fit.is-shortlist {
   color: var(--ok);
 }
 
@@ -2216,6 +2249,18 @@ button.cm-btn-primary {
   /* Tall enough to reach the top: keep its header clear of the demo strip (44px, above the backdrop). */
   max-height: calc(100vh - 76px);
   margin-top: 44px;
+}
+
+/* Below 600px the strip wraps to several lines, so dialogs sit above it instead of under it. */
+@media (max-width: 600px) {
+  .handoff-backdrop,
+  .cm-modal-backdrop {
+    z-index: 30;
+  }
+  .cm-modal-wide {
+    max-height: calc(100vh - 32px);
+    margin-top: 0;
+  }
 }
 
 .np-criteria {
