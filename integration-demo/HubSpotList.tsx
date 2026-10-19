@@ -36,6 +36,12 @@ export function roleView(jobId: string, group: RoleGroup): string {
   return group === 'shortlist' ? jobId : `${jobId}:${group}`;
 }
 
+/** Case-insensitive match on name or email, as the table search box does. */
+function matches(c: { fullName: string; email: string }, query: string): boolean {
+  const q = query.trim().toLowerCase();
+  return !q || c.fullName.toLowerCase().includes(q) || c.email.toLowerCase().includes(q);
+}
+
 function parseView(view: string): { jobId: string; group: RoleGroup } {
   const suffix = ':needs_review';
   return view.endsWith(suffix) ? { jobId: view.slice(0, -suffix.length), group: 'needs_review' } : { jobId: view, group: 'shortlist' };
@@ -44,6 +50,7 @@ function parseView(view: string): { jobId: string; group: RoleGroup } {
 /** HubSpot's contacts index. Saved views, rows and Import work; the rest is the host's chrome. */
 export function HubSpotList({ store, sources, comeet, view, onView, onOpen, onImport }: Props) {
   const [importing, setImporting] = useState(false);
+  const [query, setQuery] = useState('');
   const jobs = store.dataset.jobs;
   const role = view === 'all' ? null : parseView(view);
   const total = role
@@ -107,11 +114,17 @@ export function HubSpotList({ store, sources, comeet, view, onView, onOpen, onIm
               ))}
             </div>
           )}
-          <span className="hs-fake" aria-hidden="true">
-          <span className="hs-tablesearch">
-            Search name, phone, email
+          <label className="hs-tablesearch">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search name or email"
+              aria-label="Search contacts by name or email"
+            />
             <Icon icon={Search01Icon} size={16} />
-          </span>
+          </label>
+          <span className="hs-fake" aria-hidden="true">
           <span className="hs-filter">
             Contact owner <Icon icon={ArrowDown01Icon} size={14} />
           </span>
@@ -127,9 +140,9 @@ export function HubSpotList({ store, sources, comeet, view, onView, onOpen, onIm
           </span>
         </div>
         {role ? (
-          <RoleView key={view} store={store} comeet={comeet} jobId={role.jobId} group={role.group} onOpen={onOpen} />
+          <RoleView key={view} store={store} comeet={comeet} jobId={role.jobId} group={role.group} query={query} onOpen={onOpen} />
         ) : (
-          <AllContacts key="all" store={store} onOpen={onOpen} />
+          <AllContacts key={`all:${query}`} store={store} query={query} onOpen={onOpen} />
         )}
       </div>
 
@@ -167,6 +180,12 @@ function NameCell({ name, onOpen }: { name: string; onOpen: () => void }) {
   );
 }
 
+const NoMatch = ({ cols }: { cols: number }) => (
+  <tr className="hs-nomatch">
+    <td colSpan={cols}>No contacts match</td>
+  </tr>
+);
+
 const Check = () => (
   <td className="hs-col-check">
     <span className="hs-check" aria-hidden="true" />
@@ -174,9 +193,9 @@ const Check = () => (
 );
 
 /** Newest contacts first, as HubSpot sorts by create date. */
-function AllContacts({ store, onOpen }: { store: AssessmentStore; onOpen: Props['onOpen'] }) {
+function AllContacts({ store, query, onOpen }: { store: AssessmentStore; query: string; onOpen: Props['onOpen'] }) {
   const [page, setPage] = useState(0);
-  const people = [...store.dataset.candidates].reverse();
+  const people = [...store.dataset.candidates].reverse().filter((c) => matches(c, query));
   const pages = Math.max(1, Math.ceil(people.length / PAGE));
   const firstJob = store.dataset.jobs[0]!.jobId;
   return (
@@ -196,6 +215,7 @@ function AllContacts({ store, onOpen }: { store: AssessmentStore; onOpen: Props[
             </tr>
           </thead>
           <tbody>
+            {people.length === 0 && <NoMatch cols={6} />}
             {people.slice(page * PAGE, page * PAGE + PAGE).map((c) => {
               const last = c.attendances.at(-1);
               return (
@@ -236,20 +256,23 @@ function RoleView({
   comeet,
   jobId,
   group,
+  query,
   onOpen,
 }: {
   store: AssessmentStore;
   comeet: ComeetService;
   jobId: string;
   group: RoleGroup;
+  query: string;
   onOpen: Props['onOpen'];
 }) {
   const result = store.result(jobId);
-  const people = result.candidates.filter((a) => a.recommendation === group);
+  const inGroup = result.candidates.filter((a) => a.recommendation === group);
+  const people = inGroup.filter((a) => matches(a.candidate, query));
   const ranked = group === 'shortlist';
   const position = comeet.positionFor(jobId);
   const entries = useActivity();
-  if (people.length === 0) {
+  if (inGroup.length === 0) {
     return (
       <div className="hs-empty">
         <p className="hs-empty-title">No contacts match this view.</p>
@@ -275,6 +298,7 @@ function RoleView({
             </tr>
           </thead>
           <tbody>
+            {people.length === 0 && <NoMatch cols={ranked ? 8 : 7} />}
             {people.map((a) => {
               const c = a.candidate;
               const ref = referenceSummary(a);

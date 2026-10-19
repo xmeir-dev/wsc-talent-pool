@@ -44,6 +44,19 @@ const ACTIONS = [
   { label: 'More', icon: MoreHorizontalIcon },
 ];
 
+/** A long address wraps at the "@", never mid-word. */
+function EmailText({ email }: { email: string }) {
+  const at = email.lastIndexOf('@');
+  if (at <= 0) return <>{email}</>;
+  return (
+    <>
+      {email.slice(0, at)}
+      <wbr />
+      {email.slice(at)}
+    </>
+  );
+}
+
 /**
  * HubSpot's contact record: left sidebar, middle column tabs, right sidebar associations.
  * The Talent match app card sits at the top of the Overview tab (an app-card location HubSpot
@@ -95,7 +108,10 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
                 </h1>
                 <p>{[p?.currentTitle, company].filter(Boolean).join(' at ')}</p>
                 <p className="hs-email">
-                  <span className="hs-underline">{c.email}</span> <Icon icon={Copy01Icon} size={14} />
+                  <span className="hs-underline">
+                    <EmailText email={c.email} />
+                  </span>{' '}
+                  <Icon icon={Copy01Icon} size={14} />
                 </p>
               </div>
             </div>
@@ -143,7 +159,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
             </div>
             <dl className="hs-props">
               <dt>Email</dt>
-              <dd>{c.email || '--'}</dd>
+              <dd className="hs-break">{c.email ? <EmailText email={c.email} /> : '--'}</dd>
               <dt>LinkedIn</dt>
               <dd className="hs-break">{c.linkedinUrl || '--'}</dd>
               <dt>City</dt>
@@ -198,10 +214,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
                       </span>
                       <span className="muted">{item.date}</span>
                     </div>
-                    <p className="muted">
-                      {item.x.by}
-                      {item.x.simulated && ' · Simulated'}
-                    </p>
+                    <p className="muted">{item.x.by}</p>
                   </li>
                 ) : (
                   <li key={item.key}>

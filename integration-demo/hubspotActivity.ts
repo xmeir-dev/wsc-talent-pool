@@ -14,7 +14,6 @@ export interface LoggedActivity {
   /** YYYY-MM-DD, like the timeline's event dates. */
   date: string;
   by: string;
-  simulated: boolean;
 }
 
 const reached = (e: Entry) => e.kind === 'invite' && (e.state === 'sent' || e.state === 'confirmed');
@@ -30,7 +29,7 @@ export function timeline(entries: readonly Entry[], candidateKey: string): Logge
   return current(entries)
     .filter((e) => e.candidateKey === candidateKey)
     .sort((x, y) => Date.parse(y.at) - Date.parse(x.at))
-    .map((e) => ({ id: e.id, ...logged(e), date: e.at.slice(0, 10), by: e.by, simulated: e.simulated }));
+    .map((e) => ({ id: e.id, ...logged(e), date: e.at.slice(0, 10), by: e.by }));
 }
 
 /** HubSpot's "Last contacted" (YYYY-MM-DD), or null when the candidate has not been reached. */
