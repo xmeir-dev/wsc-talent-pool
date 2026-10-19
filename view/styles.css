@@ -656,6 +656,8 @@ ul {
   border-radius: 16px 16px 16px 4px;
   background: var(--ml-bg-surface);
   font-size: 15px;
+  /* Whole-pixel lines (15 × 1.5 = 22.5 would push everything below onto half pixels). */
+  line-height: 22px;
 }
 .d-byline {
   font-size: 12px;
@@ -680,6 +682,8 @@ ul {
   display: flex;
   align-items: center;
   gap: 12px;
+  /* Whole-pixel height so the 1px line never lands between pixels (a smeared, darker line). */
+  height: 12px;
   margin: 0 0 22px;
   font-size: 16px;
   font-weight: 600;
