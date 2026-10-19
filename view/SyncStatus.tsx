@@ -1,19 +1,81 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { ArrowDown01Icon, Refresh01Icon } from '@hugeicons/core-free-icons';
-import { Button, Popover } from '@meir-labs/ui-kit';
+import { ArrowDown01Icon, HelpCircleIcon, Refresh01Icon } from '@hugeicons/core-free-icons';
+import { Button, Popover, Tooltip } from '@meir-labs/ui-kit';
 import comeetIcon from './assets/comeet.png';
 import googleFormsIcon from './assets/google-forms.png';
 import hubspotIcon from './assets/hubspot.png';
 
 const MIN = 60_000;
 
-/** Made-up sync times for the demo: nothing connects here (see docs/assumptions.md). */
-const SOURCES = [
-  { key: 'hubspot', name: 'HubSpot', icon: hubspotIcon, ago: 4 * MIN },
-  { key: 'comeet', name: 'Comeet', icon: comeetIcon, ago: 2 * MIN },
-  { key: 'forms', name: 'Google Forms', icon: googleFormsIcon, ago: 60 * MIN },
-] as const;
+const ext = (href: string, text: string) => (
+  <a href={href} target="_blank" rel="noreferrer">
+    {text}
+  </a>
+);
+
+/** Each source and how WSC would connect it for real (checked against each tool's docs, 2026-10-19). Connecting here is a demo. */
+const SOURCES: { key: string; name: string; icon: string; steps: ReactNode[] }[] = [
+  {
+    key: 'hubspot',
+    name: 'HubSpot',
+    icon: hubspotIcon,
+    steps: [
+      <>Sign in to HubSpot as a Super Admin (or a user with Developer tools access).</>,
+      <>
+        Go to <b>Settings → Integrations → Service Keys</b> and click <b>Create a service key</b> (
+        {ext('https://developers.hubspot.com/blog/hubspot-service-keys-the-right-api-credential-for-data-integrations', 'HubSpot guide')}).
+      </>,
+      <>
+        Name it "WSC talent pool" and add these scopes: <code>crm.objects.contacts.read</code>, <code>crm.objects.contacts.write</code>,{' '}
+        <code>crm.schemas.contacts.write</code> (for the <code>talent_</code> properties), <code>crm.lists.read</code> and{' '}
+        <code>crm.lists.write</code>.
+      </>,
+      <>Click Create, copy the key, then click Connect here and paste it.</>,
+      <>Contacts start syncing; new conference contacts are assessed as they arrive.</>,
+    ],
+  },
+  {
+    key: 'comeet',
+    name: 'Comeet',
+    icon: comeetIcon,
+    steps: [
+      <>
+        In Comeet, open {ext('https://app.comeet.co/app/company/settings/careers', 'Company settings → Careers website')} and copy the company{' '}
+        <b>UID</b> and <b>Token</b>. These read the open jobs ({ext('https://developers.comeet.com/reference/careers-api-overview', 'Careers API')}).
+      </>,
+      <>
+        Email Comeet support and ask them to send{' '}
+        {ext('https://developers.comeet.com/reference/position-updates', 'position updates')} to this tool's address, so new and changed jobs
+        arrive on their own.
+      </>,
+      <>
+        Ask support to turn on the {ext('https://developers.comeet.com/reference/retrieve-a-candidate', 'Recruiting API')} (included in
+        Enterprise, a paid add-on on Pro and Growth). It shows who is already a candidate and lets <b>Invite to job</b> add people to a
+        position.
+      </>,
+      <>Click Connect here and paste the UID, the Token and the Recruiting API key.</>,
+    ],
+  },
+  {
+    key: 'forms',
+    name: 'Google Forms',
+    icon: googleFormsIcon,
+    steps: [
+      <>
+        In Google Drive, create a shared folder called "Event sign-ups" (
+        {ext('https://support.google.com/drive/answer/2375091', 'how to create a folder')}).
+      </>,
+      <>Move each event's sign-up form into it, or keep one shared form there with the event as a dropdown question.</>,
+      <>Click Connect here and sign in with the Google account that owns the folder. Allow read-only access to its forms and responses.</>,
+      <>
+        Every form in the folder is watched for new responses (
+        {ext('https://developers.google.com/workspace/forms/api/guides/push-notifications', 'Google Forms API')}); new sign-ups arrive within
+        minutes. Forms outside the folder are ignored.
+      </>,
+    ],
+  },
+];
 
 function relative(ms: number): string {
   const m = Math.floor(ms / MIN);
@@ -23,58 +85,103 @@ function relative(ms: number): string {
   return h === 1 ? '1 hr ago' : `${h} hr ago`;
 }
 
-/** "Synced 2 min ago": the arrow lists each source's last sync, with Sync now. */
+/** Header sync status: each source starts not connected; the panel connects them and syncs. */
 export function SyncStatus() {
   const [open, setOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-  const [last, setLast] = useState<Record<string, number>>(() =>
-    Object.fromEntries(SOURCES.map((s) => [s.key, Date.now() - s.ago])),
-  );
+  // Last sync per connected source; missing means not connected.
+  const [last, setLast] = useState<Record<string, number>>({});
+  const [connecting, setConnecting] = useState<string | null>(null);
+  const [howTo, setHowTo] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
-  // Keep "x min ago" current.
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(id);
   }, []);
-  const newest = Math.max(...Object.values(last));
+  const times = Object.values(last);
+  const connected = times.length > 0;
 
+  const connect = (key: string) => {
+    setConnecting(key);
+    window.setTimeout(() => {
+      const t = Date.now();
+      setLast((l) => ({ ...l, [key]: t }));
+      setNow(t);
+      setConnecting(null);
+      setHowTo((h) => (h === key ? null : h));
+    }, 1100);
+  };
   const syncNow = () => {
     setSyncing(true);
     window.setTimeout(() => {
       const t = Date.now();
-      setLast(Object.fromEntries(SOURCES.map((s) => [s.key, t])));
+      setLast((l) => Object.fromEntries(Object.keys(l).map((k) => [k, t])));
       setNow(t);
       setSyncing(false);
     }, 1400);
   };
+  const shown = SOURCES.find((s) => s.key === howTo);
 
   return (
     <Popover placement="bottom-end" open={open} onOpenChange={setOpen}>
-      <Popover.Trigger className="sync-trigger">
-        {syncing ? 'Syncing…' : `Synced ${relative(now - newest)}`}
+      <Popover.Trigger className={`sync-trigger${connected ? '' : ' is-off'}`}>
+        {syncing ? 'Syncing…' : connected ? `Synced ${relative(now - Math.max(...times))}` : 'Not connected'}
         <HugeiconsIcon icon={ArrowDown01Icon} size={14} strokeWidth={1.75} aria-hidden="true" />
       </Popover.Trigger>
-      <Popover.Content className="sync-pop" aria-label="Last syncs">
-        <ul className="sync-list">
-          {SOURCES.map((s) => (
-            <li key={s.key}>
-              <img src={s.icon} alt="" width={18} height={18} />
-              <span className="sync-name">{s.name}</span>
-              <span className="sync-when">
-                {syncing ? (
-                  <HugeiconsIcon icon={Refresh01Icon} size={14} strokeWidth={1.75} className="sync-spin" aria-label="Syncing" />
-                ) : (
-                  relative(now - last[s.key]!)
+      <Popover.Content className="sync-pop" aria-label="Connected sources">
+        <div className="sync-cards">
+          {SOURCES.map((s) => {
+            const at = last[s.key];
+            return (
+              <section key={s.key} className="sync-card" aria-label={s.name}>
+                <div className="sync-card-top">
+                  <img src={s.icon} alt="" width={20} height={20} />
+                  <Tooltip content="How to connect">
+                    <button
+                      type="button"
+                      className="sync-how"
+                      aria-label={`How to connect ${s.name}`}
+                      aria-expanded={howTo === s.key}
+                      onClick={() => setHowTo((h) => (h === s.key ? null : s.key))}
+                    >
+                      <HugeiconsIcon icon={HelpCircleIcon} size={16} strokeWidth={1.75} />
+                    </button>
+                  </Tooltip>
+                </div>
+                <span className="sync-name">{s.name}</span>
+                <span className="sync-when">
+                  {at === undefined ? (
+                    'Not connected'
+                  ) : syncing ? (
+                    <HugeiconsIcon icon={Refresh01Icon} size={14} strokeWidth={1.75} className="sync-spin" aria-label="Syncing" />
+                  ) : (
+                    `Synced ${relative(now - at)}`
+                  )}
+                </span>
+                {at === undefined && (
+                  <Button size="sm" variant="secondary" disabled={connecting !== null} onClick={() => connect(s.key)}>
+                    {connecting === s.key ? 'Connecting…' : 'Connect'}
+                  </Button>
                 )}
-              </span>
-            </li>
-          ))}
-        </ul>
+              </section>
+            );
+          })}
+        </div>
+        {shown && (
+          <div className="sync-steps">
+            <p className="sync-steps-title">Connect {shown.name}</p>
+            <ol>
+              {shown.steps.map((step, i) => (
+                <li key={i}>{step}</li>
+              ))}
+            </ol>
+          </div>
+        )}
         <Button
           variant="secondary"
           size="sm"
           className="sync-now"
-          disabled={syncing}
+          disabled={!connected || syncing}
           onClick={syncNow}
           leftIcon={<HugeiconsIcon icon={Refresh01Icon} size={16} strokeWidth={1.75} className={syncing ? 'sync-spin' : undefined} />}
         >

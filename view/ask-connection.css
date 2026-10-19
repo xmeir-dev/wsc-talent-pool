@@ -426,27 +426,69 @@
   outline: 2px solid var(--ml-text);
   outline-offset: 2px;
 }
+.sync-trigger.is-off {
+  color: var(--ml-color-warning);
+}
 .sync-pop.sync-pop {
-  width: 300px;
+  width: min(620px, calc(100vw - 32px));
+  max-width: none;
+  display: grid;
+  gap: 6px;
   padding: 6px;
 }
-.sync-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.sync-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 }
-.sync-list li {
+.sync-card {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--ml-border-subtle);
+  border-radius: 10px;
 }
-.sync-list img {
+.sync-card .ml-btn {
+  align-self: stretch;
+  margin-top: 6px;
+}
+.sync-card-top {
+  display: flex;
+  align-self: stretch;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.sync-card-top img {
   display: block;
   border-radius: 4px;
 }
+.sync-how {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin: -4px -6px -4px 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ml-text-faint);
+  cursor: pointer;
+}
+.sync-how:hover,
+.sync-how[aria-expanded='true'] {
+  background: var(--ml-bg-surface);
+  color: var(--ml-text);
+}
+.sync-how:focus-visible {
+  outline: 2px solid var(--ml-text);
+  outline-offset: 1px;
+}
 .sync-name {
-  flex: 1;
+  font-weight: 600;
 }
 .sync-when {
   display: inline-flex;
@@ -454,9 +496,43 @@
   color: var(--ml-text-faint);
   white-space: nowrap;
 }
+/* The expanded how-to spans the panel under the cards. */
+.sync-steps {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--ml-bg-surface);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ml-text-muted);
+}
+.sync-steps-title {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: var(--ml-text);
+}
+.sync-steps ol {
+  margin: 0;
+  padding-left: 18px;
+}
+.sync-steps li + li {
+  margin-top: 4px;
+}
+.sync-steps a {
+  color: var(--ml-text);
+}
+.sync-steps code {
+  font-size: 12px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--ml-bg-card);
+}
+@media (max-width: 720px) {
+  .sync-cards {
+    grid-template-columns: 1fr;
+  }
+}
 .sync-now {
   width: 100%;
-  margin-top: 4px;
 }
 .sync-spin {
   animation: sync-spin 900ms linear infinite;
