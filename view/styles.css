@@ -234,7 +234,6 @@ ul {
 
 /* Same type as the profile's section titles (Overview, Fit to WSC roles). */
 .list-count {
-  margin-right: var(--ml-space-sm);
   font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -251,8 +250,8 @@ ul {
   margin-bottom: var(--ml-space-md);
 }
 .list-count {
-  /* Room for the widest count, so the filters do not shift while a menu is open. */
-  min-width: 9.5em;
+  /* Sized to its text: the filters sit one gap after it (they move a little as the count changes). */
+  margin-right: 4px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -265,7 +264,8 @@ ul {
   max-width: 100%;
   padding: 0 12px;
   border: 0;
-  border-radius: 8px;
+  /* Same corners as the table below. */
+  border-radius: 16px;
   background: var(--ml-bg-surface);
   color: var(--ml-text);
   font: inherit;
