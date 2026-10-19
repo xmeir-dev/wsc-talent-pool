@@ -212,10 +212,10 @@ function Workspace({ dataset }: { dataset: Dataset }) {
         onChange={setCountries}
         featured={{ label: 'WSC offices', values: Object.keys(offices.offices), more: (n) => `${n} more countries` }}
       />
-      <Button variant="secondary" className="export" onClick={onExport} aria-label="Download">
+      <Button variant="secondary" className="export" onClick={onExport} aria-label="Download CSV">
         <HugeiconsIcon icon={Download04Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
         <span className="export-label" aria-hidden="true">
-          Download
+          Download CSV
         </span>
       </Button>
     </div>

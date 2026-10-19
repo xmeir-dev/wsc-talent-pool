@@ -365,7 +365,7 @@ ul {
 }
 .export:hover .export-label,
 .export:focus-visible .export-label {
-  max-width: 80px;
+  max-width: 120px;
   margin-left: 6px;
   opacity: 1;
 }
@@ -736,7 +736,7 @@ ul {
   }
   /* No hover on touch: a full-width button shows its label. */
   .filters .export .export-label {
-    max-width: 80px;
+    max-width: 120px;
     margin-left: 6px;
     opacity: 1;
   }

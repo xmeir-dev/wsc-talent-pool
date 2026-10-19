@@ -121,7 +121,7 @@ test('clicking a column header sorts the attendee list', async ({ page }) => {
 
 test('Download sits on the filter line, right-aligned', async ({ page }) => {
   await page.goto('/');
-  const exportBox = (await page.getByRole('button', { name: 'Download' }).boundingBox())!;
+  const exportBox = (await page.getByRole('button', { name: 'Download CSV' }).boundingBox())!;
   const jobBox = (await trigger(page, 'Job').boundingBox())!;
   const tableBox = (await page.locator('.ml-dt-root').boundingBox())!;
   expect(Math.abs(exportBox.y + exportBox.height / 2 - (jobBox.y + jobBox.height / 2))).toBeLessThan(2);
@@ -181,7 +181,7 @@ test('export: a job downloads the same bytes the CLI writes; no job downloads th
   const errors = watchErrors(page);
   await page.goto('/');
   const exportNow = async () => {
-    const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download' }).click()]);
+    const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download CSV' }).click()]);
     return download;
   };
 
