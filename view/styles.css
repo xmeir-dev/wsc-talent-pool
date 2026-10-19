@@ -592,8 +592,14 @@ ul {
   outline: 2px solid var(--ml-text);
   outline-offset: 2px;
 }
+/* Name and Invite stay in view while the profile scrolls under them. */
 .page-head.d-head {
-  margin-bottom: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin: calc(-1 * var(--ml-space-lg)) 0 0;
+  padding: var(--ml-space-lg) 0 var(--ml-space-sm);
+  background: var(--ml-bg);
 }
 .d-name {
   display: flex;
