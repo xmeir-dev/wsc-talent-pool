@@ -258,11 +258,12 @@ function JobFit({ a, job, outcome, onJob }: { a: CandidateAssessment; job: Job; 
   const profile = a.candidate.profile;
   const checks = fitChecks(a, job);
   const shortlisted = outcome === 'shortlist';
-  const verdictTip = shortlisted ? a.tieNote && upperFirst(a.tieNote) : checks.filter((k) => !k.ok).map((k) => k.tip).join('. ');
+  // Maybe relevant says why on hover; the rank stays on the list page.
+  const verdictTip = shortlisted ? '' : checks.filter((k) => !k.ok).map((k) => k.tip).join('. ');
   const verdict = (
     <span className="d-verdict">
       <HugeiconsIcon icon={shortlisted ? CheckmarkBadge01Icon : HelpCircleIcon} size={16} strokeWidth={1.75} aria-hidden="true" />
-      {shortlisted ? `Shortlisted${a.shortlistRank !== null ? ` · #${a.shortlistRank}` : ''}` : 'Maybe relevant'}
+      {shortlisted ? 'Shortlisted' : 'Maybe relevant'}
     </span>
   );
   // The verdict sits in the card's header, which is tinted green (shortlisted) or amber (maybe relevant).
@@ -298,7 +299,6 @@ const linkedinHref = (url: string) => (/^https?:\/\//.test(url) ? url : `https:/
 /** Assumed record links: the snapshot's HS… IDs are source IDs, not HubSpot record IDs, and Comeet is searched by email. */
 const hubspotRecord = (id: string) => `https://app.hubspot.com/contacts/record/0-1/${id}`;
 const comeetSearch = (q: string) => `https://app.comeet.co/app/candidates?search=${encodeURIComponent(q)}`;
-const upperFirst = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** A section heading with a hairline running to the right edge. */
 function SectionTitle({ children }: { children: ReactNode }) {
