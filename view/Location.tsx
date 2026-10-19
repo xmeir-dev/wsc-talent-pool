@@ -9,7 +9,7 @@ const FLAGS: Record<string, FlagComponent> = { AE, AR, AT, AU, CA, CH, CZ, DE, D
 /** A small flag after the name; city and country on hover. */
 export function CountryFlag({ c }: { c: Candidate }) {
   const place = placeOf(c);
-  const F = place && FLAGS[place.code];
+  const F = place && Object.hasOwn(FLAGS, place.code) ? FLAGS[place.code] : undefined;
   if (!place || !F) return null;
   return (
     <Hint tip={`${place.city}, ${place.country}`} focusable={false} className="flag">

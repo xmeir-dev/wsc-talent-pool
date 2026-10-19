@@ -14,6 +14,7 @@ import type {
   Recommendation,
 } from '../pipeline';
 import { minYearsFor, policyFor } from '../pipeline';
+import { ownEntry } from '../pipeline/text';
 
 /** "JOB001 · Senior ML Engineer": how a job reads in pickers. */
 export function jobLabel(job: Job): string {
@@ -30,7 +31,7 @@ const CONFERENCE_SHORT: Record<string, string> = {
 
 /** "Data & AI Summit Europe" → "Data & AI Summit": how a conference reads in the filter. Unknown names stay whole. */
 export function conferenceShort(name: string): string {
-  return CONFERENCE_SHORT[name] ?? name;
+  return ownEntry(CONFERENCE_SHORT, name) ?? name;
 }
 
 /** "Senior Product Manager - Sports Data" → "Senior PM - Sports Data": the job filter's button only. */

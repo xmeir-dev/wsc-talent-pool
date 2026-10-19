@@ -3,6 +3,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Cancel01Icon, MailAdd01Icon } from '@hugeicons/core-free-icons';
 import { Avatar, Button, Popover, Select } from '@meir-labs/ui-kit';
 import type { Candidate, Job } from '../pipeline';
+import { ownEntry } from '../pipeline/text';
 import recruiters from '../data/demo_recruiters.json';
 import type { Relevant } from './attendees';
 import comeetIcon from './assets/comeet.png';
@@ -15,7 +16,7 @@ const firstName = (name: string) => name.split(' ')[0] ?? name;
 
 /** Signed by the recruiter who met them (made up, see data/demo_recruiters.json). */
 function senderFor(c: Candidate) {
-  return c.attendances.map((at) => RECRUITERS[at.conferenceName]).find(Boolean) ?? null;
+  return c.attendances.map((at) => ownEntry(RECRUITERS, at.conferenceName)).find(Boolean) ?? null;
 }
 
 export function inviteMessage(c: Candidate, job: Job): string {

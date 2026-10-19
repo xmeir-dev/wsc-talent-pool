@@ -4,7 +4,7 @@
  */
 
 import { CONFERENCE_DOMAINS } from './rules';
-import { containsTerm, normalize } from './text';
+import { containsTerm, normalize, ownEntry } from './text';
 import type { Attendance, EventAssessment, Profile } from './types';
 
 export function assessEvent(attendance: Attendance, profile: Profile | null): EventAssessment {
@@ -17,7 +17,7 @@ export function assessEvent(attendance: Attendance, profile: Profile | null): Ev
       explanation: 'no LinkedIn profile to assess',
     };
   }
-  const rule = CONFERENCE_DOMAINS[normalize(domain)];
+  const rule = ownEntry(CONFERENCE_DOMAINS, normalize(domain));
   if (!rule) {
     return {
       attendance,
