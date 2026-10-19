@@ -93,13 +93,26 @@ ul {
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
+.pool-label-text {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ml-text-muted);
+}
 .pool-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 0;
   border: 0;
   background: none;
   font: inherit;
-  color: var(--ml-text);
+  font-size: 13px;
+  color: var(--ml-text-faint);
   cursor: pointer;
+  transition: color 150ms ease-out;
 }
 .pool-toggle:hover {
   color: var(--ml-text-muted);

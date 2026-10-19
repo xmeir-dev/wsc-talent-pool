@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import { Add01Icon, Briefcase04Icon, ConferenceIcon } from '@hugeicons/core-free-icons';
+import { Add01Icon, ArrowDown01Icon, ArrowUp01Icon, Briefcase04Icon, ConferenceIcon } from '@hugeicons/core-free-icons';
 import { Button } from '@meir-labs/ui-kit';
 import type { Pool } from './attendees';
 import { shortDate } from './format';
@@ -19,12 +19,13 @@ function PoolCard({ icon, label, count, rows, action, primary }: { icon: IconSvg
         <div>
           <span className="muted pool-label">
             <HugeiconsIcon icon={icon} size={32} strokeWidth={1.5} aria-hidden="true" />
-            {label}
+            <span className="pool-label-text">{label}</span>
           </span>
           <p className="pool-count">{count}</p>
           <p className="pool-toggle-row">
             <button type="button" className="pool-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
               {open ? 'Show less' : 'See all'}
+              <HugeiconsIcon icon={open ? ArrowUp01Icon : ArrowDown01Icon} size={14} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </p>
         </div>
