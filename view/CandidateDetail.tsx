@@ -16,7 +16,7 @@ import {
   Tick02Icon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
-import { Avatar, Button, Hint } from '@meir-labs/ui-kit';
+import { Avatar, Hint } from '@meir-labs/ui-kit';
 import { policyFor, type CandidateAssessment, type EmploymentSpell, type Job, type OutputRow, type PossibleReference, type SkillMatch } from '../pipeline';
 import type { Attendee, Relevant } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
@@ -24,6 +24,7 @@ import { AVATAR, initials } from './avatars';
 import { CHECK_ICON } from './CandidateTable';
 import comeetIcon from './assets/comeet.png';
 import hubspotIcon from './assets/hubspot.png';
+import { InviteToJob } from './InviteToJob';
 import { CountryFlag } from './Location';
 import { overviewFor } from './Overview';
 import { currentRole, fitChecks, shortDate, years } from './format';
@@ -381,24 +382,9 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
           </div>
           <p className="muted">{currentRole(row)}</p>
         </div>
-        {(c.email || c.linkedinUrl) && (
-          <div className="d-reach">
-            {c.email && (
-              <Button href={`mailto:${c.email}`} leftIcon={<HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.75} />}>
-                Email
-              </Button>
-            )}
-            {c.linkedinUrl && (
-              // The kit Button has no target prop; same classes, so it matches the Email button.
-              <a className="ml-btn ml-btn-secondary ml-btn-size-md" href={linkedinHref(c.linkedinUrl)} target="_blank" rel="noreferrer">
-                <span className="ml-btn-icon-slot" aria-hidden="true">
-                  <HugeiconsIcon icon={Linkedin01Icon} size={16} strokeWidth={1.75} />
-                </span>
-                <span className="ml-btn-label">LinkedIn</span>
-              </a>
-            )}
-          </div>
-        )}
+        <div className="d-reach">
+          <InviteToJob key={c.candidateKey} c={c} fits={ordered} />
+        </div>
       </header>
 
       <Lead a={a} />
