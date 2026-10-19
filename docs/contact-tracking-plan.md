@@ -32,7 +32,7 @@ Why it matters:
 
 | Where | What appears | What it is for |
 | --- | --- | --- |
-| Main table | Each role's status beside that role's chip in the Relevant job column ("Not contacted" is left unsaid) | Scan a role's pool for who still needs a first touch |
+| Main table | Each role's status as a small pill inside that role's chip in the Relevant job column, in place of the fit icon ("Not contacted" is left unsaid) | Scan a role's pool for who still needs a first touch |
 | Filter line | A **Status** filter next to Conference, Job and Location | "Shortlisted for Data Engineer and not contacted yet" in two clicks |
 | Profile page | An **Activity** card: each entry with its role, action state (Prepared, Sent, Failed, Confirmed, Simulated), who and when; a separate **Reference requests** list; person-wide flags at the top | Context before contacting someone |
 | Invite and Ask panels | A block, not a warning, when a rule applies: "Already interviewing for Data Engineer (Comeet)", "Asked not to be contacted", "Noa was already asked about Alex on 12 Oct" | No unwanted or repeated contact |

@@ -123,25 +123,24 @@ function RelevantFor({ list, statusOf }: { list: Attendee['relevantFor']; status
             </span>
           </span>
         );
-        // Outreach status for this role sits beside its chip; "Not contacted" is the default and stays unsaid.
+        // Outreach status for this role, as a small pill inside the chip in place of the fit icon; "Not contacted" stays unsaid.
         const s = statusOf({ jobId: job.jobId, title: job.title });
         return (
-          <span key={job.jobId} className="job-line">
-            <Hint tip={why} focusable={false}>
-              <span className={`fit ${shortlisted ? 'is-shortlist' : 'is-review'}`}>
-                <span className="fit-title">
-                  {job.title}
-                  <span className="ml-visually-hidden">{`: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
-                </span>
+          <Hint key={job.jobId} tip={why} focusable={false}>
+            <span className={`fit ${shortlisted ? 'is-shortlist' : 'is-review'}`}>
+              <span className="fit-title">
+                {job.title}
+                <span className="ml-visually-hidden">{`: ${TABLE_OUTCOME_LABEL[outcome]}`}</span>
+              </span>
+              {s.status === 'not_contacted' ? (
                 <HugeiconsIcon icon={shortlisted ? CheckmarkBadge01Icon : HelpCircleIcon} size={14} strokeWidth={1.75} aria-hidden="true" />
-              </span>
-            </Hint>
-            {s.status !== 'not_contacted' && (
-              <span className="job-status" title={s.simulated ? 'Simulated' : undefined}>
-                {STATUS_LABEL[s.status]}
-              </span>
-            )}
-          </span>
+              ) : (
+                <span className="fit-status" title={s.simulated ? 'Simulated' : undefined}>
+                  {STATUS_LABEL[s.status]}
+                </span>
+              )}
+            </span>
+          </Hint>
         );
       })}
     </span>

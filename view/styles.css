@@ -1447,14 +1447,17 @@ ul {
   display: contents;
 }
 
-/* A job chip with its outreach status beside it, quietly. */
-.job-line {
+/* A role's outreach status: a small white pill inside its job chip, where the fit icon was. */
+.fit .fit-status {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-}
-.job-status {
-  font-size: 12px;
+  height: 18px;
+  margin-right: -4px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--ml-bg-card);
+  font-size: 11px;
+  font-weight: 500;
   color: var(--ml-text-muted);
   white-space: nowrap;
 }
