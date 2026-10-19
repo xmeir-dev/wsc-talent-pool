@@ -810,15 +810,24 @@ ul {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* The arrow's space is always kept; it fades in on hover to say the link opens elsewhere. */
+/* At rest the arrow takes no room (negative margin = its width + the gap); on hover it slides in and pushes the text left. */
 .d-contact a svg {
   flex-shrink: 0;
+  margin-left: -18px;
   opacity: 0;
-  transition: opacity 150ms ease-out;
+  transition:
+    margin-left 150ms ease-out,
+    opacity 150ms ease-out;
 }
 .d-contact a:hover svg,
 .d-contact a:focus-visible svg {
+  margin-left: 0;
   opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .d-contact a svg {
+    transition: none;
+  }
 }
 .d-contact a:hover,
 .d-contact a:focus-visible {
