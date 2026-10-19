@@ -38,7 +38,7 @@ describe('assessment store', () => {
 
 describe('simulated Comeet handoff', () => {
   it('creates a Sourced candidate with the assessment in custom fields', async () => {
-    const comeet = createSimulatedComeet({ isAvailable: () => true, delayMs: 0 });
+    const comeet = createSimulatedComeet({ isAvailable: () => true, delayMs: 0, people: store.dataset.candidates });
     const r = await comeet.handoff(handoffFor(comeet, 'Priya Anand', 'JOB001'));
     expect(r.kind).toBe('created');
     if (r.kind !== 'created') return;
@@ -50,7 +50,7 @@ describe('simulated Comeet handoff', () => {
   });
 
   it('returns the existing record on a repeat handoff instead of a duplicate', async () => {
-    const comeet = createSimulatedComeet({ isAvailable: () => true, delayMs: 0 });
+    const comeet = createSimulatedComeet({ isAvailable: () => true, delayMs: 0, people: store.dataset.candidates });
     const payload = handoffFor(comeet, 'Priya Anand', 'JOB001');
     const first = await comeet.handoff(payload);
     const second = await comeet.handoff(payload);
@@ -59,8 +59,8 @@ describe('simulated Comeet handoff', () => {
   });
 
   it('finds a person already in an active process', async () => {
-    const comeet = createSimulatedComeet({ isAvailable: () => true, delayMs: 0 });
-    const payload = handoffFor(comeet, 'Lucas Evans', 'JOB001');
+    const comeet = createSimulatedComeet({ isAvailable: () => true, delayMs: 0, people: store.dataset.candidates });
+    const payload = handoffFor(comeet, 'Ryan Patel', 'JOB004');
     const found = await comeet.find(payload.email, payload.positionUid);
     expect(found.kind === 'found' && found.candidate?.stage).toBe('Phone screen');
     expect((await comeet.handoff(payload)).kind).toBe('existing');

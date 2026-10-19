@@ -1,8 +1,10 @@
 /**
- * Demo-only Comeet fixtures. Fictional positions, recruiters and statuses; nothing here comes from
- * the supplied CSVs or from a real Comeet account.
+ * Demo-only Comeet fixtures. Fictional positions and recruiters. The Comeet history is the same made-up
+ * file the recruiter view reads (data/demo_comeet.json); nothing here comes from a real Comeet account.
  */
 
+import type { Candidate } from '../pipeline';
+import { activeInComeet, comeetFor, type ComeetRecord } from '../view/activity';
 import type { ComeetCandidate, ComeetPosition } from './comeet';
 
 export const POSITIONS: ComeetPosition[] = [
@@ -12,27 +14,50 @@ export const POSITIONS: ComeetPosition[] = [
   { uid: 'POS-DE-004', jobId: 'JOB004', name: 'Data Engineer' },
 ];
 
-/** One person already in an active process, so the demo can show "already in Comeet". */
-export function seedCandidates(): ComeetCandidate[] {
-  return [
-    {
-      uid: 'CMT-1042',
-      positionUid: 'POS-ML-001',
-      positionName: 'Senior ML Engineer',
-      firstName: 'Lucas',
-      lastName: 'Evans',
-      email: 'l.evans@img.com',
-      linkedinUrl: 'linkedin.com/in/lucas-evans-img',
-      location: 'London UK',
-      tags: ['Python', 'PyTorch', 'Computer Vision', 'AWS'],
-      addedOn: 'Oct 2, 2026',
-      status: 'In progress',
-      stage: 'Phone screen',
-      owner: 'Dana (fictional recruiter)',
-      nextStep: 'Dana is booking a phone screen. Check with Dana before contacting Lucas.',
-      source: 'Referral',
-      customFields: null,
-      note: '',
-    },
-  ];
+const OWNER = 'Dana (fictional recruiter)';
+const sentence = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const addedOn = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+
+/** How a shared history record reads as a Comeet candidate in the position. */
+function workflow(r: ComeetRecord, first: string): Pick<ComeetCandidate, 'status' | 'stage' | 'owner' | 'nextStep'> {
+  if (r.kind === 'lead' && !activeInComeet(r))
+    return { status: 'Sourced', stage: 'Sourced', owner: 'Unassigned', nextStep: 'Assign an owner, who reviews the fit and decides on outreach.' };
+  if (activeInComeet(r)) {
+    const stage = sentence(r.outcome.replace(/^in process:\s*/i, ''));
+    return { status: 'In progress', stage, owner: OWNER, nextStep: `Dana is running the ${stage.toLowerCase()}. Check with Dana before contacting ${first}.` };
+  }
+  const stage = sentence(r.outcome.replace(/^rejected (after|at)\s*/i, ''));
+  return { status: 'Rejected', stage, owner: OWNER, nextStep: `Closed. Check with Dana before approaching ${first} again.` };
+}
+
+/** Everyone in the pool with a shared Comeet record for an open position. */
+export function seedCandidates(people: readonly Candidate[], positions: readonly ComeetPosition[]): ComeetCandidate[] {
+  let uid = 1040;
+  return people.flatMap((c) =>
+    comeetFor(c.candidateKey).flatMap((r) => {
+      const position = positions.find((p) => p.name === r.job);
+      if (!position) return [];
+      const [firstName = '', ...rest] = c.fullName.split(' ');
+      return [
+        {
+          uid: `CMT-${uid++}`,
+          positionUid: position.uid,
+          positionName: position.name,
+          firstName,
+          lastName: rest.join(' '),
+          email: c.email,
+          linkedinUrl: c.linkedinUrl,
+          sourceContactId: c.candidateKey,
+          location: c.profile?.location ?? '',
+          tags: [],
+          addedOn: addedOn(r.date),
+          ...workflow(r, firstName),
+          source: 'Added in Comeet',
+          customFields: null,
+          note: '',
+        },
+      ];
+    }),
+  );
 }

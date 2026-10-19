@@ -12,10 +12,12 @@ import {
   Task01Icon,
 } from '@hugeicons/core-free-icons';
 import { useEffect, useRef, useState } from 'react';
+import { useActivity } from '../view/activity';
 import { RELEVANCE_LABEL } from '../view/format';
 import type { AssessmentStore } from './assessments';
 import type { ComeetService } from './comeet';
 import { HandoffDialog } from './HandoffDialog';
+import { lastContacted, timeline } from './hubspotActivity';
 import { comeetStatusText } from './comeetStatus';
 import { Icon } from './Icon';
 import { initials } from './initials';
@@ -50,6 +52,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
   const [handoffOpen, setHandoffOpen] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => heading.current?.focus(), []);
+  const activity = useActivity();
 
   const entry = store.get(candidateKey, jobId);
   if (!entry) return null;
@@ -60,6 +63,12 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
   const position = comeet.positionFor(jobId);
   const status = position ? comeetStatusText(comeet.statusFor(c, position.uid)) : '--';
   const company = p?.currentCompany || c.attendances.at(-1)?.listedCompany || '';
+  // Outreach from the recruiter app joins event attendance in one timeline, newest first.
+  const logged = timeline(activity, candidateKey);
+  const items = [
+    ...logged.map((x) => ({ key: x.id, date: x.date, x })),
+    ...a.events.map((e) => ({ key: e.attendance.hubspotId, date: e.attendance.conferenceDate, e })),
+  ].sort((m, n) => n.date.localeCompare(m.date));
 
   return (
     <>
@@ -116,7 +125,7 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
               <dt>Comeet status ({entry.result.job.title})</dt>
               <dd data-testid="hs-comeet-status">{status}</dd>
               <dt>Last contacted</dt>
-              <dd>--</dd>
+              <dd data-testid="hs-last-contacted">{lastContacted(activity, candidateKey) ?? '--'}</dd>
             </dl>
           </section>
 
@@ -169,21 +178,36 @@ export function HubSpotContact({ store, comeet, candidateKey, jobId, onJobChange
               <h2 id="hs-recent">Recent activities</h2>
             </div>
             <ul className="hs-activities">
-              {a.events.map((e) => (
-                <li key={e.attendance.hubspotId}>
-                  <div className="hs-activity-head">
-                    <span>
-                      <Icon icon={ArrowRight01Icon} size={14} /> <strong>Event attendance</strong> · {e.attendance.conferenceName}
-                    </span>
-                    <span className="muted">{e.attendance.conferenceDate}</span>
-                  </div>
-                  <p className="muted">
-                    Listed as {e.attendance.listedTitle || 'no title'}, {e.attendance.listedCompany || 'no company'} ·{' '}
-                    {RELEVANCE_LABEL[e.relevance]} to this role
-                  </p>
-                  {e.attendance.notes && <p>"{e.attendance.notes}"</p>}
-                </li>
-              ))}
+              {items.map((item) =>
+                'x' in item ? (
+                  <li key={item.key}>
+                    <div className="hs-activity-head">
+                      <span>
+                        <Icon icon={ArrowRight01Icon} size={14} /> <strong>{item.x.type}</strong> · {item.x.title}
+                      </span>
+                      <span className="muted">{item.date}</span>
+                    </div>
+                    <p className="muted">
+                      {item.x.by}
+                      {item.x.simulated && ' · Simulated'}
+                    </p>
+                  </li>
+                ) : (
+                  <li key={item.key}>
+                    <div className="hs-activity-head">
+                      <span>
+                        <Icon icon={ArrowRight01Icon} size={14} /> <strong>Event attendance</strong> · {item.e.attendance.conferenceName}
+                      </span>
+                      <span className="muted">{item.date}</span>
+                    </div>
+                    <p className="muted">
+                      Listed as {item.e.attendance.listedTitle || 'no title'}, {item.e.attendance.listedCompany || 'no company'} ·{' '}
+                      {RELEVANCE_LABEL[item.e.relevance]} to this role
+                    </p>
+                    {item.e.attendance.notes && <p>"{item.e.attendance.notes}"</p>}
+                  </li>
+                ),
+              )}
             </ul>
           </section>
         </main>

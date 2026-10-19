@@ -33,7 +33,7 @@ None of this feeds the ranking. Each item is made up because the supplied files 
 
 - **AI summaries.** Attendees with no recruiter note get a one-line summary written by an AI model from their LinkedIn fields (`data/ai_summaries.json`), labelled "AI summary" on screen.
 - **Recruiters and avatars.** The files don't say who wrote a conference note, so each conference has an invented recruiter (`data/demo_recruiters.json`). Employee and recruiter avatars are generated illustrations.
-- **Comeet history.** Four people have made-up Comeet records (`data/demo_comeet.json`): Alex Turner (rejected for Senior PM), Ryan Patel (in process for Data Engineer), James Thornton (rejected for an older role) and Scarlett Green (an uncontacted lead). Production reads them from the Comeet Recruiting API, matched by email.
+- **Comeet history.** Four people have made-up Comeet records (`data/demo_comeet.json`): Alex Turner (rejected for Senior PM), Ryan Patel (in process for Data Engineer), James Thornton (rejected for an older role) and Scarlett Green (an uncontacted lead). The integration demo seeds its simulated Comeet from the same file and applies the same contact rules. Production reads them from the Comeet Recruiting API, matched by email.
 - **Sample meetup.** `data/samples/wsc_product_meetup.csv` is a made-up WSC product meetup: three returning attendees and five new people, whose LinkedIn profiles come in `wsc_product_meetup_profiles.csv` (standing in for the profile lookup production runs). Adding it fills the empty Senior PM shortlist with Lior Ben-David and Maya Levin, which is Shir's "product meetup, then a product role opens" story from the call.
 
 **Links and addresses**

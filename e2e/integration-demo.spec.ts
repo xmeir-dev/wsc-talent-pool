@@ -33,7 +33,7 @@ test('morning after: the overnight notice leads to the shortlist, then card → 
   await expect(page.getByText('Integration concept · synthetic data · no live connection.')).toBeVisible();
   await expect(notices(page)).toContainText('Talent match ran overnight');
   await expect(notices(page)).toContainText('75 conference contacts from 4 events scored for 4 open roles.');
-  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 6 shortlist · 6 to review' }).click();
+  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 6 shortlist · 6 needs review' }).click();
   await expect(notices(page)).toHaveCount(0);
   await expect(shortlist(page).locator('tbody tr')).toHaveCount(6);
   await expect(shortlist(page).locator('tbody tr').first()).toContainText('Priya Anand');
@@ -43,6 +43,8 @@ test('morning after: the overnight notice leads to the shortlist, then card → 
   await expect(page.getByRole('heading', { level: 1, name: 'Priya Anand' })).toBeFocused();
   await expect(card(page).getByTestId('tm-outcome')).toHaveText('Shortlist · #1');
   await expect(card(page)).toContainText('Leads, not endorsements.');
+  await expect(card(page)).toContainText('Same company, ');
+  await expect(card(page)).not.toContainText(/worked together/i);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 
   await card(page).getByRole('button', { name: 'Add to Comeet' }).focus();
@@ -70,11 +72,12 @@ test('Comeet status flows back to HubSpot: card, record and list', async ({ page
   await expect(card(page).getByTestId('tm-comeet')).toHaveText('In Comeet: Sourced · Owner: Unassigned');
   await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toHaveCount(0);
   await expect(page.getByTestId('hs-comeet-status')).toHaveText('Sourced');
+  // A Comeet record is not contact with the candidate.
+  await expect(page.getByTestId('hs-last-contacted')).toHaveText('--');
 
   await page.getByRole('button', { name: 'Contacts' }).click();
   const row = (name: string) => shortlist(page).getByRole('row', { name: new RegExp(name) });
   await expect(row('Chiara Russo').getByTestId('comeet-status')).toHaveText('Sourced');
-  await expect(row('Lucas Evans').getByTestId('comeet-status')).toHaveText('In progress · Phone screen');
   await expect(row('Priya Anand').getByTestId('comeet-status')).toHaveText('--');
 
   // Open in Comeet from the card goes to the same record: no second handoff.
@@ -83,6 +86,22 @@ test('Comeet status flows back to HubSpot: card, record and list', async ({ page
   await expect(page.getByRole('complementary', { name: 'Candidates' }).getByRole('button', { name: /Chiara Russo/ })).toHaveCount(
     1,
   );
+  expect(errors).toEqual([]);
+});
+
+test('outreach from the recruiter app: per-role status on the shortlist, logged on the contact', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/');
+  await notices(page).getByRole('button', { name: /^Data Engineer: / }).click();
+  const table = page.getByRole('table', { name: 'Data Engineer — shortlist' });
+  const noah = table.getByRole('row', { name: /Noah Anderson/ });
+  // He declined Backend Engineer; that must not show on Data Engineer.
+  await expect(noah.getByTestId('outreach')).toHaveText('--');
+  await noah.getByRole('button', { name: 'Noah Anderson' }).click();
+  await expect(page.getByTestId('hs-last-contacted')).toHaveText('2026-10-05');
+  const recent = page.getByRole('region', { name: 'Recent activities' });
+  await expect(recent.locator('li').first()).toContainText('Note · Declined Backend Engineer');
+  await expect(recent).toContainText('Logged email · Invited to Backend Engineer');
   expect(errors).toEqual([]);
 });
 
@@ -118,7 +137,7 @@ test('importing a spreadsheet adds contacts, merges a repeat attendee and re-sco
 
   await expect(page.getByText('79 records')).toBeVisible();
   await expect(notices(page)).toContainText('Import finished: sample-conference-import.csv');
-  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 7 shortlist · 7 to review' }).click();
+  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 7 shortlist · 7 needs review' }).click();
   await expect(shortlist(page).locator('tbody tr').first()).toContainText('Noa Barak');
 
   // A bad file imports nothing.
@@ -164,15 +183,48 @@ test('Comeet opens on its own; a person already in a process shows the owner and
   await page.goto('/');
   await toApp(page, 'Comeet');
   await expect(page.getByRole('heading', { level: 1, name: 'Senior ML Engineer' })).toBeVisible();
-  await page.getByRole('button', { name: /Lucas Evans/ }).click();
+  await page.getByRole('complementary', { name: 'Hiring' }).getByRole('button', { name: 'Data Engineer' }).click();
+  await page.getByRole('button', { name: /Ryan Patel/ }).click();
   await expect(page.getByTestId('cm-status')).toHaveText('In progress · Phone screen');
-  await expect(page.getByRole('region', { name: 'Workflow' })).toContainText('Check with Dana before contacting Lucas.');
+  await expect(page.getByRole('region', { name: 'Workflow' })).toContainText('Check with Dana before contacting Ryan.');
+  expect(errors).toEqual([]);
+});
+
+test('the shared Comeet history blocks an active process, not an uncontacted lead', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Close notifications' }).click();
+  await page.getByRole('tab', { name: 'Data Engineer — shortlist' }).click();
+  const list = page.getByRole('table', { name: 'Data Engineer — shortlist' });
+  const row = (name: string) => list.getByRole('row', { name: new RegExp(name) });
+  await expect(row('Ryan Patel').getByTestId('comeet-status')).toHaveText('In progress · Phone screen');
+  await expect(row('Scarlett Green').getByTestId('comeet-status')).toHaveText('Sourced');
+
+  // In process for Data Engineer: no handoff for any role.
+  await row('Ryan Patel').getByRole('button', { name: 'Ryan Patel' }).click();
+  await expect(card(page).getByTestId('tm-comeet')).toHaveText('In Comeet: In progress · Phone screen · Owner: Dana (fictional recruiter)');
+  await card(page).getByRole('combobox', { name: 'Role' }).selectOption('JOB001');
+  await expect(card(page).getByTestId('tm-blocked')).toHaveText(
+    'Already in process for Data Engineer in Comeet (phone screen). The owning recruiter decides.',
+  );
+  await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toHaveCount(0);
+
+  // An uncontacted lead can still be added for another role.
+  await page.getByRole('button', { name: 'Contacts' }).click();
+  await row('Scarlett Green').getByRole('button', { name: 'Scarlett Green' }).click();
+  await card(page).getByRole('combobox', { name: 'Role' }).selectOption('JOB001');
+  await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toBeVisible();
+  await expect(card(page).getByTestId('tm-blocked')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
 test('Reset demo clears handoffs', async ({ page }) => {
   const errors = watchErrors(page);
   await openContact(page, 'James Thornton');
+  // Rejected for an older role: a warning, not a block.
+  await expect(card(page).getByTestId('tm-warn')).toHaveText(
+    'Rejected after technical interview for Computer Vision Engineer in Comeet · Jan 2024.',
+  );
   await card(page).getByRole('button', { name: 'Add to Comeet' }).click();
   await handoff(page).getByRole('button', { name: 'Confirm' }).click();
   await expect(handoff(page)).toContainText('Added to Senior ML Engineer as Sourced.');
@@ -180,7 +232,7 @@ test('Reset demo clears handoffs', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Reset demo' }).click();
   await expect(notices(page)).toContainText('Talent match ran overnight');
-  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 6 shortlist · 6 to review' }).click();
+  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 6 shortlist · 6 needs review' }).click();
   await shortlist(page).getByRole('button', { name: 'James Thornton' }).click();
   await expect(card(page).getByRole('button', { name: 'Add to Comeet' })).toBeVisible();
   expect(errors).toEqual([]);

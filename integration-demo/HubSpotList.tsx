@@ -1,10 +1,12 @@
 import { ArrowDown01Icon, FilterIcon, Search01Icon } from '@hugeicons/core-free-icons';
 import { useState } from 'react';
+import { useActivity } from '../view/activity';
 import type { SourceTexts } from '../pipeline';
 import { fitReason, OUTCOME_LABEL, referenceSummary } from '../view/format';
 import type { AssessmentStore } from './assessments';
 import type { ComeetService } from './comeet';
 import { comeetStatusText } from './comeetStatus';
+import { outreachStatus } from './hubspotActivity';
 import { Icon } from './Icon';
 import { ImportDialog } from './ImportDialog';
 import { initials } from './initials';
@@ -213,12 +215,13 @@ function RoleView({
   const result = store.result(jobId);
   const shortlist = result.candidates.filter((a) => a.recommendation === 'shortlist');
   const position = comeet.positionFor(jobId);
+  const entries = useActivity();
   if (shortlist.length === 0) {
     return (
       <div className="hs-empty">
         <p className="hs-empty-title">No contacts match this view.</p>
         <p className="muted">
-          No one meets every shortlist condition for {result.job.title}. {result.counts.needs_review} need a recruiter's review.
+          No one meets every shortlist condition for {result.job.title}. Needs review: {result.counts.needs_review}.
         </p>
       </div>
     );
@@ -237,6 +240,7 @@ function RoleView({
               <th scope="col">Talent match</th>
               <th scope="col">Main fit reason</th>
               <th scope="col">WSC connections</th>
+              <th scope="col">Outreach</th>
               <th scope="col">Comeet status</th>
             </tr>
           </thead>
@@ -253,6 +257,7 @@ function RoleView({
                   <td>{OUTCOME_LABEL[a.recommendation]}</td>
                   <td className="hs-wrap">{fitReason(a)}</td>
                   <td className={ref.unknown ? 'unknown' : undefined}>{ref.text}</td>
+                  <td data-testid="outreach">{outreachStatus(entries, c.candidateKey, result.job)}</td>
                   <td data-testid="comeet-status">{status}</td>
                 </tr>
               );

@@ -1,7 +1,7 @@
 import { ArrowDown01Icon, MoreHorizontalIcon } from '@hugeicons/core-free-icons';
-import { matchLabel, OUTCOME_LABEL, referenceLine } from '../view/format';
+import { connectionNote, connectionPeople, matchLabel, OUTCOME_LABEL } from '../view/format';
 import type { AssessmentStore, StoredAssessment } from './assessments';
-import type { ComeetCandidate } from './comeet';
+import { handoffCheck, type ComeetCandidate } from './comeet';
 import { comeetStatusText } from './comeetStatus';
 import { Icon } from './Icon';
 
@@ -22,9 +22,9 @@ const TAG: Record<string, string> = {
   not_recommended_for_role: 'hs-tag-default',
 };
 
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
+function Block({ title, wide, children }: { title: string; wide?: boolean; children: React.ReactNode }) {
   return (
-    <section className="tm-block">
+    <section className={wide ? 'tm-block tm-block-wide' : 'tm-block'}>
       <h3>{title}</h3>
       {children}
     </section>
@@ -41,7 +41,9 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord
   const p = a.candidate.profile;
   const matched = a.skills.filter((s) => s.match !== 'none');
   const conn = a.connections;
+  const people = connectionPeople(a, store.dataset.employees);
   const outcome = OUTCOME_LABEL[a.recommendation];
+  const check = comeetRecord ? {} : handoffCheck(a.candidate.candidateKey, jobId, store.dataset.jobs);
 
   return (
     <section className="hs-card tm" aria-labelledby="tm-title">
@@ -74,10 +76,21 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord
               Open in Comeet
             </button>
           </div>
+        ) : check.block ? (
+          <p className="tm-incomeet" data-testid="tm-blocked">
+            {check.block}
+          </p>
         ) : (
-          <button type="button" className="hs-btn hs-btn-primary" onClick={onHandoff}>
-            Add to Comeet
-          </button>
+          <div className="tm-handoff">
+            {check.warn && (
+              <p className="warn" data-testid="tm-warn">
+                {check.warn}
+              </p>
+            )}
+            <button type="button" className="hs-btn hs-btn-primary" onClick={onHandoff}>
+              Add to Comeet
+            </button>
+          </div>
         )}
       </div>
 
@@ -149,39 +162,22 @@ export function TalentMatchCard({ store, entry, jobId, onJobChange, comeetRecord
           {p && a.seniority.seniorTitleFlag && <p className="warn">{a.seniority.seniorTitleFlag}</p>}
         </Block>
 
-        <Block title="WSC connections">
-          {conn.status === 'unknown' ? (
-            <p className="unknown">Unknown: no profile.</p>
-          ) : conn.resolved.length === 0 ? (
-            <p>None listed.</p>
+        <Block title="WSC connections" wide>
+          {people.length === 0 ? (
+            conn.status === 'unknown' ? <p className="unknown">Unknown: no profile.</p> : <p>None listed.</p>
           ) : (
-            <dl className="tm-list">
-              {conn.resolved.map((e) => (
-                <div key={e.employeeId}>
-                  <dt>{e.fullName}</dt>
-                  <dd className="muted">{e.title}</dd>
-                </div>
-              ))}
-            </dl>
+            <>
+              <dl className="tm-list">
+                {people.map((x) => (
+                  <div key={x.employee.employeeId}>
+                    <dt>{x.employee.fullName}</dt>
+                    <dd className="muted">{connectionNote(x)}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="muted tm-hint">Leads, not endorsements.</p>
+            </>
           )}
-        </Block>
-
-        <Block title="Possible references">
-          {!p ? (
-            <p className="unknown">Unknown: no work history.</p>
-          ) : a.possibleReferences.length === 0 ? (
-            <p>None found.</p>
-          ) : (
-            <dl className="tm-list">
-              {a.possibleReferences.map((r) => (
-                <div key={`${r.employeeId}-${r.company}-${r.overlapStart}`}>
-                  <dt>{r.employeeName}</dt>
-                  <dd className="muted">{referenceLine(r)}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-          <p className="muted tm-hint">Overlapping work history. Leads, not endorsements.</p>
         </Block>
       </div>
 

@@ -73,6 +73,46 @@ describe('Comeet: an uncontacted lead is not "in process"', () => {
   });
 });
 
+describe('Comeet: a past rejection for another role warns', () => {
+  const rejectedBackend: ComeetRecord = { job: 'Backend Engineer', outcome: 'Rejected after phone screen', date: '2025-03-12' };
+  const rejectedPm: ComeetRecord = { job: 'Senior Product Manager - Sports Data', outcome: 'Rejected after phone screen', date: '2025-03-12' };
+  const withdrew: ComeetRecord = { job: 'Product Analyst', outcome: 'Withdrew at interview', date: '2023-06-02' };
+
+  it('warns, without blocking, with the Comeet outcome, role and month', () => {
+    expect(checkInvite([], [rejectedBackend], 'C-X', DATA, JOBS, NOW)).toEqual({
+      warn: 'Rejected after phone screen for Backend Engineer in Comeet · Mar 2025.',
+    });
+  });
+
+  it('also for a role that is not one of the person\'s relevant jobs', () => {
+    expect(checkInvite([], [rejectedPm, withdrew], 'C-X', DATA, JOBS, NOW)).toEqual({
+      warn: 'Rejected after phone screen for Senior Product Manager - Sports Data in Comeet · Mar 2025.',
+    });
+  });
+
+  it('the most recent rejection is the one named', () => {
+    const older: ComeetRecord = { job: 'Computer Vision Engineer', outcome: 'Rejected after technical interview', date: '2024-01-15' };
+    expect(checkInvite([], [older, rejectedPm], 'C-X', DATA, JOBS, NOW).warn).toMatch(/^Rejected after phone screen for Senior Product Manager/);
+  });
+
+  it('a rejection for this same role, a withdrawal, or an uncontacted lead does not warn', () => {
+    expect(checkInvite([], [rejectedBackend], 'C-X', BACKEND, JOBS, NOW)).toEqual({});
+    expect(checkInvite([], [withdrew], 'C-X', DATA, JOBS, NOW)).toEqual({});
+    expect(checkInvite([], [lead], 'C-X', BACKEND, JOBS, NOW)).toEqual({});
+  });
+
+  it('blocks still win over the warning', () => {
+    const dnc: Entry = { ...base, id: '1', at: '2026-10-01T00:00:00Z', kind: 'do_not_contact' };
+    expect(checkInvite([dnc], [rejectedPm], 'C-X', DATA, JOBS, NOW)).toEqual({ block: 'Asked not to be contacted.' });
+    expect(checkInvite([], [rejectedPm, interviewing], 'C-X', BACKEND, JOBS, NOW).block).toMatch(/Already in process for Data Engineer/);
+  });
+
+  it('a decline in our own history is named before the older Comeet rejection', () => {
+    const log = [invite('1', BACKEND, 'sent'), declined('2', BACKEND)];
+    expect(checkInvite(log, [rejectedPm], 'C-X', DATA, JOBS, NOW).warn).toMatch(/^Declined Backend Engineer/);
+  });
+});
+
 describe('repeat protection', () => {
   it('a simulated send blocks a repeat exactly like a real one', () => {
     const log = [invite('1', BACKEND, 'sent')];

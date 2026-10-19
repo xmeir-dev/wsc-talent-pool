@@ -35,7 +35,7 @@ import { current, comeetFor, describe, historyUnreadable, personFlags, record, r
 import { InviteToJob } from './InviteToJob';
 import { CountryFlag } from './Location';
 import { overviewFor } from './Overview';
-import { currentRole, fitChecks, shortDate, years } from './format';
+import { currentRole, fitChecks, latestRef, overlapTag, shortDate, years } from './format';
 
 /** The Activity row's icon: what kind of step it was, tinted red for a decline and green for interest. */
 const activityMark = (e: Entry): { icon: IconSvgElement; tone?: 'bad' | 'good' } => {
@@ -45,12 +45,6 @@ const activityMark = (e: Entry): { icon: IconSvgElement; tone?: 'bad' | 'good' }
   if (e.outcome === 'declined') return { icon: Cancel01Icon, tone: 'bad' };
   if (e.outcome === 'interested') return { icon: CheckmarkCircle02Icon, tone: 'good' };
   return { icon: Message01Icon };
-};
-
-/** How long they overlapped, from year-only dates: 2019–2021 is 2y, a single shared year is under one. */
-const yearsTogether = (start: number, end: number) => {
-  const n = (end === Infinity ? new Date().getFullYear() : end) - start;
-  return n < 1 ? '<1y' : `${n}y`;
 };
 
 interface Props {
@@ -439,7 +433,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
               <span>{r.company}</span>
               <span className="muted">{[r.title, spellYears(r)].filter(Boolean).join(' · ')}</span>
               {worked.length > 0 && (
-                <span className="d-with">Worked with {worked.map((p) => p.employeeName).join(', ')}</span>
+                <span className="d-with">Same time as {worked.map((p) => p.employeeName).join(', ')}</span>
               )}
               {r.isEarlyCareer && <span className="d-intern">Intern or junior role, counted in the total</span>}
             </li>
@@ -538,7 +532,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
       ) : (
         <ul className="d-people">
           {people.map(({ employee, refs }) => {
-            const ref = refs[0];
+            const ref = latestRef(refs);
             return (
               <li key={employee.employeeId}>
                 <Avatar size="md" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
@@ -547,7 +541,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
                     {employee.fullName}
                     {ref && (
                       <Tag size="sm" tone="success">
-                        Worked together {yearsTogether(ref.overlapStart, ref.overlapEnd)}
+                        {overlapTag(ref)}
                       </Tag>
                     )}
                   </span>

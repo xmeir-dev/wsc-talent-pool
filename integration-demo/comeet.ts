@@ -4,7 +4,8 @@
  * (create candidate with a position, "Sourced" status, custom fields and a note).
  */
 
-import { splitName, type CandidateAssessment, type Job } from '../pipeline';
+import { splitName, type Candidate, type CandidateAssessment, type Job } from '../pipeline';
+import { checkInvite, comeetFor, type Check } from '../view/activity';
 import { OUTCOME_LABEL, referenceLine } from '../view/format';
 import { POSITIONS, seedCandidates } from './fixtures';
 
@@ -37,7 +38,7 @@ export interface ComeetCandidate {
   /** Matched required skills, shown as candidate tags. */
   tags: string[];
   addedOn: string;
-  status: 'Sourced' | 'In progress';
+  status: 'Sourced' | 'In progress' | 'Rejected';
   stage: string;
   owner: string;
   nextStep: string;
@@ -67,6 +68,10 @@ export interface HandoffPayload {
 export type HandoffResult =
   | { kind: 'created'; candidate: ComeetCandidate }
   | { kind: 'existing'; candidate: ComeetCandidate }
+  /** The identifiers point at an existing record but disagree with it: a person must review it. */
+  | { kind: 'conflict'; message: string }
+  /** The app's contact rules forbid it (an active Comeet process). */
+  | { kind: 'blocked'; message: string }
   | { kind: 'unavailable'; message: string };
 
 /**
@@ -79,7 +84,10 @@ export interface PersonIdentity {
   sourceContactId?: string;
 }
 
-export type LookupResult = { kind: 'found'; candidate: ComeetCandidate | null } | { kind: 'unavailable'; message: string };
+export type LookupResult =
+  | { kind: 'found'; candidate: ComeetCandidate | null }
+  | { kind: 'conflict'; message: string }
+  | { kind: 'unavailable'; message: string };
 
 export interface ComeetService {
   positions: () => ComeetPosition[];
@@ -94,6 +102,8 @@ export interface ComeetService {
   get: (uid: string) => ComeetCandidate | undefined;
   /** Everyone in one position, oldest first. */
   list: (positionUid: string) => ComeetCandidate[];
+  /** handoffCheck() against this service's positions. */
+  check: (candidateKey: string, jobId: string) => Check;
 }
 
 const UNAVAILABLE = 'Comeet did not respond. Nothing was created.';
@@ -111,7 +121,8 @@ export function buildHandoff(a: CandidateAssessment, job: Job, version: string, 
     linkedinUrl: c.linkedinUrl,
     sourceContactId: c.candidateKey,
     location: c.profile?.location ?? '',
-    tags: a.skills.filter((s) => s.kind === 'required' && s.match !== 'none').map((s) => s.skill),
+    // Only skills named on the profile become tags; related or likely ones stay qualified in evidence and gaps.
+    tags: a.skills.filter((s) => s.kind === 'required' && s.match === 'named').map((s) => s.skill),
     status: 'Sourced',
     source: 'Conference talent pool (HubSpot)',
     customFields: {
@@ -141,27 +152,65 @@ export interface SimulationOptions {
   /** Read on every call, so the demo's outage switch takes effect immediately. */
   isAvailable: () => boolean;
   delayMs?: number;
+  /** The contact pool. Anyone with a record in data/demo_comeet.json for an open position is seeded into it. */
+  people?: readonly Candidate[];
 }
 
-export function createSimulatedComeet({ isAvailable, delayMs = 400 }: SimulationOptions): ComeetService {
-  const records = new Map(seedCandidates().map((c) => [c.uid, c]));
+type Field = 'email' | 'linkedinUrl' | 'sourceContactId';
+const FIELDS: { field: Field; norm: (v: string) => string; label: string; other: string }[] = [
+  { field: 'email', norm: normEmail, label: 'this email', other: 'a different email' },
+  { field: 'linkedinUrl', norm: normUrl, label: 'this LinkedIn profile', other: 'a different LinkedIn profile' },
+  { field: 'sourceContactId', norm: (v) => v.trim(), label: 'this HubSpot contact', other: 'a different HubSpot contact' },
+];
+type Match = { kind: 'match'; candidate: ComeetCandidate } | { kind: 'conflict'; message: string } | null;
+
+/**
+ * May this person be handed off for this role? Exactly the recruiter view's invite rule (checkInvite in
+ * view/activity.ts) on the shared Comeet history (data/demo_comeet.json): an active process blocks every role,
+ * an uncontacted lead does not, and a past rejection for another role warns.
+ */
+export function handoffCheck(candidateKey: string, jobId: string, jobs: readonly { jobId: string; title: string }[]): Check {
+  const job = jobs.find((j) => j.jobId === jobId);
+  return job ? checkInvite([], comeetFor(candidateKey), candidateKey, job, jobs) : {};
+}
+
+export function createSimulatedComeet({ isAvailable, delayMs = 400, people = [] }: SimulationOptions): ComeetService {
   const positions = [...POSITIONS];
+  const records = new Map(seedCandidates(people, positions).map((c) => [c.uid, c]));
   let nextUid = 2001;
   const wait = () => new Promise((resolve) => setTimeout(resolve, delayMs));
-  const match = (person: string | PersonIdentity, positionUid: string) => {
-    const who = typeof person === 'string' ? { email: person } : person;
+  /**
+   * The first non-blank identifier (email, then LinkedIn, then source contact) that equals a record's finds it.
+   * If any other identifier is set on both sides and differs, it is a conflict, never a match.
+   */
+  const match = (person: string | PersonIdentity, positionUid: string): Match => {
+    const who: PersonIdentity = typeof person === 'string' ? { email: person } : person;
     const inPosition = [...records.values()].filter((c) => c.positionUid === positionUid);
-    const by = (field: (c: PersonIdentity) => string | undefined, norm: (v: string) => string) => {
-      const value = norm(field(who) ?? '');
-      return value ? inPosition.find((c) => norm(field(c) ?? '') === value) : undefined;
-    };
-    return (
-      by((c) => c.email, normEmail) ??
-      by((c) => c.linkedinUrl, normUrl) ??
-      by((c) => c.sourceContactId, (v) => v.trim()) ??
-      null
-    );
+    for (const key of FIELDS) {
+      const value = key.norm(who[key.field] ?? '');
+      const found = value ? inPosition.find((c) => key.norm(c[key.field] ?? '') === value) : undefined;
+      if (!found) continue;
+      const clash = FIELDS.find((f) => {
+        const mine = f.norm(who[f.field] ?? '');
+        const theirs = f.norm(found[f.field] ?? '');
+        return mine !== '' && theirs !== '' && mine !== theirs;
+      });
+      return clash
+        ? { kind: 'conflict', message: `Needs review: ${key.label} belongs to an existing Comeet candidate with ${clash.other}.` }
+        : { kind: 'match', candidate: found };
+    }
+    return null;
   };
+  const recordFor = (person: string | PersonIdentity, positionUid: string) => {
+    const m = match(person, positionUid);
+    return m?.kind === 'match' ? m.candidate : null;
+  };
+  const check = (candidateKey: string, jobId: string): Check =>
+    handoffCheck(
+      candidateKey,
+      jobId,
+      positions.map((p) => ({ jobId: p.jobId, title: p.name })),
+    );
 
   return {
     positions: () => positions,
@@ -170,20 +219,26 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400 }: Simulation
       positions.push(position);
       return position;
     },
-    statusFor: (person, positionUid) => match(person, positionUid),
+    statusFor: (person, positionUid) => recordFor(person, positionUid),
+    check,
     positionFor: (jobId) => positions.find((p) => p.jobId === jobId),
     get: (uid) => records.get(uid),
     list: (positionUid) => [...records.values()].filter((c) => c.positionUid === positionUid),
     async find(person, positionUid) {
       await wait();
       if (!isAvailable()) return { kind: 'unavailable', message: UNAVAILABLE };
-      return { kind: 'found', candidate: match(person, positionUid) };
+      const m = match(person, positionUid);
+      return m?.kind === 'conflict' ? m : { kind: 'found', candidate: m?.candidate ?? null };
     },
     async handoff(p) {
       await wait();
       if (!isAvailable()) return { kind: 'unavailable', message: UNAVAILABLE };
-      const existing = match(p, p.positionUid);
-      if (existing) return { kind: 'existing', candidate: existing };
+      const m = match(p, p.positionUid);
+      if (m?.kind === 'conflict') return m;
+      if (m) return { kind: 'existing', candidate: m.candidate };
+      const jobId = positions.find((x) => x.uid === p.positionUid)?.jobId ?? '';
+      const block = check(p.sourceContactId, jobId).block;
+      if (block) return { kind: 'blocked', message: block };
       const candidate: ComeetCandidate = {
         uid: `CMT-${nextUid++}`,
         positionUid: p.positionUid,

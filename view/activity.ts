@@ -134,6 +134,8 @@ export interface Check {
 const DAY = 86_400_000;
 export const shortDay = (iso: string) => new Date(iso.length === 10 ? `${iso}T00:00:00Z` : iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 const firstName = (name: string) => name.split(' ')[0] ?? name;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthYear = (iso: string) => `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
 
 /** May this person be invited to this role? Same rules for single and bulk invites. */
 export function checkInvite(
@@ -157,6 +159,11 @@ export function checkInvite(
     if (s.status === 'declined') return { warn: `Declined ${other.title} on ${shortDay(s.at!)}.` };
     if (s.status === 'contacted' && s.at && now - Date.parse(s.at) < 30 * DAY) return { warn: `Contacted for ${other.title} on ${shortDay(s.at)}.` };
   }
+  // A past Comeet rejection for any other role (open or not). A withdrawal or a lead is not a rejection.
+  const rejected = comeet
+    .filter((r) => r.job !== job.title && r.kind !== 'lead' && /^rejected/i.test(r.outcome))
+    .sort((x, y) => y.date.localeCompare(x.date))[0];
+  if (rejected) return { warn: `${rejected.outcome} for ${rejected.job} in Comeet · ${monthYear(rejected.date)}.` };
   return {};
 }
 
@@ -309,8 +316,6 @@ export function statusIn(
   return job ? { ...roleStatus(entries, comeet, candidateKey, job), job } : overallStatus(entries, comeet, candidateKey, jobs);
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const monthYear = (iso: string) => `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${iso.slice(0, 4)}`;
 /** The status in words for a table chip's band, or null when nothing has happened for this role. */
 export function statusLine(entries: readonly Entry[], candidateKey: string, job: { jobId: string; title: string }): { text: string; simulated: boolean } | null {
   const comeet = comeetFor(candidateKey);

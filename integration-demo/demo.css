@@ -1986,6 +1986,22 @@ svg {
   border-radius: 8px;
 }
 
+.tm-handoff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+.tm-handoff p,
+p.tm-incomeet {
+  margin: 0;
+}
+p.tm-incomeet {
+  padding: 6px 12px;
+}
+
 .tm-incomeet {
   display: flex;
   flex-wrap: wrap;
@@ -2100,4 +2116,8 @@ button.cm-btn-primary {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 6px;
+}
+
+.tm-block-wide {
+  grid-column: 1 / -1;
 }

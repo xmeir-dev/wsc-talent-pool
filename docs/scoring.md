@@ -88,7 +88,7 @@ The less obvious ones: highlight and event detection in sports video usually mea
 These are two separate columns, and neither affects the outcome:
 
 - **Employee connections**: WSC employees the profile lists as mutual LinkedIn connections. Only IDs found on the employee roster are counted; unknown IDs are flagged.
-- **Possible references**: WSC employees who worked at the same employer in overlapping years, matched from dated work history. Employer names are matched loosely ("Akamai" matches "Akamai Technologies") and generic names ("Startup", "University") are ignored, so treat these as leads to check.
+- **Possible references**: WSC employees who worked at the same employer in overlapping years, matched from dated work history. Employer names are matched loosely ("Akamai" matches "Akamai Technologies") and generic names ("Startup", "University") are ignored, so treat these as leads to check. The views tag them "Same company, 2y overlap": a shared employer does not prove they worked together.
 
 ## Conference relevance
 

@@ -135,7 +135,7 @@ test('a row opens a profile page; Back, Escape and the browser back button retur
   await expect(page.getByRole('table')).toHaveCount(0);
   const main = page.getByRole('main');
   await expect(main.locator('.d-job')).toContainText(['Senior ML Engineer']);
-  await expect(main).toContainText('Worked with Maya Levi');
+  await expect(main).toContainText('Same time as Maya Levi');
 
   await page.getByRole('button', { name: 'Back', exact: true }).click();
   await expect(heading).toHaveCount(0);

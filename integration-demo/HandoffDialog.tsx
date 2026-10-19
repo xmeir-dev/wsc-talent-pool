@@ -20,6 +20,8 @@ type State =
   | { step: 'sending' }
   | { step: 'created'; candidate: ComeetCandidate }
   | { step: 'existing'; candidate: ComeetCandidate }
+  /** A conflicting identity or a blocking rule: nothing is sent. */
+  | { step: 'stopped'; message: string }
   | { step: 'unavailable'; message: string };
 
 /** Review, then confirm. Nothing is sent until Confirm, and a failed call never reads as success. */
@@ -55,6 +57,7 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
     comeet.find(payload, payload.positionUid).then((r) => {
       if (!live) return;
       if (r.kind === 'unavailable') setState({ step: 'unavailable', message: r.message });
+      else if (r.kind === 'conflict') setState({ step: 'stopped', message: r.message });
       else setState(r.candidate ? { step: 'existing', candidate: r.candidate } : { step: 'review' });
     });
     return () => {
@@ -70,6 +73,7 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
     const r = await comeet.handoff(payload);
     sending.current = false;
     if (r.kind === 'unavailable') setState({ step: 'unavailable', message: r.message });
+    else if (r.kind === 'conflict' || r.kind === 'blocked') setState({ step: 'stopped', message: r.message });
     else {
       setState({ step: r.kind, candidate: r.candidate });
       onHandedOff();
@@ -130,6 +134,7 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
                   {state.candidate.owner}. {state.candidate.nextStep}
                 </p>
               )}
+              {state.step === 'stopped' && <p className="warn">{state.message}</p>}
               {state.step === 'unavailable' && <p className="error-text">{state.message}</p>}
             </div>
           </>
@@ -137,7 +142,7 @@ export function HandoffDialog({ entry, version, comeet, onClose, onOpenComeet, o
 
         <div className="handoff-actions">
           <button type="button" className="hs-btn hs-btn-outline" onClick={close}>
-            {state.step === 'created' || state.step === 'existing' ? 'Close' : 'Cancel'}
+            {state.step === 'created' || state.step === 'existing' || state.step === 'stopped' ? 'Close' : 'Cancel'}
           </button>
           {(state.step === 'review' || state.step === 'sending') && (
             <button type="button" className="hs-btn hs-btn-primary" onClick={confirm} disabled={state.step === 'sending'}>

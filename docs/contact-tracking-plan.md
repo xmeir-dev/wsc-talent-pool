@@ -76,6 +76,7 @@ Checked for every single and bulk action. A bulk action skips blocked people and
 | Declined this role | Invites to this role; other roles stay open, with a warning |
 | Same colleague already asked about the same person (Sent or Confirmed) | A repeat request |
 | Recent contact for another role (window to agree, e.g. 30 days) | Warns, does not block |
+| Rejected in Comeet for another role ("Rejected after phone screen for Senior Product Manager - Sports Data in Comeet · Mar 2025."); a withdrawal is not a rejection | Warns, does not block; the same rule in the integration demo's handoff |
 
 Production: two recruiters can act at the same moment, so the check runs on the server, and one key per person × role × action makes a second identical action a no-op. Browser storage cannot show this; the demo only checks one browser's history.
 
@@ -120,7 +121,7 @@ All in the recruiter view (`view/`); the pipeline and its CSV output do not chan
 
 Tests (all passing: 141 unit, 19 browser):
 
-- Unit (`view/activity.test.ts`): role status per role (declined for one role, open for another); an uncontacted Comeet lead not counting as in process; every block rule; Prepared not counted as contact; a repeated simulated send blocked; a correction superseding an earlier entry.
+- Unit (`view/activity.test.ts`): role status per role (declined for one role, open for another); an uncontacted Comeet lead not counting as in process; every block rule; a past Comeet rejection for another role warning (a withdrawal does not); Prepared not counted as contact; a repeated simulated send blocked; a correction superseding an earlier entry.
 - Browser (`e2e/contact-tracking.spec.ts`): the seeded examples render and block as described; an invite survives a reload and blocks a repeat; the Status filter narrows the list.
 
 ## Open questions

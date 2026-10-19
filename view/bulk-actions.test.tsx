@@ -35,6 +35,12 @@ describe('bulk Invite to jobs', () => {
     expect(panel.textContent).not.toMatch(/blocked/);
   });
 
+  it('warns about a past Comeet rejection for another role, with the same words as a single invite', async () => {
+    const panel = await open('Invite to jobs', ['James Thornton', 'Priya Anand']);
+    expect(within(panel).getByText('James Thornton: Rejected after technical interview for Computer Vision Engineer in Comeet · Jan 2024.')).toBeTruthy();
+    expect(within(panel).getByRole('button', { name: 'Send 2 invites' })).toBeTruthy();
+  });
+
   it('keeps hard blocks as they are', async () => {
     const noah = person('Noah Anderson');
     const best = [...noah.relevantFor].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1))[0]!;

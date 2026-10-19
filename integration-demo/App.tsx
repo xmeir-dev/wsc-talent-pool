@@ -23,7 +23,7 @@ interface Props {
 function roleLines(store: AssessmentStore, jobIds: string[]) {
   return jobIds.map((jobId) => {
     const r = store.result(jobId);
-    return { jobId, text: `${r.job.title}: ${r.counts.shortlist} shortlist · ${r.counts.needs_review} to review` };
+    return { jobId, text: `${r.job.title}: ${r.counts.shortlist} shortlist · ${r.counts.needs_review} needs review` };
   });
 }
 
@@ -48,7 +48,7 @@ export function App({ sources: initialSources = bundledSources, delayMs }: Props
   const [session, setSession] = useState(0);
   // A fresh simulated Comeet per demo session; Reset demo discards everything handed off.
   const comeet: ComeetService = useMemo(
-    () => createSimulatedComeet({ isAvailable: () => true, delayMs }),
+    () => createSimulatedComeet({ isAvailable: () => true, delayMs, people: store.dataset.candidates }),
     [session, delayMs],
   );
   const firstPosition = comeet.positions()[0]!.uid;

@@ -24,6 +24,7 @@ import {
 import type { Relevant } from './attendees';
 import { checkReference, comeetFor, record, useActivity } from './activity';
 import { AVATAR, initials } from './avatars';
+import { connectionPeople as sharedConnectionPeople, latestRef, type ConnectionPerson } from './format';
 import { bundledSources } from './data';
 import './ask-connection.css';
 
@@ -70,29 +71,8 @@ let roster: Map<string, Employee> | null = null;
 /** Former colleagues who are not listed connections are only known by ID from the reference match. */
 const employeesById = () => (roster ??= buildDataset(bundledSources).employees);
 
-/** The most recent shared employer is the likeliest to be remembered. */
-const latestRef = (refs: PossibleReference[]) => [...refs].sort((x, y) => y.overlapEnd - x.overlapEnd)[0];
-
-export interface ConnectionPerson {
-  employee: Employee;
-  refs: PossibleReference[];
-}
-
-/** Listed connections plus former colleagues who are not listed; former colleagues first, most recent overlap first. */
-export function connectionPeople(a: CandidateAssessment): ConnectionPerson[] {
-  const refsOf = (id: string) => a.possibleReferences.filter((r) => r.employeeId === id);
-  const listed = a.connections.resolved.map((employee) => ({ employee, refs: refsOf(employee.employeeId) }));
-  const listedIds = new Set(listed.map((p) => p.employee.employeeId));
-  const unlisted = [...new Set(a.possibleReferences.map((r) => r.employeeId))]
-    .filter((id) => !listedIds.has(id))
-    .flatMap((id) => {
-      const employee = employeesById().get(id);
-      return employee ? [{ employee, refs: refsOf(id) }] : [];
-    });
-  const people = [...listed, ...unlisted];
-  const end = (p: ConnectionPerson) => latestRef(p.refs)?.overlapEnd ?? -Infinity;
-  return [...people.filter((p) => p.refs.length > 0).sort((x, y) => end(y) - end(x)), ...people.filter((p) => p.refs.length === 0)];
-}
+/** One list of WSC people (listed connections and same-company overlaps); see view/format.ts. */
+export const connectionPeople = (a: CandidateAssessment): ConnectionPerson[] => sharedConnectionPeople(a, employeesById());
 
 const shortSpan = (r: PossibleReference) =>
   r.overlapStart === r.overlapEnd

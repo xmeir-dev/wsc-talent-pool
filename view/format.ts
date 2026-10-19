@@ -6,6 +6,7 @@
 import type {
   CandidateAssessment,
   ConferenceRelevance,
+  Employee,
   Job,
   MatchKind,
   OutputRow,
@@ -121,6 +122,50 @@ export function years(start: number, end: number | null): string {
 
 export function referenceLine(r: PossibleReference): string {
   return `Both at ${r.company}, ${years(r.overlapStart, r.overlapEnd)}`;
+}
+
+/**
+ * A shared employer at overlapping dates, from year-only history. It does not prove they worked together,
+ * so it says only what is known: "Same company, 2y overlap" (a single shared year is "<1y").
+ */
+export function overlapTag(r: Pick<PossibleReference, 'overlapStart' | 'overlapEnd'>, thisYear = new Date().getFullYear()): string {
+  const n = (r.overlapEnd === Infinity ? thisYear : r.overlapEnd) - r.overlapStart;
+  return `Same company, ${n < 1 ? '<1y' : `${n}y`} overlap`;
+}
+
+export interface ConnectionPerson {
+  employee: Employee;
+  /** Listed among the profile's WSC connections (as opposed to only a same-company overlap). */
+  listed: boolean;
+  refs: PossibleReference[];
+}
+
+/** The most recent shared employer is the likeliest to be remembered. */
+export const latestRef = (refs: readonly PossibleReference[]) => [...refs].sort((x, y) => y.overlapEnd - x.overlapEnd)[0];
+
+/**
+ * One list of WSC people for a candidate: listed connections and anyone found by a same-company overlap,
+ * overlaps first (most recent first), then listed connections with no overlap.
+ */
+export function connectionPeople(a: CandidateAssessment, employees: ReadonlyMap<string, Employee>): ConnectionPerson[] {
+  const refsOf = (id: string) => a.possibleReferences.filter((r) => r.employeeId === id);
+  const listed = a.connections.resolved.map((employee) => ({ employee, listed: true, refs: refsOf(employee.employeeId) }));
+  const listedIds = new Set(listed.map((p) => p.employee.employeeId));
+  const unlisted = [...new Set(a.possibleReferences.map((r) => r.employeeId))]
+    .filter((id) => !listedIds.has(id))
+    .flatMap((id) => {
+      const employee = employees.get(id);
+      return employee ? [{ employee, listed: false, refs: refsOf(id) }] : [];
+    });
+  const people = [...listed, ...unlisted];
+  const end = (p: ConnectionPerson) => latestRef(p.refs)?.overlapEnd ?? -Infinity;
+  return [...people.filter((p) => p.refs.length > 0).sort((x, y) => end(y) - end(x)), ...people.filter((p) => p.refs.length === 0)];
+}
+
+/** "Connection", "Same company, 2y overlap", or both. */
+export function connectionNote(p: ConnectionPerson): string {
+  const ref = latestRef(p.refs);
+  return [p.listed && 'Connection', ref && overlapTag(ref)].filter(Boolean).join(' · ');
 }
 
 export type FitCheckKey = 'must' | 'skills' | 'years';
