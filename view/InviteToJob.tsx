@@ -130,7 +130,6 @@ export function InviteToJob({
         />
         {check.block && !status && <p className="check-note is-block">{check.block}</p>}
         {check.warn && !check.block && <p className="check-note">{check.warn}</p>}
-        <p className="ask-sim muted">Simulated — no message will be sent</p>
         <div className="ask-actions">
           <Button
             size="sm"

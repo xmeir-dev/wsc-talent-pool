@@ -203,8 +203,7 @@
   align-items: center;
   gap: 8px;
 }
-.ask-status,
-.ask-sim {
+.ask-status {
   font-size: 12px;
 }
 

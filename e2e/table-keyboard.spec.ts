@@ -50,7 +50,7 @@ test('F12: Space on a row checkbox selects without opening the profile; Space ag
   expect(errors).toEqual([]);
 });
 
-test('F12: Enter on a button inside a row does that button’s job; the panel says Send is simulated', async ({ page }) => {
+test('F12: Enter on a button inside a row does that button’s job', async ({ page }) => {
   const errors = watchErrors(page);
   await seniorMl(page);
   await priya(page).getByRole('button', { name: /^Invite Priya Anand/ }).focus();
@@ -58,10 +58,7 @@ test('F12: Enter on a button inside a row does that button’s job; the panel sa
   const panel = page.getByRole('dialog', { name: 'Invite Priya Anand to a job' });
   await expect(panel).toBeVisible();
   await expect(profile(page)).toHaveCount(0);
-  // The simulation notice comes before the Send button, not only after it.
-  const notice = panel.getByText('Simulated — no message will be sent');
-  const send = panel.getByRole('button', { name: 'Send invite' });
-  expect((await notice.boundingBox())!.y).toBeLessThan((await send.boundingBox())!.y);
+  await expect(panel.getByRole('button', { name: 'Send invite' })).toBeVisible();
   expect(errors).toEqual([]);
 });
 
