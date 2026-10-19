@@ -6,14 +6,34 @@ import type { Pool } from './attendees';
 import { shortDate } from './format';
 
 interface Row {
+  /** The filter value: a conference name or a job ID. */
+  id: string;
   name: string;
   /** Quiet text right after the name. */
   sub?: string;
   value: string;
 }
 
-/** One card: icon, label, big count, then "See all" opens the full list in place. */
-function PoolCard({ icon, label, count, rows, action, primary }: { icon: IconSvgElement; label: string; count: number; rows: Row[]; action: string; primary?: boolean }) {
+/** One card: icon, label, big count, then "See all" opens the full list in place. A row click adds it to the table filter or takes it out, so several can be on at once. */
+function PoolCard({
+  icon,
+  label,
+  count,
+  rows,
+  action,
+  primary,
+  selected,
+  onSelect,
+}: {
+  icon: IconSvgElement;
+  label: string;
+  count: number;
+  rows: Row[];
+  action: string;
+  primary?: boolean;
+  selected: string[];
+  onSelect: (next: string[]) => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <section className="pool-card" aria-label={label}>
@@ -37,40 +57,64 @@ function PoolCard({ icon, label, count, rows, action, primary }: { icon: IconSvg
       </div>
       {open && (
         <ul className="pool-list">
-          {rows.map((r) => (
-            <li key={r.name}>
-              <span>
-                {r.name}
-                {r.sub && <span className="muted pool-sub">{r.sub}</span>}
-              </span>
-              <span className="muted">{r.value}</span>
-            </li>
-          ))}
+          {rows.map((r) => {
+            const on = selected.includes(r.id);
+            // Keep the filter in list order, like the filter menus.
+            const toggle = () => onSelect(rows.map((x) => x.id).filter((id) => (id === r.id ? !on : selected.includes(id))));
+            return (
+              <li key={r.id}>
+                <button type="button" className="pool-row" aria-pressed={on} onClick={toggle}>
+                  <span>
+                    {r.name}
+                    {r.sub && <span className="muted pool-sub">{r.sub}</span>}
+                  </span>
+                  <span className="muted">{r.value}</span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>
   );
 }
 
-export function PoolCards({ pool, attendeesPer }: { pool: Pool; attendeesPer: Map<string, number> }) {
+interface Filter {
+  selected: string[];
+  onSelect: (next: string[]) => void;
+}
+
+export function PoolCards({
+  pool,
+  attendeesPer,
+  conferences,
+  jobs: jobFilter,
+}: {
+  pool: Pool;
+  attendeesPer: Map<string, number>;
+  conferences: Filter;
+  jobs: Filter;
+}) {
   const shortlisted = (jobId: string) =>
     pool.attendees.filter((p) => p.relevantFor.some((r) => r.job.jobId === jobId && r.outcome === 'shortlist')).length;
-  const jobs = pool.jobs.map((j) => ({ name: j.title, n: shortlisted(j.jobId) }));
+  const jobs = pool.jobs.map((j) => ({ id: j.jobId, name: j.title, n: shortlisted(j.jobId) }));
   return (
     <div className="pool-cards">
       <PoolCard
         icon={ConferenceIcon}
         label="Conferences"
         count={pool.conferences.length}
-        rows={pool.conferences.map((c) => ({ name: c.name, sub: shortDate(c.date), value: `${attendeesPer.get(c.name)} attendees` }))}
+        rows={pool.conferences.map((c) => ({ id: c.name, name: c.name, sub: shortDate(c.date), value: `${attendeesPer.get(c.name)} attendees` }))}
         action="New conference"
+        {...conferences}
       />
       <PoolCard
         icon={Briefcase04Icon}
         label="Open jobs"
         count={pool.jobs.length}
-        rows={jobs.map((j) => ({ name: j.name, value: `${j.n} shortlisted` }))}
+        rows={jobs.map((j) => ({ id: j.id, name: j.name, value: `${j.n} shortlisted` }))}
         action="New job"
+        {...jobFilter}
         primary
       />
     </div>

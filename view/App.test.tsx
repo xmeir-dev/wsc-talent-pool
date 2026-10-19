@@ -46,6 +46,26 @@ async function pick(user: User, name: 'Conference' | 'Job', ...chips: RegExp[]) 
 const pool = buildPool(buildDataset(bundledSources));
 
 describe('recruiter view: list', () => {
+  it('a row in the Conferences or Open jobs card toggles it in the table filter, several at once', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const card = (name: string) => within(screen.getByRole('region', { name }));
+    await user.click(card('Conferences').getByRole('button', { name: /See all/ }));
+    const devops = card('Conferences').getByRole('button', { name: /DevOps World 2025/ });
+    await user.click(devops);
+    expect(heading()).toBe('11 of 75 attendees');
+    expect(value('Conference')).toBe('DevOps World');
+    await user.click(card('Open jobs').getByRole('button', { name: /See all/ }));
+    await user.click(card('Open jobs').getByRole('button', { name: /Data Engineer/ }));
+    expect(value('Job')).toBe('Data Engineer');
+    await user.click(card('Conferences').getByRole('button', { name: /Data & AI Summit/ }));
+    expect(heading()).toBe('6 of 75 attendees');
+    expect(devops.getAttribute('aria-pressed')).toBe('true');
+    await user.click(devops);
+    await user.click(card('Conferences').getByRole('button', { name: /Data & AI Summit/ }));
+    expect(value('Conference')).toBe('All');
+  });
+
   it('opens on every attendee, A–Z, with no top bar or view switcher', () => {
     render(<App />);
     expect(heading()).toBe('All 75 attendees');

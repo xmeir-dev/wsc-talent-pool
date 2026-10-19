@@ -125,14 +125,28 @@ ul {
   padding: 0;
   list-style: none;
 }
-.pool-list li {
+.pool-row {
   display: flex;
   justify-content: space-between;
   gap: var(--ml-space-md);
+  width: 100%;
   padding: 7px 12px;
-  border: 1px solid var(--ml-border-subtle);
+  border: 0;
   border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--ml-border-subtle);
+  background: none;
+  font: inherit;
   font-size: 13px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 150ms ease-out, box-shadow 150ms ease-out;
+}
+.pool-row:hover {
+  background: var(--ml-bg-surface);
+}
+.pool-row[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px var(--ml-text-muted);
 }
 .pool-sub {
   margin-left: 8px;

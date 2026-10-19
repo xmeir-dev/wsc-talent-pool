@@ -220,7 +220,12 @@ function Workspace({ dataset }: { dataset: Dataset }) {
           <p className="muted">Conference to candidate pipeline</p>
         </div>
       </header>
-      <PoolCards pool={pool} attendeesPer={filterCounts(pool).conferences} />
+      <PoolCards
+        pool={pool}
+        attendeesPer={filterCounts(pool).conferences}
+        conferences={{ selected: conferences, onSelect: setConferences }}
+        jobs={{ selected: jobIds, onSelect: setJobIds }}
+      />
       {filters}
       <AttendeeTable attendees={attendees} onOpen={openProfile} emptyState={empty} sort={sort} onSort={setSort} />
       <footer className="page-foot">
