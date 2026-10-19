@@ -40,7 +40,8 @@ test('the list opens on all attendees; conference and job filters narrow it', as
   const errors = watchErrors(page);
   await page.goto('/');
   await expect(title(page)).toHaveText('All 75 attendees');
-  await expect(bodyRows(page)).toHaveCount(75);
+  await expect(bodyRows(page)).toHaveCount(12);
+  await expect(page.getByText('Page 1 of 7')).toBeVisible();
   await expect(page.getByRole('tab')).toHaveCount(0);
 
   await pick(page, 'Conference', /^Broadcast Expo/);
@@ -99,7 +100,8 @@ test('a filter menu: chips toggle with mouse and keyboard, the menu stays open, 
   await expect(page.locator('.attendees table')).toBeVisible();
   const count = Number((await title(page).textContent())!.split(' ')[0]);
   expect(count).toBeGreaterThan(12);
-  await expect(bodyRows(page)).toHaveCount(count);
+  await expect(bodyRows(page)).toHaveCount(12);
+  await expect(page.getByText(`Page 1 of ${Math.ceil(count / 12)}`)).toBeVisible();
   expect(errors).toEqual([]);
 });
 

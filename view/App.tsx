@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { ArrowLeft01Icon, Download04Icon, Briefcase01Icon, Calendar03Icon, Location01Icon } from '@hugeicons/core-free-icons';
-import { Button, Callout, EmptyState, Select, TopBar, type SortState } from '@meir-labs/ui-kit';
+import { Button, Callout, EmptyState, PaginationFooter, Select, TopBar, usePagination, type SortState } from '@meir-labs/ui-kit';
 import { buildDataset, DataValidationError, type Dataset, type SourceTexts } from '../pipeline';
 import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
 import { CandidateDetail } from './CandidateDetail';
@@ -67,6 +67,11 @@ function Workspace({ dataset }: { dataset: Dataset }) {
     return [...list].sort((x, y) => order.get(x.candidate.candidateKey)! - order.get(y.candidate.candidateKey)!);
   }, [pool, conferences, jobIds, countries, sort, job]);
   const shown = attendees.length;
+  const [pageSize, setPageSize] = useState(12);
+  const paged = usePagination(attendees, pageSize);
+  // A new filter, sort or page size starts again at the first page.
+  const { reset } = paged;
+  useEffect(reset, [reset, conferences, jobIds, countries, sort, pageSize]);
   const { conferenceOptions, jobOptions, countryOptions } = useMemo(() => {
     const counts = filterCounts(pool);
     const conferenceOptions: FilterOption[] = pool.conferences.map((c) => {
@@ -227,7 +232,27 @@ function Workspace({ dataset }: { dataset: Dataset }) {
         jobs={{ selected: jobIds, onSelect: setJobIds }}
       />
       {filters}
-      <AttendeeTable attendees={attendees} onOpen={openProfile} emptyState={empty} sort={sort} onSort={setSort} />
+      <AttendeeTable
+        attendees={paged.page}
+        onOpen={openProfile}
+        emptyState={empty}
+        sort={sort}
+        onSort={setSort}
+        footer={
+          shown > 0 && (
+            <PaginationFooter
+              pageIndex={paged.pageIndex}
+              pageCount={paged.pageCount}
+              onPage={paged.setPage}
+              total={shown}
+              pageSize={pageSize}
+              pageSizeOptions={[12, 24, 48, 96]}
+              onPageSizeChange={setPageSize}
+              noun="attendee"
+            />
+          )
+        }
+      />
       <footer className="page-foot">
         Created by{' '}
         <a href="https://www.linkedin.com/in/meir-rosenschein" target="_blank" rel="noreferrer">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import { Add01Icon, ArrowDown01Icon, ArrowUp01Icon, Briefcase04Icon, ConferenceIcon } from '@hugeicons/core-free-icons';
+import { Add01Icon, ArrowDown01Icon, ArrowUp01Icon, Briefcase04Icon, Calendar03Icon } from '@hugeicons/core-free-icons';
 import { Button } from '@meir-labs/ui-kit';
 import type { Pool } from './attendees';
 import { shortDate } from './format';
@@ -101,7 +101,7 @@ export function PoolCards({
   return (
     <div className="pool-cards">
       <PoolCard
-        icon={ConferenceIcon}
+        icon={Calendar03Icon}
         label="Conferences"
         count={pool.conferences.length}
         rows={pool.conferences.map((c) => ({ id: c.name, name: c.name, sub: shortDate(c.date), value: `${attendeesPer.get(c.name)} attendees` }))}

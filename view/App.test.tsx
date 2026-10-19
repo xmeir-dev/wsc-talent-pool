@@ -24,6 +24,8 @@ afterEach(() => {
 type User = ReturnType<typeof userEvent.setup>;
 const rows = () => within(screen.getByRole('table')).getAllByRole('row').slice(1);
 const heading = () => document.querySelector('.list-count')?.textContent;
+/** Pagination shows 12 a page; tests that read the whole list put it on one page. */
+const showAll = (user: User) => user.selectOptions(screen.getByRole('combobox', { name: 'Rows per page' }), '96');
 
 const trigger = (name: 'Conference' | 'Job') =>
   within(document.querySelector<HTMLElement>('.filters')!).getByRole('button', { name: new RegExp(`^${name}`) });
@@ -69,7 +71,7 @@ describe('recruiter view: list', () => {
   it('opens on every attendee, A–Z, with no top bar or view switcher', () => {
     render(<App />);
     expect(heading()).toBe('All 75 attendees');
-    expect(rows()).toHaveLength(75);
+    expect(rows()).toHaveLength(12);
     expect(rows()[0]!.textContent).toContain('Adaora Okafor');
     expect(trigger('Conference').textContent).toBe('ConferenceAll');
     expect(trigger('Job').textContent).toBe('JobAll');
@@ -78,8 +80,22 @@ describe('recruiter view: list', () => {
     expect(screen.getByRole('button', { name: 'Export' })).toBeTruthy();
   });
 
-  it('shows the jobs each attendee is relevant for and nothing when none', () => {
+  it('pages the list 12 at a time; a filter starts again at page 1', async () => {
+    const user = userEvent.setup();
     render(<App />);
+    expect(screen.getByText('Page 1 of 7')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Next page' }));
+    expect(screen.getByText('Page 2 of 7')).toBeTruthy();
+    expect(rows()).toHaveLength(12);
+    expect(rows()[0]!.textContent).not.toContain('Adaora Okafor');
+    await pick(user, 'Conference', /^DevOps World/);
+    expect(screen.getByText('Page 1 of 1')).toBeTruthy();
+    expect(rows()).toHaveLength(11);
+  });
+
+  it('shows the jobs each attendee is relevant for and nothing when none', async () => {
+    render(<App />);
+    await showAll(userEvent.setup());
     const adaora = screen.getByRole('row', { name: /Adaora Okafor/ });
     expect(adaora.querySelector('.jobs')?.textContent).toBe('Senior ML Engineer50%: Needs review');
     const noah = screen.getByRole('row', { name: /Noah Anderson/ });
@@ -108,6 +124,7 @@ describe('recruiter view: list', () => {
   it('filters by several conferences; the menu stays open while chips toggle, and Clear resets it', async () => {
     const user = userEvent.setup();
     render(<App />);
+    await showAll(user);
     await toggle(user, 'Conference', /^Data & AI Summit 12$/);
     expect(heading()).toBe('12 of 75 attendees');
     expect(rows()).toHaveLength(12);
@@ -165,6 +182,7 @@ describe('recruiter view: list', () => {
   it('two jobs show the attendee list: anyone shortlist or needs review for either', async () => {
     const user = userEvent.setup();
     render(<App />);
+    await showAll(user);
     await pick(user, 'Job', /^Senior ML Engineer/, /^Data Engineer/);
     const union = filterAttendees(pool, [], ['JOB001', 'JOB004']);
     expect(union.length).toBeGreaterThan(12);
@@ -274,6 +292,7 @@ describe('recruiter view: profile', () => {
   it('labels missing information as unknown, not as a negative finding', async () => {
     const user = userEvent.setup();
     render(<App sources={loadSources(FIXTURE_DIR)} />);
+    await showAll(user);
     const mia = rows().find((r) => r.textContent?.includes('Mia Missing'))!;
     expect(mia.textContent).toContain('Unknown');
     await user.click(within(mia).getByText('Mia Missing'));

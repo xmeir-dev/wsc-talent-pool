@@ -3,13 +3,13 @@ import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
 import {
   Calendar03Icon,
   File02Icon,
-  Target02Icon,
+  Briefcase04Icon,
   UserIcon,
 } from '@hugeicons/core-free-icons';
-import { Avatar, DataTable, Hint, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
+import { DataTable, Hint, Tag, type Column, type SortState } from '@meir-labs/ui-kit';
 import type { CandidateAssessment } from '../pipeline';
 import type { Attendee } from './attendees';
-import { AVATAR, initials } from './avatars';
+import { AskConnection } from './AskConnection';
 import { CountryFlag } from './Location';
 import { Overview } from './Overview';
 import { WscMark } from './WscMark';
@@ -48,24 +48,30 @@ const about = (c: CandidateAssessment['candidate']) => <Overview c={c} />;
 /** An empty cell gets a faint hairline instead of words. */
 const empty = <span className="empty-line" role="img" aria-label="None" />;
 
-/** Count, then up to two names as tags with initials; the rest go in a "+N" tag with the names on hover. */
-const connections = (a: CandidateAssessment) => {
-  const c = a.connections;
+/** Count, then up to two names as tags that open a drafted request for a recommendation; the rest go in a "+N" tag with the names on hover. */
+const connections = ({ any, candidate, relevantFor }: Attendee) => {
+  const c = any.a.connections;
   if (c.status === 'unknown') return quiet('Unknown', true);
-  const people = [...c.resolved.map((e) => ({ id: e.employeeId, name: e.fullName })), ...c.unresolvedIds.map((id) => ({ id, name: id }))];
-  if (people.length === 0) return empty;
-  const names = people.map((p) => p.name);
+  const names = [...c.resolved.map((e) => e.fullName), ...c.unresolvedIds];
+  if (names.length === 0) return empty;
+  const best = [...relevantFor].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1))[0];
+  const ctx = { candidate, job: best ? { job: best.job, outcome: best.outcome } : null };
+  const shown = [
+    ...c.resolved.map((e) => (
+      <AskConnection key={e.employeeId} employee={e} refs={any.a.possibleReferences.filter((r) => r.employeeId === e.employeeId)} ctx={ctx} />
+    )),
+    ...c.unresolvedIds.map((id) => (
+      <Tag key={id} size="sm" className="conn-tag">
+        {id}
+      </Tag>
+    )),
+  ];
   const rest = names.slice(2);
   return (
     <span className="conns">
       <span className="conn-count">{names.length}</span>
       <span className="conn-tags">
-        {people.slice(0, 2).map((p) => (
-          <Tag key={p.id} size="sm" className="conn-tag">
-            <Avatar size="xs" src={AVATAR[p.id]} fallback={initials(p.name)} aria-hidden="true" />
-            {p.name}
-          </Tag>
-        ))}
+        {shown.slice(0, 2)}
         {rest.length > 0 && (
           <Hint focusable={false} tip={rest.join(', ')}>
             <Tag size="sm">+{rest.length}</Tag>
@@ -107,7 +113,8 @@ export function AttendeeTable({
   emptyState,
   sort,
   onSort,
-}: Shared & { attendees: Attendee[]; sort: SortState | null; onSort: (next: SortState | null) => void }) {
+  footer,
+}: Shared & { attendees: Attendee[]; sort: SortState | null; onSort: (next: SortState | null) => void; footer?: ReactNode }) {
   const columns: Column<Attendee>[] = [
     {
       id: 'candidate',
@@ -134,13 +141,13 @@ export function AttendeeTable({
     },
     {
       id: 'relevant',
-      header: <Head icon={Target02Icon} label="Relevant job" />,
+      header: <Head icon={Briefcase04Icon} label="Relevant job" />,
       sortable: true,
       width: 176,
       accessor: ({ relevantFor }) => <RelevantFor list={relevantFor} />,
     },
     { id: 'about', header: <Head icon={File02Icon} label="About candidate" />, width: '24%', accessor: ({ candidate }) => about(candidate) },
-    { id: 'ref', header: <Head icon={<WscMark />} label="WSC connections" />, accessor: ({ any }) => connections(any.a) },
+    { id: 'ref', header: <Head icon={<WscMark />} label="WSC connections" />, accessor: connections },
   ];
 
   return (
@@ -155,6 +162,7 @@ export function AttendeeTable({
       getRowId={({ candidate }) => candidate.candidateKey}
       onRowClick={({ candidate }) => onOpen(candidate.candidateKey)}
       emptyState={emptyState}
+      footer={footer}
     />
   );
 }
