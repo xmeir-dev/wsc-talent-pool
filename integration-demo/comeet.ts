@@ -8,12 +8,23 @@ import { normalizeLinkedinUrl } from '../pipeline/text';
 import { splitName, type Candidate, type CandidateAssessment, type Job } from '../pipeline';
 import { checkHandoff, comeetFor, handoffNote, SEEDED, type Check, type Entry, type HistoryState } from '../view/activity';
 import { OUTCOME_LABEL, referenceLine } from '../view/format';
-import { POSITIONS, seedCandidates } from './fixtures';
+import { DEFAULT_RECRUITER, POSITIONS, recruiterFor, reviewStep, seedCandidates } from './fixtures';
+import { initials } from './initials';
+
+export { DEFAULT_RECRUITER, RECRUITERS, recruiterFor, reviewStep } from './fixtures';
 
 export interface ComeetPosition {
   uid: string;
   jobId: string;
   name: string;
+  /** The position's lead recruiter (Comeet's position API exposes it). Owns everyone handed off for the role. */
+  recruiter: string;
+}
+
+/** Avatar letters for an owner: "?" when unassigned, the user's own "WS" for You. */
+export function ownerInitials(owner: string): string {
+  if (owner === 'Unassigned') return '?';
+  return owner === DEFAULT_RECRUITER ? 'WS' : initials(owner);
 }
 
 /** Configured custom candidate fields. Values are plain text, as a recruiter would read them. */
@@ -39,6 +50,9 @@ export interface ComeetCandidate {
   /** Matched required skills, shown as candidate tags. */
   tags: string[];
   addedOn: string;
+  /** A prospect is sourced for the position and not yet in its hiring process (Comeet's Prospects tab). */
+  kind: 'candidate' | 'prospect';
+  /** For a prospect, Comeet's prospect_status. */
   status: 'Sourced' | 'In progress' | 'Rejected';
   stage: string;
   owner: string;
@@ -61,6 +75,8 @@ export interface HandoffPayload {
   location: string;
   tags: string[];
   status: 'Sourced';
+  /** The position's recruiter, who owns the record in Comeet. */
+  owner: string;
   source: string;
   customFields: TalentFields;
   note: string;
@@ -93,7 +109,9 @@ export type LookupResult =
 export interface ComeetService {
   positions: () => ComeetPosition[];
   /** A new position opened in Comeet; in production its webhook starts an assessment for the role. */
-  addPosition: (jobId: string, name: string) => ComeetPosition;
+  addPosition: (jobId: string, name: string, recruiter?: string) => ComeetPosition;
+  /** recruiterFor() over this service's positions, new ones included. */
+  recruiterFor: (positionId: string) => string;
   /** What HubSpot shows as "Comeet status": the person's record in that position, if any. */
   statusFor: (person: string | PersonIdentity, positionUid: string) => ComeetCandidate | null;
   positionFor: (jobId: string) => ComeetPosition | undefined;
@@ -131,6 +149,7 @@ export function buildHandoff(a: CandidateAssessment, job: Job, version: string, 
     // Only skills named on the profile become tags; related or likely ones stay qualified in evidence and gaps.
     tags: confirmed ? a.skills.filter((s) => s.kind === 'required' && s.match === 'named').map((s) => s.skill) : [],
     status: 'Sourced',
+    owner: position.recruiter || DEFAULT_RECRUITER,
     source: 'Conference talent pool (HubSpot)',
     customFields: {
       roleFit: `${OUTCOME_LABEL[a.recommendation]}${rank}`,
@@ -262,11 +281,12 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400, people, hist
 
   return {
     positions: () => positions,
-    addPosition: (jobId, name) => {
-      const position = { uid: `POS-${jobId}`, jobId, name };
+    addPosition: (jobId, name, recruiter = DEFAULT_RECRUITER) => {
+      const position = { uid: `POS-${jobId}`, jobId, name, recruiter: recruiter.trim() || DEFAULT_RECRUITER };
       positions.push(position);
       return position;
     },
+    recruiterFor: (positionId) => recruiterFor(positionId, positions),
     statusFor: (person, positionUid) => recordFor(person, positionUid),
     check,
     positionFor: (jobId) => positions.find((p) => p.jobId === jobId),
@@ -285,9 +305,11 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400, people, hist
       const m = resolve(p, p.positionUid);
       if (m?.kind === 'conflict') return m;
       if (m) return { kind: 'existing', candidate: m.candidate };
-      const jobId = positions.find((x) => x.uid === p.positionUid)?.jobId ?? '';
-      const block = check(p.sourceContactId, jobId).block;
+      const position = positions.find((x) => x.uid === p.positionUid);
+      const block = check(p.sourceContactId, position?.jobId ?? '').block;
       if (block) return { kind: 'blocked', message: block };
+      // The position's recruiter owns the prospect; the HubSpot contact owner is not touched.
+      const owner = position ? recruiterFor(position.uid, positions) : p.owner;
       const candidate: ComeetCandidate = {
         uid: `CMT-${nextUid++}`,
         positionUid: p.positionUid,
@@ -300,10 +322,11 @@ export function createSimulatedComeet({ isAvailable, delayMs = 400, people, hist
         location: p.location,
         tags: p.tags,
         addedOn: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        kind: 'prospect',
         status: p.status,
         stage: 'Sourced',
-        owner: 'Unassigned',
-        nextStep: 'Assign an owner, who reviews the fit and decides on outreach.',
+        owner,
+        nextStep: reviewStep(owner),
         source: p.source,
         customFields: p.customFields,
         note: p.note,

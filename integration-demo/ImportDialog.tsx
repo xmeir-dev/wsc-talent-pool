@@ -107,8 +107,8 @@ export function ImportDialog({ sources, onClose, onImport }: Props) {
               ) : (
                 <p className="muted">
                   {p.created} new contacts · {p.merged} added as an event to an existing contact (no duplicate)
-                  {p.alreadyRecorded > 0 && ` · ${p.alreadyRecorded} already recorded for this event, skipped`}. All open roles are
-                  re-scored after import.
+                  {p.alreadyRecorded > 0 && ` · ${p.alreadyRecorded} already recorded for this event, skipped`}. Imported as
+                  non-marketing contacts. All open roles are re-scored after import.
                 </p>
               )}
               {p.uncertain.length > 0 && (

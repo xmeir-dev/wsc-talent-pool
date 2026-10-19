@@ -19,7 +19,7 @@ export interface Notice {
   id: string;
   title: string;
   body: string;
-  /** One line per role; each count opens that role's view on that group. */
+  /** The roles this event scored. The notice links to the first role's view; a single role's counts are shown inline. */
   lines: { jobId: string; title: string; shortlist: number; needsReview: number }[];
 }
 
@@ -113,41 +113,33 @@ export function HubSpotShell({ notices, unread, onReadAll, onOpenView, children 
             </button>
           </div>
           <ul>
-            {notices.map((n) => (
-              <li key={n.id} className="hs-notice">
-                <p className="hs-notice-app">WSC Talent Pool</p>
-                <p className="hs-notice-title">{n.title}</p>
-                <p className="muted">{n.body}</p>
-                <ul className="hs-notice-lines">
-                  {n.lines.map((l) => (
-                    <li key={l.jobId}>
-                      {l.title}:{' '}
-                      {(
-                        [
-                          ['shortlist', l.shortlist, 'shortlist'],
-                          ['needs_review', l.needsReview, 'needs review'],
-                        ] as const
-                      ).map(([outcome, count, label], i) => (
-                        <span key={outcome}>
-                          {i > 0 && ' · '}
-                          <button
-                            type="button"
-                            className="hs-link"
-                            aria-label={`${l.title}: ${count} ${label}`}
-                            onClick={() => {
-                              onOpenView(roleView(l.jobId, outcome));
-                              setOpen(false);
-                            }}
-                          >
-                            {count} {label}
-                          </button>
-                        </span>
-                      ))}
-                    </li>
-                  ))}
-                </ul>
-              </li>
-            ))}
+            {notices.map((n) => {
+              // One line per event and one link, to the first role's view; per-role counts live on the saved-view tabs.
+              const first = n.lines[0];
+              const only = n.lines.length === 1 ? first : undefined;
+              return (
+                <li key={n.id} className="hs-notice">
+                  <p className="hs-notice-app">WSC Talent Pool</p>
+                  <p>
+                    <strong className="hs-notice-title">{n.title}</strong> — {n.body}
+                    {only && ` ${only.shortlist} shortlist · ${only.needsReview} needs review.`}{' '}
+                    {first && (
+                      <button
+                        type="button"
+                        className="hs-link"
+                        aria-label={`View results: ${n.title}`}
+                        onClick={() => {
+                          onOpenView(roleView(first.jobId, 'shortlist'));
+                          setOpen(false);
+                        }}
+                      >
+                        View results
+                      </button>
+                    )}
+                  </p>
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}

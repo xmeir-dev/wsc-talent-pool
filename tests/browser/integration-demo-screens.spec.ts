@@ -17,10 +17,12 @@ const table = (page: Page, title: string, group: 'shortlist' | 'needs review') =
 const names = (page: Page, title: string, g: 'shortlist' | 'needs review') =>
   table(page, title, g).locator('tbody tr .hs-link').allInnerTexts();
 
-test('the notification opens a role’s needs-review queue; every person in it opens and Back keeps the group', async ({ page }) => {
+test('a role’s needs-review queue: every person in it opens and Back keeps the group', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
-  await notices(page).getByRole('button', { name: `${PM}: 5 needs review` }).click();
+  await page.getByRole('button', { name: 'Close notifications' }).click();
+  await page.getByRole('tab', { name: PM, exact: true }).click();
+  await group(page, 'Needs review').click();
   await expect(group(page, 'Needs review')).toHaveAttribute('aria-pressed', 'true');
   await expect(group(page, 'Needs review')).toHaveText('Needs review (5)');
   await expect(page.getByText('5 records')).toBeVisible();
@@ -79,7 +81,8 @@ test('group counts follow an import and a new role', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: 'Import contacts' });
   await dialog.getByRole('button', { name: 'Use sample file' }).click();
   await dialog.getByRole('button', { name: 'Import 5 contacts' }).click();
-  await notices(page).getByRole('button', { name: 'Senior ML Engineer: 7 needs review' }).click();
+  await notices(page).getByRole('button', { name: 'View results: Import finished: sample-conference-import.csv' }).click();
+  await group(page, 'Needs review').click();
   await expect(group(page, 'Needs review')).toHaveText('Needs review (7)');
   await expect(group(page, 'Shortlist')).toHaveText('Shortlist (7)');
   await expect(table(page, 'Senior ML Engineer', 'needs review').locator('tbody tr')).toHaveCount(7);
@@ -88,10 +91,13 @@ test('group counts follow an import and a new role', async ({ page }) => {
   await page.getByRole('button', { name: 'New position' }).click();
   await page.getByRole('dialog', { name: 'New position' }).getByRole('button', { name: 'Publish position' }).click();
   await page.getByRole('button', { name: 'HubSpot', exact: true }).click();
-  const link = notices(page).getByRole('button', { name: /^Computer Vision Engineer: \d+ needs review$/ });
-  const count = Number((await link.innerText()).split(' ')[0]);
-  await link.click();
+  // A single-role notice states that role's counts; they match the saved view's groups.
+  const line = notices(page).getByRole('listitem').filter({ hasText: 'New Comeet position: Computer Vision Engineer' });
+  const [, shortlisted, count] = /(\d+) shortlist · (\d+) needs review\./.exec(await line.innerText())!.map(Number);
+  await line.getByRole('button', { name: 'View results: New Comeet position: Computer Vision Engineer' }).click();
   await expect(page.getByRole('tab', { name: 'Computer Vision Engineer', selected: true })).toBeVisible();
+  await expect(group(page, 'Shortlist')).toHaveText(`Shortlist (${shortlisted})`);
+  await group(page, 'Needs review').click();
   await expect(group(page, 'Needs review')).toHaveText(`Needs review (${count})`);
   await expect(page.getByText(`${count} records`)).toBeVisible();
   expect(errors).toEqual([]);
