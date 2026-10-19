@@ -33,20 +33,23 @@ const SOURCES: { key: string; name: string; icon: string; home: string; steps: R
     icon: hubspotIcon,
     home: 'https://app.hubspot.com/',
     steps: [
-      <>Sign in to HubSpot as a Super Admin (or a user with Developer tools access).</>,
+      <>Sign in to HubSpot as a Super Admin, or a user with Developer tools access.</>,
       <>
-        Go to <b>Settings → Integrations → Service Keys</b> and click <b>Create a service key</b> (
+        Go to <b>Settings → Integrations → Service Keys</b> (in some accounts it sits under <b>Development</b> in the left menu) and click{' '}
+        <b>Create a service key</b> (
         {ext('https://developers.hubspot.com/blog/hubspot-service-keys-the-right-api-credential-for-data-integrations', 'HubSpot guide')}).
       </>,
       <>
-        Name it "WSC talent pool" and add these scopes: <code>crm.objects.contacts.read</code>, <code>crm.objects.contacts.write</code>,{' '}
-        <code>crm.schemas.contacts.write</code> (for the <code>talent_</code> properties), <code>crm.lists.read</code> and{' '}
-        <code>crm.lists.write</code>.
+        Name it "WSC talent pool" and add these scopes ({ext('https://developers.hubspot.com/docs/apps/developer-platform/build-apps/authentication/scopes', 'scope list')}
+        ): <code>crm.objects.contacts.read</code>, <code>crm.objects.contacts.write</code>, <code>crm.schemas.contacts.write</code> (to create the{' '}
+        <code>talent_</code> properties), <code>crm.lists.read</code> and <code>crm.lists.write</code>.
       </>,
-      <>Click Create, copy the key, then click Connect here and paste it.</>,
-      <>Contacts start syncing; new conference contacts are assessed as they arrive.</>,
+      <>Click Create, copy the key straight away, then paste it here.</>,
+      <>
+        Service keys don't receive webhooks, so the tool checks HubSpot for new and changed contacts every few minutes and assesses them.
+      </>,
     ],
-    fields: [{ id: 'key', label: 'Service key', placeholder: 'pat-eu1-…', secret: true }],
+    fields: [{ id: 'key', label: 'Service key', placeholder: 'Paste the key from HubSpot', secret: true }],
   },
   {
     key: 'comeet',
@@ -55,25 +58,23 @@ const SOURCES: { key: string; name: string; icon: string; home: string; steps: R
     home: 'https://app.comeet.co/app/',
     steps: [
       <>
-        In Comeet, open {ext('https://app.comeet.co/app/company/settings/careers', 'Company settings → Careers website')} and copy the company{' '}
-        <b>UID</b> and <b>Token</b>. These read the open jobs ({ext('https://developers.comeet.com/reference/careers-api-overview', 'Careers API')}).
+        Request API access with Comeet's {ext('https://forms.gle/2GhnJHovgH7vRQVS8', 'API access form')}. The Recruiting API is part of the
+        Enterprise plan ({ext('https://developers.comeet.com/reference/getting-started-comeet-customers', 'Comeet guide')}).
+      </>,
+      <>Comeet support replies with your <b>secret</b>.</>,
+      <>
+        A Comeet Admin or Owner opens {ext('https://app.comeet.co/app/index.html#/company/settings/integrations', 'Company settings → Integrations')}{' '}
+        and copies the <b>API key</b>.
       </>,
       <>
-        Email Comeet support and ask them to send{' '}
-        {ext('https://developers.comeet.com/reference/position-updates', 'position updates')} to this tool's address, so new and changed jobs
-        arrive on their own.
+        Ask support to send {ext('https://developers.comeet.com/reference/position-updates', 'position updates')} to this tool's address, so new
+        and changed jobs arrive on their own. Candidate statuses are read from the API every few minutes.
       </>,
-      <>
-        Ask support to turn on the {ext('https://developers.comeet.com/reference/retrieve-a-candidate', 'Recruiting API')} (included in
-        Enterprise, a paid add-on on Pro and Growth). It shows who is already a candidate and lets <b>Invite to job</b> add people to a
-        position.
-      </>,
-      <>Click Connect here and paste the UID, the Token and the Recruiting API key.</>,
+      <>Paste the API key and the secret here.</>,
     ],
     fields: [
-      { id: 'uid', label: 'Company UID', placeholder: 'e.g. 30.005' },
-      { id: 'token', label: 'Token', placeholder: 'From Careers website settings', secret: true },
-      { id: 'api', label: 'Recruiting API key', placeholder: 'From Comeet support', secret: true, optional: true },
+      { id: 'key', label: 'API key', placeholder: 'From Settings → Integrations', secret: true },
+      { id: 'secret', label: 'Secret', placeholder: 'From Comeet support', secret: true },
     ],
   },
   {
@@ -87,15 +88,19 @@ const SOURCES: { key: string; name: string; icon: string; home: string; steps: R
         {ext('https://support.google.com/drive/answer/2375091', 'how to create a folder')}).
       </>,
       <>Move each event's sign-up form into it, or keep one shared form there with the event as a dropdown question.</>,
-      <>Click Connect here and sign in with the Google account that owns the folder. Allow read-only access to its forms and responses.</>,
       <>
-        Every form in the folder is watched for new responses (
-        {ext('https://developers.google.com/workspace/forms/api/guides/push-notifications', 'Google Forms API')}); new sign-ups arrive within
-        minutes. Forms outside the folder are ignored.
+        Click <b>Sign in with Google</b> below with an account that can open the folder, and allow read-only access to Drive and to form
+        responses. If WSC's Google Workspace limits outside apps, an admin allows this one first.
+      </>,
+      <>Paste the folder's link.</>,
+      <>
+        The tool watches each form in the folder for new responses (
+        {ext('https://developers.google.com/workspace/forms/api/guides/push-notifications', 'Google Forms API')}) and renews the watch weekly;
+        new sign-ups arrive within minutes. Forms outside the folder are ignored.
       </>,
     ],
     google: true,
-    fields: [{ id: 'folder', label: 'Event sign-ups folder', placeholder: 'https://drive.google.com/drive/folders/…' }],
+    fields: [{ id: 'folder', label: 'Event sign-ups folder link', placeholder: 'https://drive.google.com/drive/folders/…' }],
   },
   {
     key: 'slack',
@@ -104,17 +109,17 @@ const SOURCES: { key: string; name: string; icon: string; home: string; steps: R
     home: 'https://app.slack.com/',
     steps: [
       <>
-        Go to {ext('https://api.slack.com/apps', 'Slack apps')}, click <b>Create New App → From scratch</b>, name it "WSC talent pool" and pick
-        the WSC workspace.
+        {ext('https://api.slack.com/apps?new_app=1', 'Create a Slack app')} from scratch, name it "WSC talent pool" and pick the WSC workspace (
+        {ext('https://docs.slack.dev/app-management/quickstart-app-settings', 'Slack guide')}).
       </>,
       <>
         Under <b>OAuth &amp; Permissions → Bot Token Scopes</b>, add <code>chat:write</code>, <code>im:write</code>, <code>users:read</code> and{' '}
         <code>users:read.email</code> (to find each colleague by their work email).
       </>,
+      <>Click <b>Install to Workspace</b> and allow it; a Slack admin may need to approve the app.</>,
       <>
-        Click <b>Install to Workspace</b>; a Slack admin may need to approve it ({ext('https://api.slack.com/authentication/basics', 'Slack guide')}).
+        Back on <b>OAuth &amp; Permissions</b>, copy the <b>Bot User OAuth Token</b> (it starts with <code>xoxb-</code>) and paste it here.
       </>,
-      <>Copy the <b>Bot User OAuth Token</b> (starts with <code>xoxb-</code>), then paste it here.</>,
       <>Ask messages to WSC colleagues then go out as direct messages from the app, instead of being copied by hand.</>,
     ],
     fields: [{ id: 'token', label: 'Bot User OAuth Token', placeholder: 'xoxb-…', secret: true }],

@@ -93,6 +93,43 @@ export function BulkActions({ selected, jobs, onClear }: { selected: Attendee[];
   return (
     <div className="bulk-bar" role="region" aria-label="Selected attendees">
       <span className="bulk-count">{selected.length} selected</span>
+      <BulkPanel label="Ask WSC connections" icon={<HugeiconsIcon icon={BubbleChatIcon} size={16} strokeWidth={1.75} />} title="Ask WSC connections">
+        {(close) =>
+          asks.length ? (
+            <>
+              <ul className="bulk-asks">
+                {asks.map(({ employee, people }) => (
+                  <li key={employee.employeeId}>
+                    <Avatar size="sm" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
+                    <span className="bulk-ask-who">
+                      <span>{employee.fullName}</span>
+                      <span className="muted">about {names(people)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="muted bulk-note">Preview for {asks[0]!.employee.fullName}:</p>
+              <textarea className="ask-text" readOnly rows={6} value={askMessage(asks[0]!.employee, asks[0]!.people)} aria-label="Request preview" />
+              <div className="ask-actions">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  leftIcon={<HugeiconsIcon icon={SlackIcon} size={16} aria-hidden="true" />}
+                  onClick={() => {
+                    setStatus(`${asks.length} Slack ${asks.length === 1 ? 'message' : 'messages'} would go out, one per colleague.`);
+                    close();
+                  }}
+                >
+                  Send {asks.length} in Slack
+                </Button>
+                {unconnected > 0 && <span className="ask-status muted">{unconnected} selected have no WSC connection</span>}
+              </div>
+            </>
+          ) : (
+            <p className="muted">No one at WSC is connected to the selected people.</p>
+          )
+        }
+      </BulkPanel>
       <BulkPanel
         label="Invite to jobs"
         icon={<HugeiconsIcon icon={MailAdd01Icon} size={16} strokeWidth={1.75} />}
@@ -149,43 +186,6 @@ export function BulkActions({ selected, jobs, onClear }: { selected: Attendee[];
             </div>
           </>
         )}
-      </BulkPanel>
-      <BulkPanel label="Ask WSC connections" icon={<HugeiconsIcon icon={BubbleChatIcon} size={16} strokeWidth={1.75} />} title="Ask WSC connections">
-        {(close) =>
-          asks.length ? (
-            <>
-              <ul className="bulk-asks">
-                {asks.map(({ employee, people }) => (
-                  <li key={employee.employeeId}>
-                    <Avatar size="sm" src={AVATAR[employee.employeeId]} fallback={initials(employee.fullName)} aria-hidden="true" />
-                    <span className="bulk-ask-who">
-                      <span>{employee.fullName}</span>
-                      <span className="muted">about {names(people)}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="muted bulk-note">Preview for {asks[0]!.employee.fullName}:</p>
-              <textarea className="ask-text" readOnly rows={6} value={askMessage(asks[0]!.employee, asks[0]!.people)} aria-label="Request preview" />
-              <div className="ask-actions">
-                <Button
-                  size="sm"
-                  variant="primary"
-                  leftIcon={<HugeiconsIcon icon={SlackIcon} size={16} aria-hidden="true" />}
-                  onClick={() => {
-                    setStatus(`${asks.length} Slack ${asks.length === 1 ? 'message' : 'messages'} would go out, one per colleague.`);
-                    close();
-                  }}
-                >
-                  Send {asks.length} in Slack
-                </Button>
-                {unconnected > 0 && <span className="ask-status muted">{unconnected} selected have no WSC connection</span>}
-              </div>
-            </>
-          ) : (
-            <p className="muted">No one at WSC is connected to the selected people.</p>
-          )
-        }
       </BulkPanel>
       <span className="bulk-status muted" role="status">
         {status}
