@@ -10,7 +10,7 @@ import { BulkActions } from './BulkActions';
 import { NewConference } from './NewConference';
 import { SyncStatus } from './SyncStatus';
 import { STATUS_LABEL, statusIn, type RoleStatus } from './activity';
-import { useActivity, useKnownPeople } from './actionStore';
+import { rememberIdentities, useActivity, useKnownPeople } from './actionStore';
 import { PageFooter } from './PageFooter';
 import { PoolCards } from './PoolCards';
 import { bundledSources } from './data';
@@ -45,6 +45,11 @@ export function App({ sources: initial = bundledSources }: { sources?: SourceTex
   // People with saved history keep the ID it is under, even if a later import adds or drops a LinkedIn URL or email.
   const known = useKnownPeople();
   const loaded = useMemo(() => load(sources, known), [sources, known]);
+  // Links this build accepted (e.g. an import adding a LinkedIn URL to someone with history) are saved now, not
+  // only when an action succeeds, so the next reload still finds the person.
+  useEffect(() => {
+    if (loaded.ok) void rememberIdentities(loaded.dataset.candidates);
+  }, [loaded]);
   if (!loaded.ok) {
     return (
       <main className="content">

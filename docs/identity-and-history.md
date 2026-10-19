@@ -18,7 +18,9 @@ Each person has one durable ID, `candidateKey` in code and `candidate_key` in th
 - a row with an email and no LinkedIn URL joins the one person whose LinkedIn rows carry that email (a supplied person re-imported with only their email stays one person). If several LinkedIn people share that email it joins none of them and is a `conflict`;
 - rows with no LinkedIn URL and no email join only rows with the same source ID **and** the same name. Different names that share only a source ID (`X Alice`, `X Bob`) stay different people, flagged `possible_duplicate`.
 
-**Which ID they get.** If an identifier only this person has in the data is already on record (the supplied people's file, or history this browser saved, which remembers each person's LinkedIn URLs and emails), they keep that ID. So a person first known by email who comes back with the same email and a LinkedIn URL keeps the ID their invite is under. Identifiers on record for two different people make the person a `conflict`; they are never merged. Otherwise the ID is a hash of the **anchor**: the first LinkedIn URL, else the email, else source ID + name. Rows with none of these get a row anchor (a hash of the whole row) and are **unanchored**.
+**Saved identity links.** For each person with saved history this browser keeps their **links**: every LinkedIn URL and email they have been resolved with, and, for someone known only by a source ID, that source ID + name (the join rule above). A link is saved as soon as a pool build accepts it (on load and after every import), whether or not anyone acts. It is accepted only when the person's identity is `resolved` and no link of theirs is on record for someone else; people without saved history get nothing stored, so their IDs stay exactly what the CLI gives.
+
+**Which ID they get.** If a link only this person has in the data is already on record (the supplied people's file, or a saved link), they keep that ID. So a person first known by email who comes back with the same email and a LinkedIn URL keeps the ID their invite is under; after a reload, the same LinkedIn URL with a new email is still them; and a source-ID-only person who later arrives with the same source ID, the same name and an email keeps theirs. Links on record for two different people make the person a `conflict` (held: no action until the source data is fixed); they are never merged, and the row's links are not saved. Otherwise the ID is a hash of the **anchor**: the first LinkedIn URL, else the email, else source ID + name. Rows with none of these get a row anchor (a hash of the whole row) and are **unanchored**.
 
 What follows from that:
 
@@ -50,10 +52,10 @@ For other modules: use `candidateKey` as the person key, build maps with `indexB
 
 An attendee list added with **Add conference** (recruiter view) or **Import** (integration demo) lives in memory until the page reloads (or **Reset demo**); the supplied files are the pool. Saved history is not lost when an import goes: it stays under the person ID, and the store remembers that person's LinkedIn URLs and emails, so:
 
-- importing the same person again (same email or LinkedIn URL, with or without the other) gives the same ID and their history comes back, with no duplicate person. For the same event edition it adds no second attendance either: a retried list changes nothing ([importing and events](importing-and-events.md#repeated-rows-and-retries));
+- importing the same person again with any identifier already linked to them (an email, a LinkedIn URL, or source ID + name) gives the same ID and their history comes back, with no duplicate person. Each import that brings them a new identifier links it too, so email → email + LinkedIn → LinkedIn + new email is one person across reloads. For the same event edition it adds no second attendance either: a retried list changes nothing ([importing and events](importing-and-events.md#repeated-rows-and-retries));
 - a different person, even with the same name, gets a different ID and inherits nothing.
 
-A source-ID-only person's ID includes their name, so an app-assigned contact ID later given to someone else does not hand them the first person's history. As a further guard the store remembers the name each ID was first saved for; if a source-ID person shows up under that ID with a different name, their actions are blocked and the profile asks whether it is the same person.
+A source-ID-only person's ID includes their name, so an app-assigned contact ID later given to someone else does not hand them the first person's history. A source ID + name link is trusted only as far as the source system's IDs are: the integration demo numbers new contacts `HS076`, `HS077`… on each import, so after a reload a different person with the same name could be given the same number and be held or shown the first person's history (never the other way round: never a second, empty history). As a further guard the store remembers the name each ID was first saved for; if a source-ID person shows up under that ID with a different name, their actions are blocked and the profile asks whether it is the same person.
 
 ## Saved history and two tabs
 
@@ -63,7 +65,7 @@ Every action (invite, reference request, Mark sent) is one readwrite transaction
 
 - two tabs acting on different people both keep their action (nothing is overwritten);
 - two tabs inviting the same person to the same role record one invite; the other is told "Not sent: Already contacted for … on …";
-- after a commit the other tabs re-read the history (BroadcastChannel), so their buttons update.
+- after a commit the other tabs re-read the history (BroadcastChannel), so their buttons update. Saved identity links work the same way (`rememberIdentities`): one transaction, then the other tabs re-read and rebuild their pool with them.
 
 Each action has a deduplication identity: person + role for an invite, person + colleague for a reference request, one do-not-contact per person. A unique index on it backs up the rule. Drafts (Prepared) and failed sends can repeat; only Sent and Confirmed count.
 
@@ -79,6 +81,8 @@ The store is version 2. Version 1 was a list in `localStorage` (`wsc-activity-v1
 - duplicate sends the old store allowed are all kept, and count once.
 
 The v1 list is left in place, never wiped. No history is guessed onto a person or deleted on upgrade.
+
+Saved identity links live in the existing `people` store (each person's `identifiers`), so no schema change was needed. Records saved before links were kept on import still work: a source-ID-only person saved with no identifiers is found through their stored anchor.
 
 **Clearing saved history.** Nothing in the apps deletes it. The integration demo's **Reset demo** starts the demo session over: it discards imports, positions added in Comeet, handed-off Comeet records and notifications, but leaves the saved outreach history alone. The recruiter view has no reset. To clear a browser's saved history, clear the site's data for that address (in Chrome: the site-information icon in the address bar → Site settings → Delete data, or DevTools → Application → Storage → Clear site data); the seeded examples come back on their own. Tests use `resetActivity()`.
 

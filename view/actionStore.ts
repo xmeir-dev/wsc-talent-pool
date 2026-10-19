@@ -17,7 +17,7 @@
  * this page only.
  */
 import { useSyncExternalStore } from 'react';
-import { isRegisteredPersonId } from '../pipeline';
+import { identityBlock, isRegisteredPersonId } from '../pipeline';
 import {
   actionGate,
   checkInvite,
@@ -26,7 +26,10 @@ import {
   dedupKeyFor,
   isEntry,
   knownPeople,
+  linksOf,
   SEEDED,
+  storedAsSomeoneElse,
+  storedUnderOtherId,
   type Channel,
   type Entry,
   type HeldEntry,
@@ -134,7 +137,7 @@ export function decide(
     // Remember who this is, and every identifier they now have that no one else with history owns.
     const before = people.get(p.candidateKey);
     const owned = knownPeople(people);
-    const added = p.identity.identifiers.filter((id) => !(before?.identifiers ?? []).includes(id) && (owned.get(id) ?? p.candidateKey) === p.candidateKey);
+    const added = linksOf(p).filter((id) => !(before?.identifiers ?? []).includes(id) && (owned.get(id) ?? p.candidateKey) === p.candidateKey);
     if (!before || added.length > 0) {
       const stored: StoredPerson = before
         ? { ...before, identifiers: [...(before.identifiers ?? []), ...added].sort() }
@@ -147,6 +150,37 @@ export function decide(
     return { ok: true, entry };
   });
   return { results, entries, people: newPeople, seq };
+}
+
+/**
+ * Identity links a dataset build accepted, kept whether or not anyone acts. For each person with saved history in
+ * this browser whose identity is resolved and not under review, any identifier they now have that is not yet on
+ * record (a LinkedIn URL added to an email-only person, a new email on a known URL, an email on a source-ID-only
+ * person) is added to their stored record. Without this, a link learned by an import was lost on reload unless an
+ * action happened to succeed, and a later import with the new identifier could start a second, empty history.
+ * Never takes an identifier already on record for someone else (resolvePeople makes that person a conflict).
+ * People with no saved history get nothing stored, so their IDs stay what the CLI gives them. Pure.
+ */
+export function acceptIdentities(saved: Pick<Saved, 'entries' | 'people'>, persons: readonly PersonRef[]): StoredPerson[] {
+  const people = new Map(saved.people);
+  const withEntries = new Set(saved.entries.map((e) => e.candidateKey));
+  const changed = new Map<string, StoredPerson>();
+  const at = new Date().toISOString();
+  for (const p of persons) {
+    const before = people.get(p.candidateKey);
+    if (!before && !withEntries.has(p.candidateKey)) continue;
+    if (identityBlock(p.identity) || storedAsSomeoneElse({ people }, p) || storedUnderOtherId({ people }, p)) continue;
+    const owned = knownPeople(people);
+    const have = new Set(before?.identifiers ?? []);
+    const added = linksOf(p).filter((id) => !have.has(id) && (owned.get(id) ?? p.candidateKey) === p.candidateKey);
+    if (before && added.length === 0) continue;
+    const stored: StoredPerson = before
+      ? { ...before, identifiers: [...have, ...added].sort() }
+      : { personId: p.candidateKey, anchor: p.identity.anchor, fullName: p.fullName, since: at, identifiers: added.sort() };
+    people.set(p.candidateKey, stored);
+    changed.set(p.candidateKey, stored);
+  }
+  return [...changed.values()];
 }
 
 /**
@@ -417,6 +451,28 @@ export async function recordActions(requests: readonly ActionRequest[]): Promise
   await refreshActivity();
   announce();
   return results;
+}
+
+/**
+ * Saves the identity links a pool build accepted (acceptIdentities), in one transaction against the store as it is
+ * now. The views call it whenever they build a pool, so a link learned by an import survives a reload even if no
+ * action follows. Other tabs re-read and rebuild with it. Does nothing (no write) when there is nothing new.
+ */
+export async function rememberIdentities(persons: readonly PersonRef[]): Promise<void> {
+  const b = await getBackend();
+  if (acceptIdentities(await b.read(), persons).length === 0) return;
+  let changed = 0;
+  try {
+    changed = await b.write((saved) => {
+      const people = acceptIdentities(saved, persons);
+      return { result: people.length, put: { people } };
+    });
+  } catch {
+    return; // Not saved; the next build tries again, and actions still check identity in their own transaction.
+  }
+  if (changed === 0) return;
+  await refreshActivity();
+  announce();
 }
 
 /** A recruiter's decision on held v1 history: it is this person's (it joins their history) or it is not. */
