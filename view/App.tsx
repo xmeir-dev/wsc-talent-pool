@@ -244,7 +244,10 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
           }}
         />
       </header>
-      <h2 className="section-label">At a glance</h2>
+      {/* Same section title as the profile page, so spacing under the header and above content matches. */}
+      <h2 className="d-section-title">
+        <span>At a glance</span>
+      </h2>
       <PoolCards
         pool={pool}
         attendeesPer={filterCounts(pool).conferences}
