@@ -7,6 +7,7 @@ import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, fil
 import { CandidateDetail } from './CandidateDetail';
 import { AttendeeTable } from './CandidateTable';
 import { NewConference } from './NewConference';
+import { SyncStatus } from './SyncStatus';
 import { PoolCards } from './PoolCards';
 import { bundledSources } from './data';
 import offices from '../data/wsc_offices.json';
@@ -232,6 +233,7 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
           <h1>WSC talent pool</h1>
           <p className="muted">Conference to candidate pipeline</p>
         </div>
+        <SyncStatus />
         <NewConference
           existing={pool.conferences.map((c) => c.name)}
           onAdd={(text, names, profiles) => {
