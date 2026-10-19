@@ -161,7 +161,7 @@ function Lead({ a }: { a: CandidateAssessment }) {
   // A message from whoever wrote it: their avatar beside a speech bubble, who and where underneath.
   return (
     <section>
-      <SectionTitle>Note</SectionTitle>
+      <SectionTitle>{o.source === 'recruiter' ? 'Recruiter note' : 'AI summary'}</SectionTitle>
       <div className="d-lead">
         {o.by ? (
           <Avatar size="md" src={AVATAR[o.by.id]} fallback={initials(o.by.name)} aria-hidden="true" />
