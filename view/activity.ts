@@ -240,3 +240,15 @@ export function describe(e: Entry): string {
   }
 }
 export const STATE_LABEL: Record<SendState, string> = { prepared: 'Prepared', sent: 'Sent', failed: 'Failed', confirmed: 'Confirmed' };
+
+/** The table's status for a person: the selected role's, or their most advanced role's when none is selected. */
+export function statusIn(
+  entries: readonly Entry[],
+  candidateKey: string,
+  jobs: readonly { jobId: string; title: string }[],
+  jobId: string | null,
+): RoleState & { job?: { jobId: string; title: string } } {
+  const comeet = comeetFor(candidateKey);
+  const job = jobId ? jobs.find((j) => j.jobId === jobId) : undefined;
+  return job ? { ...roleStatus(entries, comeet, candidateKey, job), job } : overallStatus(entries, comeet, candidateKey, jobs);
+}

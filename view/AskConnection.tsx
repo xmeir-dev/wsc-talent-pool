@@ -22,6 +22,7 @@ import {
   type PossibleReference,
 } from '../pipeline';
 import type { Relevant } from './attendees';
+import { checkReference, comeetFor, record, useActivity } from './activity';
 import { AVATAR, initials } from './avatars';
 import { bundledSources } from './data';
 import './ask-connection.css';
@@ -232,6 +233,12 @@ export function AskConnection({
     }
   };
   const email = `mailto:${employeeEmail(employee)}?subject=${encodeURIComponent(`Quick question about ${ctx.candidate.fullName}`)}&body=${encodeURIComponent(message)}`;
+  const entries = useActivity();
+  const key = ctx.candidate.candidateKey;
+  // A colleague is asked about a person once; copying or opening email only prepares a request.
+  const check = checkReference(entries, comeetFor(key), key, employee.employeeId, employee.fullName);
+  const prepare = (channel: 'copy' | 'email') =>
+    record({ kind: 'reference', candidateKey: key, employeeId: employee.employeeId, employeeName: employee.fullName, channel, state: 'prepared' });
 
   return (
     <Popover
@@ -319,6 +326,8 @@ export function AskConnection({
             </div>
           )}
         </div>
+        {check.block && !status && <p className="check-note is-block">{check.block}</p>}
+        {check.warn && !check.block && !status && <p className="check-note">{check.warn}</p>}
         <div className="ask-actions">
           <Button
             size="sm"
@@ -328,7 +337,8 @@ export function AskConnection({
             title={copied ? 'Copied' : 'Copy message'}
             onClick={async () => {
               if (await copy()) {
-                setStatus(null);
+                prepare('copy');
+                setStatus('Prepared, not sent: mark it sent on the profile once you send it.');
                 setCopied(true);
                 window.setTimeout(() => setCopied(false), 1600);
               } else setStatus('Select the text and copy it');
@@ -340,20 +350,29 @@ export function AskConnection({
             size="sm"
             variant="primary"
             leftIcon={<HugeiconsIcon icon={SlackIcon} size={16} aria-hidden="true" />}
-            onClick={async () =>
-              setStatus((await copy()) ? `Copied. Paste it in your Slack DM to ${theirFirst}.` : 'Select the text and copy it')
-            }
+            disabled={!!check.block}
+            onClick={() => {
+              record({ kind: 'reference', candidateKey: key, employeeId: employee.employeeId, employeeName: employee.fullName, channel: 'slack', state: 'sent' });
+              setStatus(`Sent · Simulated: the Slack app would message ${theirFirst}.`);
+            }}
           >
             Send in Slack
           </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            href={email}
-            leftIcon={<HugeiconsIcon icon={Mail01Icon} size={16} aria-hidden="true" />}
-          >
-            Email {theirFirst}
-          </Button>
+          {/* Opening an email app proves nothing was sent, so it only prepares the request. */}
+          {!check.block && (
+            <Button
+              size="sm"
+              variant="secondary"
+              href={email}
+              onClick={() => {
+                prepare('email');
+                setStatus('Prepared, not sent: mark it sent on the profile once you send it.');
+              }}
+              leftIcon={<HugeiconsIcon icon={Mail01Icon} size={16} aria-hidden="true" />}
+            >
+              Email {theirFirst}
+            </Button>
+          )}
           <span className="ask-status muted" role="status">
             {status}
           </span>

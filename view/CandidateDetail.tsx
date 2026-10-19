@@ -9,10 +9,12 @@ import {
   Calendar03Icon,
   Cancel01Icon,
   CheckmarkBadge01Icon,
+  Clock01Icon,
   HelpCircleIcon,
   InformationCircleIcon,
   Linkedin01Icon,
   Mail01Icon,
+  MailSend01Icon,
   StarIcon,
   Tick02Icon,
   UserIcon,
@@ -26,6 +28,7 @@ import { AVATAR, initials } from './avatars';
 import comeetHistory from '../data/demo_comeet.json';
 import comeetIcon from './assets/comeet.png';
 import hubspotIcon from './assets/hubspot.png';
+import { current, comeetFor, describe, personFlags, record, roleStatus, shortDay, STATE_LABEL, STATUS_LABEL, useActivity } from './activity';
 import { InviteToJob } from './InviteToJob';
 import { CountryFlag } from './Location';
 import { overviewFor } from './Overview';
@@ -282,14 +285,14 @@ function JobFit({
   job,
   outcome,
   onJob,
-  comeet,
+  role,
 }: {
   a: CandidateAssessment;
   job: Job;
   outcome: Relevant;
   onJob: (jobId: string) => void;
-  /** Their Comeet status for this role, if they are a candidate for it. */
-  comeet?: { outcome: string; date: string };
+  /** Where they stand for this role: from Comeet, or from our own outreach. */
+  role: { text: string; fromComeet: boolean };
 }) {
   const profile = a.candidate.profile;
   const checks = fitChecks(a, job);
@@ -317,10 +320,14 @@ function JobFit({
       ) : (
         <p className="unknown">Unknown: no usable LinkedIn profile. Missing information is not a negative finding.</p>
       )}
-      {/* Read from Comeet (made up here, see data/demo_comeet.json): where they stand for this role. */}
+      {/* Where they stand for this role: Comeet's status once handed off, otherwise our own outreach (simulated). */}
       <p className="d-fit-comeet">
-        <img src={comeetIcon} alt="" width={16} height={16} />
-        {comeet ? `${comeet.outcome} · ${monthYear(comeet.date)}` : 'Not a candidate in Comeet yet'}
+        {role.fromComeet ? (
+          <img src={comeetIcon} alt="" width={16} height={16} />
+        ) : (
+          <HugeiconsIcon icon={MailSend01Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
+        )}
+        {role.text}
       </p>
     </section>
   );
@@ -430,6 +437,23 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
   );
   const hubspotId = c.attendances.map((at) => at.hubspotId).find(Boolean);
   const applications = COMEET[c.candidateKey] ?? [];
+  const entries = useActivity();
+  const comeet = comeetFor(c.candidateKey);
+  const history = current(entries)
+    .filter((e) => e.candidateKey === c.candidateKey)
+    .reverse();
+  const flags = personFlags(entries, comeet, c.candidateKey);
+  const roleLine = (job: Job) => {
+    const s = roleStatus(entries, comeet, c.candidateKey, { jobId: job.jobId, title: job.title });
+    const rec = comeet.find((r) => r.job === job.title);
+    if (rec && (s.status === 'in_process' || s.status === 'comeet_lead' || s.status === 'comeet_closed'))
+      return { fromComeet: true, text: `${rec.outcome} · ${monthYear(rec.date)}` };
+    if (s.status === 'not_contacted') return { fromComeet: false, text: 'Not contacted for this role' };
+    return { fromComeet: false, text: [STATUS_LABEL[s.status], s.at && shortDay(s.at), s.simulated && 'Simulated'].filter(Boolean).join(' · ') };
+  };
+  // The latest request to each colleague about this person, if any.
+  const askedBy = (employeeId: string) =>
+    history.find((e): e is Extract<typeof e, { kind: 'reference' }> => e.kind === 'reference' && e.employeeId === employeeId);
   const contacts = [
     c.email && { key: 'email', icon: <HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.75} />, name: 'Email', value: c.email, href: `mailto:${c.email}` },
     c.linkedinUrl && {
@@ -516,6 +540,34 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
                     )}
                   </span>
                   <span className="muted">{employee.title}</span>
+                  {(() => {
+                    const asked = askedBy(employee.employeeId);
+                    if (!asked) return null;
+                    return (
+                      <span className="d-asked">
+                        Asked {shortDay(asked.at)} · {STATE_LABEL[asked.state]} · Simulated
+                        {asked.state === 'prepared' && (
+                          <button
+                            type="button"
+                            className="d-mark-sent"
+                            onClick={() =>
+                              record({
+                                kind: 'reference',
+                                candidateKey: c.candidateKey,
+                                employeeId: asked.employeeId,
+                                employeeName: asked.employeeName,
+                                channel: asked.channel,
+                                state: 'confirmed',
+                                supersedes: asked.id,
+                              })
+                            }
+                          >
+                            Mark sent
+                          </button>
+                        )}
+                      </span>
+                    );
+                  })()}
                 </span>
                 <AskConnection employee={employee} refs={refs} ctx={ctx} asButton />
               </li>
@@ -530,6 +582,41 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
             </li>
           ))}
         </ul>
+      )}
+    </section>
+  );
+
+  const activityCard = (
+    <section className="d-card">
+      <Label icon={Clock01Icon}>Activity</Label>
+      {flags.doNotContact && <p className="check-note is-block">Asked not to be contacted.</p>}
+      {flags.inProcess && (
+        <p className="check-note is-block">
+          In process for {flags.inProcess.job} in Comeet ({flags.inProcess.outcome.replace(/^in process:\s*/i, '')}). New invites are blocked.
+        </p>
+      )}
+      {history.length ? (
+        <ul className="d-rows">
+          {history.map((e) => (
+            <li key={e.id}>
+              <span className="d-person">
+                <span>{describe(e)}</span>
+                <span className="muted">
+                  {[
+                    (e.kind === 'invite' || e.kind === 'reference') && STATE_LABEL[e.state],
+                    e.simulated && 'Simulated',
+                    shortDay(e.at),
+                    e.by,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted">No outreach yet</p>
       )}
     </section>
   );
@@ -560,6 +647,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
           <div className="d-col">
             {contactCard}
             {metCard}
+            {activityCard}
           </div>
           <div className="d-col">
             {careerCard}
@@ -579,7 +667,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
                 job={job}
                 outcome={outcome}
                 onJob={onJob}
-                comeet={applications.find((ap) => ap.job === job.title)}
+                role={roleLine(job)}
               />
             ))}
           </div>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Download04Icon, Briefcase01Icon, Calendar03Icon, Location01Icon } from '@hugeicons/core-free-icons';
+import { Download04Icon, Briefcase01Icon, Calendar03Icon, Location01Icon, MailSend01Icon } from '@hugeicons/core-free-icons';
 import { Button, Callout, EmptyState, PaginationFooter, usePagination, type SortState } from '@meir-labs/ui-kit';
 import { buildDataset, DataValidationError, parseCsv, toCsv, type Dataset, type SourceTexts } from '../pipeline';
 import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
@@ -9,6 +9,7 @@ import { AttendeeTable } from './CandidateTable';
 import { BulkActions } from './BulkActions';
 import { NewConference } from './NewConference';
 import { SyncStatus } from './SyncStatus';
+import { STATUS_LABEL, statusIn, useActivity, type RoleStatus } from './activity';
 import { PoolCards } from './PoolCards';
 import { bundledSources } from './data';
 import offices from '../data/wsc_offices.json';
@@ -87,18 +88,35 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
 
   // One table, same columns, whatever the filter. Exactly one job: that job's ranked order until a header is clicked.
   const job = jobIds.length === 1 ? jobIds[0]! : null;
+  const entries = useActivity();
+  const jobList = useMemo(() => pool.jobs.map((j) => ({ jobId: j.jobId, title: j.title })), [pool]);
+  // Outreach status: the selected role's, or each person's most advanced role when none is selected.
+  const [statuses, setStatuses] = useState<string[]>([]);
+  const others = useMemo(() => filterAttendees(pool, conferences, jobIds, countries), [pool, conferences, jobIds, countries]);
+  const statusOf = useMemo(() => {
+    const m = new Map<string, RoleStatus>();
+    for (const p of others) m.set(p.candidate.candidateKey, statusIn(entries, p.candidate.candidateKey, jobList, job).status);
+    return m;
+  }, [others, entries, jobList, job]);
+  const statusOptions: FilterOption[] = useMemo(() => {
+    const count = new Map<RoleStatus, number>();
+    for (const s of statusOf.values()) count.set(s, (count.get(s) ?? 0) + 1);
+    return (Object.keys(STATUS_LABEL) as RoleStatus[])
+      .filter((s) => count.has(s))
+      .map((s) => ({ value: s, label: STATUS_LABEL[s], short: STATUS_LABEL[s], count: count.get(s)! }));
+  }, [statusOf]);
   const attendees = useMemo(() => {
-    const list = filterAttendees(pool, conferences, jobIds, countries);
+    const list = statuses.length ? others.filter((p) => statuses.includes(statusOf.get(p.candidate.candidateKey)!)) : others;
     if (sort || !job) return sortAttendees(list, sort ?? BY_RELEVANT_JOB, pool.jobs);
     const order = new Map(jobItems(pool, job, []).map(({ a }, i) => [a.candidate.candidateKey, i]));
     return [...list].sort((x, y) => order.get(x.candidate.candidateKey)! - order.get(y.candidate.candidateKey)!);
-  }, [pool, conferences, jobIds, countries, sort, job]);
+  }, [pool, others, statuses, statusOf, sort, job]);
   const shown = attendees.length;
   const [pageSize, setPageSize] = useState(12);
   const paged = usePagination(attendees, pageSize);
   // A new filter, sort or page size starts again at the first page.
   const { reset } = paged;
-  useEffect(reset, [reset, conferences, jobIds, countries, sort, pageSize]);
+  useEffect(reset, [reset, conferences, jobIds, countries, statuses, sort, pageSize]);
   const { conferenceOptions, jobOptions, countryOptions } = useMemo(() => {
     const counts = filterCounts(pool);
     const conferenceOptions: FilterOption[] = pool.conferences.map((c) => {
@@ -198,7 +216,7 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
   const onExport = () =>
     downloadFile(job ? exportCsv(pool.results.get(job)!) : attendeesCsv(attendees, conferences, jobIds, countries));
 
-  const filtered = conferences.length > 0 || jobIds.length > 0 || countries.length > 0;
+  const filtered = conferences.length > 0 || jobIds.length > 0 || countries.length > 0 || statuses.length > 0;
   const filters = (
     <div className="filters">
       <span className="list-count">{filtered ? `${shown} of ${total} attendees` : `All ${total} attendees`}</span>
@@ -218,6 +236,7 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         onChange={setCountries}
         featured={{ label: 'WSC offices', values: Object.keys(offices.offices), more: (n) => `${n} more countries` }}
       />
+      <FilterMenu label="Status" icon={MailSend01Icon} options={statusOptions} selected={statuses} onChange={setStatuses} />
       <Button variant="secondary" className="export" onClick={onExport} aria-label="Download CSV">
         <HugeiconsIcon icon={Download04Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
         <span className="export-label" aria-hidden="true">
@@ -229,8 +248,9 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
   const empty = <EmptyState variant="no-results" title="No one matches these filters." />;
 
   return (
-    <main className="content">
-      <header className="page-head d-head home-head">
+    <>
+      <main className="content">
+        <header className="page-head d-head home-head">
         <img className="page-logo" src="/favicon-192.png" alt="WSC Sports" width={44} height={44} />
         <div className="page-title">
           <h1>WSC talent pool</h1>
@@ -272,6 +292,8 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
         onSort={setSort}
         selected={picked}
         onSelect={setPicked}
+        jobs={jobList}
+        statusJob={job}
       />
       {shown > 0 && (
         <PaginationFooter
@@ -286,13 +308,18 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
           noun="attendee"
         />
       )}
-      <footer className="page-foot">
-        Made by{' '}
-        <a href="https://www.linkedin.com/in/meir-rosenschein" target="_blank" rel="noreferrer">
-          Meir Rosenschein
-        </a>{' '}
-        for WSC Sports, Oct 18–20, 2026
-      </footer>
     </main>
+      <footer className="page-foot">
+        <span>
+          Made by{' '}
+          <a href="https://www.linkedin.com/in/meir-rosenschein" target="_blank" rel="noreferrer">
+            Meir Rosenschein
+          </a>{' '}
+          for
+        </span>
+        <img src="/favicon-192.png" alt="" width={16} height={16} />
+        <span>WSC Sports, Oct 18–20, 2026</span>
+      </footer>
+    </>
   );
 }

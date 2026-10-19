@@ -217,17 +217,20 @@ ul {
   border-color: var(--ml-border-subtle);
 }
 
+/* Full-width sign-off under the page: fades into a faint wash of the WSC lime at the bottom. */
 .page-foot {
-  /* Pulls into the page's 60px bottom padding so the space under it matches the space above. */
-  margin: 40px 0 calc(var(--ml-space-lg) - 60px);
-  padding-top: var(--ml-space-lg);
-  /* Full-width line above, same as the header's bottom line. */
-  border: 0 solid;
-  border-image: linear-gradient(to bottom, var(--ml-border-subtle) 1px, transparent 1px) fill 0 / 0 / 0 100vmax;
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 40px var(--ml-space-xl) 24px;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, #d7f20a 18%, transparent));
   font-size: 13px;
-  /* Fainter than the faint token: a sign-off, not content. */
-  color: color-mix(in srgb, var(--ml-text-faint) 65%, var(--ml-bg));
+  color: var(--ml-text-muted);
+}
+.page-foot img {
+  border-radius: 4px;
 }
 .page-foot a {
   color: inherit;
@@ -1442,4 +1445,37 @@ ul {
 /* Wrapper that only catches the header tick-box click; it adds no box of its own. */
 .dt-catch {
   display: contents;
+}
+
+/* Outreach status: the word, then the role (when none is selected) and Simulated, quietly. */
+.status-cell {
+  display: flex;
+  flex-direction: column;
+}
+.status-cell .muted {
+  font-size: 13px;
+}
+
+/* Under a WSC connection: whether they were already asked about this person. */
+.d-asked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ml-text-faint);
+}
+.d-mark-sent {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ml-text-muted);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.d-mark-sent:hover,
+.d-mark-sent:focus-visible {
+  color: var(--ml-text);
 }

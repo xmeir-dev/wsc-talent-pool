@@ -7,6 +7,7 @@ import recruiters from '../data/demo_recruiters.json';
 import type { Relevant } from './attendees';
 import comeetIcon from './assets/comeet.png';
 import { initials } from './avatars';
+import { checkInvite, comeetFor, record, useActivity } from './activity';
 
 const RECRUITERS: Record<string, { id: string; name: string }> = recruiters.byConference;
 const firstName = (name: string) => name.split(' ')[0] ?? name;
@@ -35,9 +36,18 @@ export function InviteToJob({ c, fits }: { c: Candidate; fits: { job: Job; outco
   const [jobId, setJobId] = useState(fits[0]?.job.jobId ?? '');
   const [text, setText] = useState<string | null>(null);
   const [status, setStatus] = useState<ReactNode>(null);
+  const entries = useActivity();
   const job = fits.find((f) => f.job.jobId === jobId)?.job ?? fits[0]?.job;
   if (!job) return null;
   const message = text ?? inviteMessage(c, job);
+  // The same rules as bulk invites: blocked people cannot be sent to; a warning is shown first.
+  const check = checkInvite(
+    entries,
+    comeetFor(c.candidateKey),
+    c.candidateKey,
+    { jobId: job.jobId, title: job.title },
+    fits.map((f) => ({ jobId: f.job.jobId, title: f.job.title })),
+  );
 
   return (
     <Popover
@@ -92,15 +102,18 @@ export function InviteToJob({ c, fits }: { c: Candidate; fits: { job: Job; outco
           rows={11}
           aria-label={`Invite to ${c.fullName}`}
         />
+        {check.block && !status && <p className="check-note is-block">{check.block}</p>}
+        {check.warn && !check.block && <p className="check-note">{check.warn}</p>}
         <div className="ask-actions">
           <Button
             size="sm"
             variant="primary"
-            disabled={!c.email}
+            disabled={!c.email || !!check.block}
             leftIcon={<img src={comeetIcon} alt="" width={16} height={16} className="invite-comeet" />}
-            onClick={() =>
-              setStatus(`Demo: Comeet would add ${firstName(c.fullName)} to ${job.title} and send this from there.`)
-            }
+            onClick={() => {
+              record({ kind: 'invite', candidateKey: c.candidateKey, jobId: job.jobId, jobTitle: job.title, channel: 'comeet', state: 'sent' });
+              setStatus(`Sent · Simulated: Comeet would invite ${firstName(c.fullName)} to ${job.title}.`);
+            }}
           >
             Send invite
           </Button>

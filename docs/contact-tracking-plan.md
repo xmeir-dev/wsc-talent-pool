@@ -1,6 +1,6 @@
 # Contact tracking plan
 
-Status: revised 2026-10-19 after two CTO reviews; the assignment scope below is approved to build. Live connections and sending stay out of scope.
+Status: revised 2026-10-19 after two CTO reviews. The assignment scope below is built (simulated, in `view/activity.ts`); live connections and sending stay out of scope.
 
 Proposal: keep a history of every outreach action and show where each person stands **for each role**, with person-wide warnings on top, so recruiters can see who was contacted, how and with what result, and are stopped before contacting someone they shouldn't. Outreach stays separate from candidate fit: nothing here changes a ranking.
 

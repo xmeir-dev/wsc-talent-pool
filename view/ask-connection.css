@@ -713,3 +713,22 @@
 .bulk-ask-who .muted {
   font-size: 13px;
 }
+
+/* Why an action is blocked (or worth a second look) before sending. */
+.check-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--ml-bg-surface);
+  font-size: 13px;
+  color: var(--ml-text-muted);
+}
+.check-note.is-block {
+  color: var(--ml-text);
+}
+
+.bulk-blocked {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
