@@ -30,7 +30,10 @@ ul {
   font-style: italic;
 }
 
+/* One column for every page (list and profile): same width, same side padding. */
 .content {
+  max-width: 1040px;
+  margin: 0 auto;
   padding: var(--ml-space-lg) var(--ml-space-xl);
 }
 
@@ -569,10 +572,6 @@ ul {
 }
 [data-meirlabs-theme='dark'] .detail {
   --amber: #f59e0b;
-}
-.profile {
-  max-width: 1040px;
-  margin: 0 auto;
 }
 
 /* Header: same as the list page, with the initials where the logo sits. */
@@ -1295,35 +1294,14 @@ ul {
   }
   /* Attendees: name, role, conference, jobs; connections stay on the profile. */
   .attendees .ml-dt td:nth-child(4) {
-    margin-top: 4px;
-  }
-  .attendees .ml-dt td:nth-child(5) {
     display: none;
   }
 }
 
-/* One-line overview under a name: recruiter's note as plain text; AI-written summary marked only by a violet sparkle. */
 .who {
   display: flex;
   flex-direction: column;
   gap: 2px;
-}
-.overview {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 6px;
-  font-size: 14px;
-  line-height: 1.45;
-  color: var(--ml-text);
-}
-.overview-mark {
-  display: inline-flex;
-  margin-top: 3px;
-  flex-shrink: 0;
-  color: #8250df;
-}
-[data-meirlabs-theme='dark'] .overview-mark {
-  color: #a371f7;
 }
 .skill-tip {
   display: flex;
@@ -1342,19 +1320,6 @@ ul {
 .skill-tip-rows > :nth-child(odd) {
   opacity: 0.65;
 }
-.note-tip {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 280px;
-}
-.note-tip-by {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  opacity: 0.75;
-}
-
 /* The kit's 4px icon-to-label gap reads cramped beside bold labels; a little more room on every button. */
 .ml-btn {
   gap: 6px;

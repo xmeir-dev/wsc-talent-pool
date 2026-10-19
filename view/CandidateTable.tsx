@@ -4,7 +4,6 @@ import {
   Calendar03Icon,
   CheckListIcon,
   Clock01Icon,
-  File02Icon,
   StarIcon,
   Briefcase04Icon,
   UserIcon,
@@ -14,7 +13,6 @@ import type { CandidateAssessment } from '../pipeline';
 import type { Attendee } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
 import { CountryFlag } from './Location';
-import { Overview } from './Overview';
 import { WscMark } from './WscMark';
 import { fitChecks, shortDate, TABLE_OUTCOME_LABEL, type FitCheckKey } from './format';
 
@@ -45,8 +43,6 @@ const who = (c: CandidateAssessment['candidate'], role: string) => (
     {role && <span className="muted who-role">{role}</span>}
   </span>
 );
-
-const about = (c: CandidateAssessment['candidate']) => <Overview c={c} />;
 
 /** An empty cell gets a faint hairline instead of words. */
 const empty = <span className="empty-line" role="img" aria-label="None" />;
@@ -126,14 +122,14 @@ export function AttendeeTable({
     {
       id: 'candidate',
       header: <Head icon={UserIcon} label="Candidate" />,
-      width: '19%',
+      width: '22%',
       sortable: true,
       accessor: ({ candidate, role }) => who(candidate, role),
     },
     {
       id: 'conference',
       header: <Head icon={Calendar03Icon} label="Conference" />,
-      width: '17%',
+      width: '20%',
       sortable: true,
       accessor: ({ candidate }) => (
         <span className="confs">
@@ -150,10 +146,9 @@ export function AttendeeTable({
       id: 'relevant',
       header: <Head icon={Briefcase04Icon} label="Relevant job" />,
       sortable: true,
-      width: '27%',
+      width: '34%',
       accessor: ({ relevantFor }) => <RelevantFor list={relevantFor} />,
     },
-    { id: 'about', header: <Head icon={File02Icon} label="About candidate" />, width: '21%', accessor: ({ candidate }) => about(candidate) },
     { id: 'ref', header: <Head icon={<WscMark />} label="WSC connections" />, accessor: connections },
   ];
 

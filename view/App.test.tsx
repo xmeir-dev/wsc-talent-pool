@@ -126,14 +126,11 @@ describe('recruiter view: list', () => {
     expect(alexei.querySelector('.empty-line')).not.toBeNull();
   });
 
-  it("shows the recruiter's note under a name, else a marked AI-written summary", () => {
+  it('has no About candidate column; the note lives on the profile', () => {
     render(<App />);
+    expect(screen.queryByRole('columnheader', { name: /About candidate/ })).toBeNull();
     const adaora = screen.getByRole('row', { name: /Adaora Okafor/ });
-    expect(adaora.querySelector('.overview-recruiter')?.textContent).toBe('Building video analytics platform for African leagues');
-    const amara = screen.getByRole('row', { name: /Amara Diallo/ });
-    expect(amara.querySelector('.overview-recruiter')).toBeNull();
-    expect(amara.querySelector('.overview-ai')?.textContent).toBe('Telecom network engineer for 4 years, previously at Sonatel, focused on MPLS and LTE.');
-    expect(within(amara).getByLabelText('AI-written')).toBeTruthy();
+    expect(adaora.textContent).not.toContain('Building video analytics platform for African leagues');
   });
 
   it('filters by several conferences; the menu stays open while chips toggle, and Clear resets it', async () => {
