@@ -743,7 +743,12 @@ ul {
   white-space: nowrap;
 }
 .d-label-name svg {
+  display: block;
   flex-shrink: 0;
+}
+/* All-caps label: centre on the cap height, not the line box, so it sits mid-icon. */
+.d-label-name > span {
+  text-box: trim-both cap alphabetic;
 }
 .d-meta {
   font-variant-numeric: tabular-nums;
