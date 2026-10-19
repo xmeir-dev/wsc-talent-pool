@@ -4,6 +4,10 @@ import { Add01Icon, ArrowDown01Icon, ArrowUp01Icon, Briefcase04Icon, Calendar03I
 import { Button } from '@meir-labs/ui-kit';
 import type { Pool } from './attendees';
 import { shortDate } from './format';
+import comeetIcon from './assets/comeet.png';
+
+/** Assumed Comeet position link; the real one uses Comeet's position ID, which the snapshot doesn't have. */
+const comeetPosition = (jobId: string) => `https://app.comeet.co/app/positions/${jobId}`;
 
 interface Row {
   /** The filter value: a conference name or a job ID. */
@@ -12,6 +16,8 @@ interface Row {
   /** Quiet text right after the name. */
   sub?: string;
   value: string;
+  /** Opens the row's record in another tool, shown as that tool's icon. */
+  link?: { href: string; label: string; icon: string };
 }
 
 /** One card: icon, label, big count, then "See all" opens the full list in place. A row click adds it to the table filter or takes it out, so several can be on at once. */
@@ -62,7 +68,7 @@ function PoolCard({
             // Keep the filter in list order, like the filter menus.
             const toggle = () => onSelect(rows.map((x) => x.id).filter((id) => (id === r.id ? !on : selected.includes(id))));
             return (
-              <li key={r.id}>
+              <li key={r.id} className={r.link ? 'has-link' : undefined}>
                 <button type="button" className="pool-row" aria-pressed={on} onClick={toggle}>
                   <span>
                     {r.name}
@@ -70,6 +76,11 @@ function PoolCard({
                   </span>
                   <span className="muted">{r.value}</span>
                 </button>
+                {r.link && (
+                  <a className="pool-link" href={r.link.href} target="_blank" rel="noreferrer" aria-label={r.link.label} title={r.link.label}>
+                    <img src={r.link.icon} alt="" width={16} height={16} />
+                  </a>
+                )}
               </li>
             );
           })}
@@ -112,7 +123,12 @@ export function PoolCards({
         icon={Briefcase04Icon}
         label="Open jobs"
         count={pool.jobs.length}
-        rows={jobs.map((j) => ({ id: j.id, name: j.name, value: `${j.n} shortlisted` }))}
+        rows={jobs.map((j) => ({
+          id: j.id,
+          name: j.name,
+          value: `${j.n} shortlisted`,
+          link: { href: comeetPosition(j.id), label: `Open ${j.name} in Comeet`, icon: comeetIcon },
+        }))}
         action="New job"
         {...jobFilter}
         primary
