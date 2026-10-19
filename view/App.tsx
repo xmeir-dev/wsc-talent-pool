@@ -10,6 +10,7 @@ import { BulkActions } from './BulkActions';
 import { NewConference } from './NewConference';
 import { SyncStatus } from './SyncStatus';
 import { STATUS_LABEL, statusIn, useActivity, type RoleStatus } from './activity';
+import { PageFooter } from './PageFooter';
 import { PoolCards } from './PoolCards';
 import { bundledSources } from './data';
 import offices from '../data/wsc_offices.json';
@@ -196,7 +197,8 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
 
   if (open && openAttendee) {
     return (
-      <main className="content profile">
+      <>
+        <main className="content profile">
         <CandidateDetail
           a={open.a}
           row={open.row}
@@ -209,7 +211,9 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
             back();
           }}
         />
-      </main>
+        </main>
+        <PageFooter />
+      </>
     );
   }
 
@@ -308,18 +312,8 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
           noun="attendee"
         />
       )}
-    </main>
-      <footer className="page-foot">
-        <span>
-          Made by{' '}
-          <a href="https://www.linkedin.com/in/meir-rosenschein" target="_blank" rel="noreferrer">
-            Meir Rosenschein
-          </a>{' '}
-          for
-        </span>
-        <img src="/favicon-192.png" alt="" width={16} height={16} />
-        <span>WSC Sports, Oct 18–20, 2026</span>
-      </footer>
+      </main>
+      <PageFooter />
     </>
   );
 }
