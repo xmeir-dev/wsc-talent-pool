@@ -882,7 +882,8 @@ svg {
 
 .tm-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* The recommendation column never shrinks below its longest word, so its tag cannot cross the divider. */
+  grid-template-columns: minmax(min-content, 1fr) repeat(3, minmax(0, 1fr));
   border: 1px solid var(--hs-border);
   border-radius: 8px;
 }
@@ -1778,7 +1779,7 @@ svg {
     grid-template-columns: minmax(0, 1fr);
   }
   .tm-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(min-content, 1fr) minmax(0, 1fr);
   }
   .tm-stat:nth-child(3) {
     border-left: 0;
