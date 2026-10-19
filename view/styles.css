@@ -598,7 +598,7 @@ ul {
   top: 0;
   z-index: 10;
   margin: calc(-1 * var(--ml-space-lg)) 0 0;
-  padding: var(--ml-space-lg) 0 var(--ml-space-sm);
+  padding: var(--ml-space-lg) 0;
   /* Background and the bottom line run edge to edge; a border-image outset doesn't add sideways scroll. */
   border: 0 solid;
   border-image: linear-gradient(to top, var(--ml-border-subtle) 1px, var(--ml-bg) 1px) fill 0 / 0 / 0 100vmax;
@@ -607,6 +607,15 @@ ul {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+/* Trim the name to its capitals and the role to its baseline: the flag centres on the letters,
+   and the header's padding is the same visible space above the name and below the role. */
+.d-head h1 {
+  text-box: trim-both cap alphabetic;
+}
+.d-head .page-title p {
+  margin-top: 8px;
+  text-box: trim-end cap alphabetic;
 }
 .d-reach {
   display: flex;
