@@ -9,14 +9,17 @@ import {
   Calendar03Icon,
   Cancel01Icon,
   CheckmarkBadge01Icon,
+  CheckmarkCircle02Icon,
   Clock01Icon,
   HelpCircleIcon,
   InformationCircleIcon,
   Linkedin01Icon,
   Mail01Icon,
   MailSend01Icon,
+  Message01Icon,
   StarIcon,
   Tick02Icon,
+  UnavailableIcon,
   UserIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
@@ -28,11 +31,21 @@ import { AVATAR, initials } from './avatars';
 import comeetHistory from '../data/demo_comeet.json';
 import comeetIcon from './assets/comeet.png';
 import hubspotIcon from './assets/hubspot.png';
-import { current, comeetFor, describe, personFlags, record, roleStatus, shortDay, STATE_LABEL, STATUS_LABEL, useActivity } from './activity';
+import { current, comeetFor, describe, personFlags, record, roleStatus, shortDay, STATE_LABEL, STATUS_LABEL, useActivity, type Entry } from './activity';
 import { InviteToJob } from './InviteToJob';
 import { CountryFlag } from './Location';
 import { overviewFor } from './Overview';
 import { currentRole, fitChecks, shortDate, years } from './format';
+
+/** The Activity row's icon: what kind of step it was, tinted red for a decline and green for interest. */
+const activityMark = (e: Entry): { icon: IconSvgElement; tone?: 'bad' | 'good' } => {
+  if (e.kind === 'invite') return { icon: MailSend01Icon };
+  if (e.kind === 'reference') return { icon: UserMultipleIcon };
+  if (e.kind === 'do_not_contact') return { icon: UnavailableIcon, tone: 'bad' };
+  if (e.outcome === 'declined') return { icon: Cancel01Icon, tone: 'bad' };
+  if (e.outcome === 'interested') return { icon: CheckmarkCircle02Icon, tone: 'good' };
+  return { icon: Message01Icon };
+};
 
 /** How long they overlapped, from year-only dates: 2019–2021 is 2y, a single shared year is under one. */
 const yearsTogether = (start: number, end: number) => {
@@ -596,24 +609,23 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
         </p>
       )}
       {history.length ? (
-        <ul className="d-rows">
-          {history.map((e) => (
-            <li key={e.id}>
-              <span className="d-person">
-                <span>{describe(e)}</span>
-                <span className="muted">
-                  {[
-                    (e.kind === 'invite' || e.kind === 'reference') && STATE_LABEL[e.state],
-                    e.simulated && 'Simulated',
-                    shortDay(e.at),
-                    e.by,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')}
+        <ul className="d-rows d-activity">
+          {history.map((e) => {
+            const { icon, tone } = activityMark(e);
+            const state = (e.kind === 'invite' || e.kind === 'reference') && e.state !== 'sent' && e.state !== 'confirmed' ? STATE_LABEL[e.state] : null;
+            return (
+              <li key={e.id}>
+                <span className={`d-activity-icon${tone ? ` is-${tone}` : ''}`}>
+                  <HugeiconsIcon icon={icon} size={15} strokeWidth={1.75} aria-hidden="true" />
                 </span>
-              </span>
-            </li>
-          ))}
+                <span className="d-activity-text">
+                  {describe(e)}
+                  {state && <span className="muted"> · {state}</span>}
+                </span>
+                <span className="d-activity-date">{shortDay(e.at)}</span>
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="muted">No outreach yet</p>

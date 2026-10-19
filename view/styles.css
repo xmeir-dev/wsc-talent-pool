@@ -909,6 +909,35 @@ ul {
 .d-rows li:last-child {
   border-bottom: 0;
 }
+/* Activity: an icon for the kind of step, what happened, the date on the right. */
+.d-activity-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--ml-bg-surface);
+  color: var(--ml-text-muted);
+}
+.d-activity-icon.is-bad {
+  background: var(--ml-color-danger-muted);
+  color: var(--ml-color-danger);
+}
+.d-activity-icon.is-good {
+  background: var(--ml-color-success-muted);
+  color: var(--ml-color-success);
+}
+.d-activity-text {
+  flex: 1;
+  min-width: 0;
+}
+.d-activity-date {
+  flex: none;
+  font-size: 13px;
+  color: var(--ml-text-faint);
+  font-variant-numeric: tabular-nums;
+}
 .d-contact a {
   display: inline-flex;
   align-items: center;
