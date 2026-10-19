@@ -913,6 +913,12 @@ svg {
   line-height: 1.2;
 }
 
+/* The stat cell can shrink below the tag's one-line width; wrap inside it instead of spilling into the next stat. */
+.tm-stat .hs-tag {
+  max-width: 100%;
+  white-space: normal;
+}
+
 .tm-why {
   display: grid;
   gap: 6px;

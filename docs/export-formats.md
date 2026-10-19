@@ -5,13 +5,13 @@ There are two kinds of download, for two different jobs. They are labelled separ
 | Purpose | Where | Format | Values |
 |---|---|---|---|
 | **For people to open** (the default) | Recruiter view: **Download** → **Attendees shown (N), Excel**; with one job chosen also **Full JOB… assessment (N), Excel** | Excel workbook, `.xlsx`, MIME `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`. Files `attendees_<filters>.xlsx` and `candidates_<job_id>.xlsx` | Every text value is a text cell; counts, ranks and years are number cells. Text is exactly as in the pool, with nothing added |
-| **CRM import / data interchange** | Recruiter view, with one job chosen: **CRM import CSV, full JOB… assessment (exact values)**. CLI: `npm run pipeline` | UTF-8 CSV, `candidates_<job_id>.csv`, `text/csv` | Exactly as in the source, byte for byte the same file as the CLI writes (a test checks this). Not meant to be opened in a spreadsheet program |
+| **CRM import / data interchange** | Recruiter view, with one job chosen: **CRM import CSV, full JOB… assessment**. CLI: `npm run pipeline` | UTF-8 CSV, `candidates_<job_id>.csv`, `text/csv` | The same normalized values as the assessment (surrounding whitespace trimmed on import), not sanitized for formulas. Byte for byte the same file as the CLI writes (a test checks this). Not meant to be opened in a spreadsheet program |
 
 ## Why two formats
 
-A spreadsheet program guesses each CSV cell's type when it opens the file. A cell that starts with `=`, `+`, `-` or `@` can be turned into a formula, so an attendee called `=1+2` shows as `3`. Putting the cell in CSV quotes does not prevent this: quotes only protect commas and line breaks. Changing the value instead (adding an apostrophe or a space in front) would corrupt the CRM import and the exact CLI file. So:
+A spreadsheet program guesses each CSV cell's type when it opens the file. A cell that starts with `=`, `+`, `-` or `@` can be turned into a formula, so an attendee called `=1+2` shows as `3`. Putting the cell in CSV quotes does not prevent this: quotes only protect commas and line breaks. Changing the value instead (adding an apostrophe or a space in front) would corrupt the CRM import and break the match with the CLI file. So:
 
-- The **CSV stays exact**. `pipeline/csv.ts` writes values unchanged, only quoting where CSV punctuation requires it. The shared serializer never adds prefixes. Import this file into HubSpot with the [mapping in Schema and flow](schema-and-flow.md#hubspot-preparation); do not open it in a spreadsheet program to read it.
+- The **CSV is not sanitized**. `pipeline/csv.ts` writes the assessment's values unchanged (the normalized values: both importers trim surrounding whitespace), only quoting where CSV punctuation requires it. The shared serializer never adds prefixes. Import this file into HubSpot with the [mapping in Schema and flow](schema-and-flow.md#hubspot-preparation); do not open it in a spreadsheet program to read it.
 - The **Excel file says what each cell is** (`pipeline/xlsx.ts`, a small writer in this repo with no added dependency):
   - Text is written as an inline string cell (`t="inlineStr"`) with the Text number format (`@`). It is never a formula element and never left for the program to type, and it is not changed. A value that looks like a number in a text column (such as `007`) stays text.
   - Counts, ranks and years (`shortlist_rank`, the skill counts, `years_experience`, `connection_count`) are number cells, so they sort and add up. The column decides the type, never the look of a value.
@@ -31,7 +31,7 @@ The Excel assessment has the same columns, people, order and decisions as the CS
 3. opens each file in LibreOffice and saves it as `.xlsx` (open and save), then reopens the saved file and converts it to UTF-8 CSV;
 4. checks the saved file contains no formula (`<f>`) anywhere, every one of those values is a string cell with exactly the original text, the reopened CSV shows the same literal text, and every count and rank is still a number cell with the same value.
 
-A control in the same test opens the exact CRM CSV directly in LibreOffice: there `=1+2` does become a formula showing 3. This shows both why the CRM file is not the person download and that the check can detect a formula.
+A control in the same test opens the CRM CSV directly in LibreOffice: there `=1+2` does become a formula showing 3. This shows both why the CRM file is not the person download and that the check can detect a formula.
 
 One known reader behaviour: a CR LF pair inside a cell comes back from LibreOffice as a single line feed (its line-break convention). That value is still text, not a formula, and the test records this. Every other tested value comes back byte for byte.
 

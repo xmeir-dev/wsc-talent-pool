@@ -50,7 +50,7 @@ None of this feeds the ranking. Each item is made up because the supplied files 
 
 **Sources**
 
-- **Add conference** adds one event's attendee list to the pool in the browser, from a file, a link to a Google Form's responses sheet (it must be viewable by anyone with the link; the form itself can't be read without signing in), or the sample. It lasts until the page reloads. In production, forms in the shared "Event sign-ups" folder send sign-ups to HubSpot directly ([which forms sync](#how-conference-lists-arrive)).
+- **Add conference** adds one event's attendee list to the pool in the browser, from a file, a link to a Google Form's responses sheet (it must be viewable by anyone with the link; the form itself can't be read without signing in), or the sample. It lasts until the page is reloaded. In production, forms in the shared "Event sign-ups" folder send sign-ups to HubSpot directly ([which forms sync](#how-conference-lists-arrive)).
 - **Connect accounts** in the header opens **Your accounts**: HubSpot, Comeet, Google Forms and Slack, each **Not connected** at first, with real setup steps and links (checked against each tool's docs on 2026-10-19) and the fields each needs. Nothing typed there is stored or sent; **Connect** and **Sync now** only show what would happen. In production, new jobs and sign-ups arrive on their own once connected, with a nightly check, and **Sync now** forces one.
 
 ## How conference lists arrive

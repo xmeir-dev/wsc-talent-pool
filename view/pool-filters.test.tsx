@@ -88,7 +88,7 @@ describe('#003 download scope', () => {
     expect(items.map((i) => i.textContent)).toEqual([
       `Attendees shown (${shown}), Excel`,
       `Full JOB001 assessment (${all.candidates.length}), Excel`,
-      'CRM import CSV, full JOB001 assessment (exact values)',
+      'CRM import CSV, full JOB001 assessment',
     ]);
 
     await user.click(items[0]!);

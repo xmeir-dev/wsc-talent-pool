@@ -258,7 +258,7 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
           items={[
             { value: 'shown', label: `Attendees shown (${shown}), Excel` },
             { value: 'job', label: `Full ${job} assessment (${pool.results.get(job)!.candidates.length}), Excel` },
-            { value: 'crm', label: `CRM import CSV, full ${job} assessment (exact values)` },
+            { value: 'crm', label: `CRM import CSV, full ${job} assessment` },
           ]}
           onSelect={(v) =>
             v === 'crm'
