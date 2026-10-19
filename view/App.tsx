@@ -2,10 +2,11 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { HugeiconsIcon } from '@hugeicons/react';
 import { Download04Icon, Briefcase01Icon, Calendar03Icon, Location01Icon } from '@hugeicons/core-free-icons';
 import { Button, Callout, EmptyState, PaginationFooter, usePagination, type SortState } from '@meir-labs/ui-kit';
-import { buildDataset, DataValidationError, type Dataset, type SourceTexts } from '../pipeline';
+import { buildDataset, DataValidationError, parseCsv, toCsv, type Dataset, type SourceTexts } from '../pipeline';
 import { attendeesCsv, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
 import { CandidateDetail } from './CandidateDetail';
 import { AttendeeTable } from './CandidateTable';
+import { NewConference } from './NewConference';
 import { PoolCards } from './PoolCards';
 import { bundledSources } from './data';
 import offices from '../data/wsc_offices.json';
@@ -29,7 +30,15 @@ function load(sources: SourceTexts): Loaded {
   }
 }
 
-export function App({ sources = bundledSources }: { sources?: SourceTexts }) {
+/** The attendee list with another event's rows added, in the original columns. */
+function withAttendees(base: string, added: string): string {
+  const a = parseCsv(base);
+  return toCsv(a.header, [...a.records, ...parseCsv(added).records]);
+}
+
+export function App({ sources: initial = bundledSources }: { sources?: SourceTexts }) {
+  // An added conference lives in memory only; a reload goes back to the supplied files.
+  const [sources, setSources] = useState(initial);
   const loaded = useMemo(() => load(sources), [sources]);
   if (!loaded.ok) {
     return (
@@ -45,10 +54,17 @@ export function App({ sources = bundledSources }: { sources?: SourceTexts }) {
       </main>
     );
   }
-  return <Workspace dataset={loaded.dataset} />;
+  const addAttendees = (text: string): string[] | null => {
+    const next = { ...sources, attendees: withAttendees(sources.attendees, text) };
+    const tried = load(next);
+    if (!tried.ok) return tried.problems;
+    setSources(next);
+    return null;
+  };
+  return <Workspace dataset={loaded.dataset} onAddAttendees={addAttendees} />;
 }
 
-function Workspace({ dataset }: { dataset: Dataset }) {
+function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttendees: (text: string) => string[] | null }) {
   const pool = useMemo(() => buildPool(dataset), [dataset]);
   // Filters live here, so they survive a trip to a profile and back.
   // Empty means no filter. Values are conference names and job IDs, in list order.
@@ -215,6 +231,18 @@ function Workspace({ dataset }: { dataset: Dataset }) {
         attendeesPer={filterCounts(pool).conferences}
         conferences={{ selected: conferences, onSelect: setConferences }}
         jobs={{ selected: jobIds, onSelect: setJobIds }}
+        newConference={
+          <NewConference
+            known={new Set(pool.attendees.map((p) => p.candidate.email.toLowerCase()).filter(Boolean))}
+            existing={pool.conferences.map((c) => c.name)}
+            onAdd={(text, names) => {
+              const problems = onAddAttendees(text);
+              // Show who came: filter the table to the new event.
+              if (!problems) setConferences(names);
+              return problems;
+            }}
+          />
+        }
       />
       {filters}
       <AttendeeTable

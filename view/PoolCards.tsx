@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import { Add01Icon, ArrowDown01Icon, ArrowUp01Icon, Briefcase04Icon, Calendar03Icon } from '@hugeicons/core-free-icons';
-import { Button } from '@meir-labs/ui-kit';
+import { ArrowDown01Icon, ArrowUp01Icon, Briefcase04Icon, Calendar03Icon } from '@hugeicons/core-free-icons';
 import type { Pool } from './attendees';
 import { shortDate } from './format';
 import comeetIcon from './assets/comeet.png';
@@ -27,7 +26,6 @@ function PoolCard({
   count,
   rows,
   action,
-  primary,
   selected,
   onSelect,
 }: {
@@ -35,8 +33,8 @@ function PoolCard({
   label: string;
   count: number;
   rows: Row[];
-  action: string;
-  primary?: boolean;
+  /** The card's one action, if any (e.g. New conference). */
+  action?: ReactNode;
   selected: string[];
   onSelect: (next: string[]) => void;
 }) {
@@ -57,9 +55,7 @@ function PoolCard({
             </button>
           </p>
         </div>
-        <Button variant={primary ? 'primary' : 'secondary'} leftIcon={<HugeiconsIcon icon={Add01Icon} size={16} strokeWidth={1.75} />}>
-          {action}
-        </Button>
+        {action}
       </div>
       {open && (
         <ul className="pool-list">
@@ -99,11 +95,13 @@ export function PoolCards({
   attendeesPer,
   conferences,
   jobs: jobFilter,
+  newConference,
 }: {
   pool: Pool;
   attendeesPer: Map<string, number>;
   conferences: Filter;
   jobs: Filter;
+  newConference: ReactNode;
 }) {
   const shortlisted = (jobId: string) =>
     pool.attendees.filter((p) => p.relevantFor.some((r) => r.job.jobId === jobId && r.outcome === 'shortlist')).length;
@@ -115,7 +113,7 @@ export function PoolCards({
         label="Conferences"
         count={pool.conferences.length}
         rows={pool.conferences.map((c) => ({ id: c.name, name: c.name, sub: shortDate(c.date), value: `${attendeesPer.get(c.name)} attendees` }))}
-        action="New conference"
+        action={newConference}
         {...conferences}
       />
       <PoolCard
@@ -128,9 +126,7 @@ export function PoolCards({
           value: `${j.n} shortlisted`,
           link: { href: comeetPosition(j.id), label: `Open ${j.name} in Comeet`, icon: comeetIcon },
         }))}
-        action="New job"
         {...jobFilter}
-        primary
       />
     </div>
   );

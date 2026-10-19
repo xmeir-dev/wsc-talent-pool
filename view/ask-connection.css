@@ -253,3 +253,45 @@
 .ask-context .ask-disclosure:hover {
   color: var(--ml-text-muted);
 }
+
+/* New conference: the same panel, narrower; one file row, then Add to pool. */
+.ask.new-conf {
+  width: min(380px, calc(100vw - 32px));
+}
+.new-conf-pick,
+.new-conf-file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--ml-border-subtle);
+  border-radius: 10px;
+  background: var(--ml-bg-surface);
+}
+.new-conf-file > svg {
+  flex-shrink: 0;
+  color: var(--ml-text-muted);
+}
+.new-conf-what {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-right: auto;
+}
+.new-conf-what .muted {
+  font-size: 13px;
+}
+.new-conf-change {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ml-text-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.new-conf-change:hover,
+.new-conf-change:focus-visible {
+  color: var(--ml-text);
+  text-decoration: underline;
+}
