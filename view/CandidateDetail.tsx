@@ -15,6 +15,7 @@ import {
   Mail01Icon,
   StarIcon,
   Tick02Icon,
+  UserIcon,
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
 import { Avatar, Hint } from '@meir-labs/ui-kit';
@@ -399,7 +400,7 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
   ].filter((x) => !!x);
   const contactCard = (
     <section className="d-card">
-      <Label icon={Mail01Icon}>Contact</Label>
+      <Label icon={UserIcon}>Contact</Label>
       <ul className="d-rows d-contact">
         {contacts.map((x) => (
           <li key={x.key}>
