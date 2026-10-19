@@ -257,6 +257,18 @@ export function CandidateDetail({ a, row, job, jobPicker, onBack }: Props) {
             </section>
           )}
 
+          <section className="d-card">
+            <Label icon={Calendar03Icon}>Met at</Label>
+            <ul className="d-rows">
+              {a.events.map((e) => (
+                <li key={e.attendance.hubspotId}>
+                  <span>{e.attendance.conferenceName}</span>
+                  <span className="muted">{shortDate(e.attendance.conferenceDate)}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
           {showConnections && (
             <section className="d-card">
               <Label icon={UserMultipleIcon}>{people.length + conn.unresolvedIds.length > 1 ? 'WSC connections' : 'WSC connection'}</Label>
@@ -290,39 +302,6 @@ export function CandidateDetail({ a, row, job, jobPicker, onBack }: Props) {
             </section>
           )}
         </div>
-      </div>
-
-      <div className="d-grid d-grid-even">
-        <section className="d-card">
-          <Label icon={Calendar03Icon}>Met at</Label>
-          <ul className="d-rows">
-            {a.events.map((e) => (
-              <li key={e.attendance.hubspotId}>
-                <span>{e.attendance.conferenceName}</span>
-                <span className="muted">{shortDate(e.attendance.conferenceDate)}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section className="d-card">
-          <Label icon={Mail01Icon}>Contact</Label>
-          <ul className="d-contact">
-            <li>
-              <HugeiconsIcon icon={Mail01Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
-              {c.email ? <a href={`mailto:${c.email}`}>{c.email}</a> : <span className="unknown">No email</span>}
-            </li>
-            <li>
-              <HugeiconsIcon icon={Linkedin01Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
-              {c.linkedinUrl ? (
-                <a href={linkedinHref(c.linkedinUrl)} target="_blank" rel="noreferrer">
-                  {c.linkedinUrl}
-                </a>
-              ) : (
-                <span className="unknown">No LinkedIn URL</span>
-              )}
-            </li>
-          </ul>
-        </section>
       </div>
 
       {a.dataQualityFlags.length > 0 && (

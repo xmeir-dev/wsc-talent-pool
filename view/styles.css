@@ -693,9 +693,6 @@ ul {
   gap: var(--ml-space-md);
   align-items: start;
 }
-.d-grid-even {
-  align-items: stretch;
-}
 .d-col {
   display: flex;
   flex-direction: column;
@@ -761,32 +758,6 @@ ul {
 }
 .d-person .muted {
   font-size: 13px;
-}
-.d-contact {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.d-contact li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: var(--ml-text-muted);
-}
-.d-contact a {
-  color: var(--ml-text);
-  text-decoration: none;
-  overflow-wrap: anywhere;
-}
-.d-contact li + li a {
-  color: var(--ml-text-muted);
-}
-.d-contact a:hover {
-  text-decoration: underline;
 }
 @media (max-width: 720px) {
   .d-grid,
