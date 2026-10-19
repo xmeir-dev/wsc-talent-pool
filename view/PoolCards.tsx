@@ -7,6 +7,8 @@ import { shortDate } from './format';
 
 interface Row {
   name: string;
+  /** Quiet text right after the name. */
+  sub?: string;
   value: string;
 }
 
@@ -37,7 +39,10 @@ function PoolCard({ icon, label, count, rows, action, primary }: { icon: IconSvg
         <ul className="pool-list">
           {rows.map((r) => (
             <li key={r.name}>
-              <span>{r.name}</span>
+              <span>
+                {r.name}
+                {r.sub && <span className="muted pool-sub">{r.sub}</span>}
+              </span>
               <span className="muted">{r.value}</span>
             </li>
           ))}
@@ -57,7 +62,7 @@ export function PoolCards({ pool, attendeesPer }: { pool: Pool; attendeesPer: Ma
         icon={ConferenceIcon}
         label="Conferences"
         count={pool.conferences.length}
-        rows={pool.conferences.map((c) => ({ name: c.name, value: `${shortDate(c.date)} · ${attendeesPer.get(c.name)} attendees` }))}
+        rows={pool.conferences.map((c) => ({ name: c.name, sub: shortDate(c.date), value: `${attendeesPer.get(c.name)} attendees` }))}
         action="New conference"
       />
       <PoolCard
