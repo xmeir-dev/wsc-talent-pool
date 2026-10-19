@@ -65,6 +65,9 @@ export function hash64(text: string): string {
 
 export const anchorKey = (kind: AnchorKind, value: string) => `${kind}:${value}`;
 
+/** The anchor of a person known only by a source contact ID: the ID and the name together (resolvePeople). */
+export const sourceKey = (sourceId: string, name: string) => `source_id:${sourceId}|${normalize(name)}`;
+
 /** anchor → published person ID, validated once: every ID is C-…, used once, for one anchor. */
 export const REGISTERED_IDS: ReadonlyMap<string, string> = (() => {
   const people = (registry as { people: Record<string, string> }).people;
@@ -169,7 +172,8 @@ export interface PersonGroup<T> {
  *   source ID stay different people.
  * Then the person ID: if the person's identifiers that are unique to them in this data point at one known
  * person (data/person_ids.json, or history this browser saved), that ID is kept, even if the person has since
- * gained or lost a LinkedIn URL or email; two known people at once is a conflict. Otherwise P-<hash> of the
+ * gained or lost a LinkedIn URL or email; two known people at once is a conflict. A saved source ID + name
+ * (a source-ID-only person with history) counts as such an identifier for rows with that source ID and name. Otherwise P-<hash> of the
  * first LinkedIn URL, else the email, else source ID + name, else the row. Same input, same IDs.
  */
 export function resolvePeople<T>(rows: readonly T[], keyOf: (r: T) => IdentityRow, known: ReadonlyMap<string, string> = REGISTERED_IDS): PersonGroup<T>[] {
@@ -202,33 +206,39 @@ export function resolvePeople<T>(rows: readonly T[], keyOf: (r: T) => IdentityRo
         join(`email:${k.email}`, i);
         if (urls && urls.size > 1) groupReasons.set(i, [`email ${k.email} is on ${urls.size} different LinkedIn profiles`]);
       }
-    } else if (k.sourceId) join(`source_id:${k.sourceId}|${normalize(k.name)}`, i);
+    } else if (k.sourceId) join(sourceKey(k.sourceId, k.name), i);
     else join(`row:${hash64(k.signature)}`, i);
   });
 
-  type Group = { members: number[]; identifiers: string[]; reasons: string[] };
+  // sourceKeys: `source_id:<id>|<name>` of the rows that have a source ID. Only for finding a known person (a
+  // source-ID-only person with saved history), never for joining rows; the CLI's known IDs have none.
+  type Group = { members: number[]; identifiers: string[]; sourceKeys: string[]; reasons: string[] };
   const collect = () => {
     const byRoot = new Map<number, Group>();
     keys.forEach((k, i) => {
-      const g = byRoot.get(find(i)) ?? { members: [], identifiers: [], reasons: [] };
+      const g = byRoot.get(find(i)) ?? { members: [], identifiers: [], sourceKeys: [], reasons: [] };
       g.members.push(i);
       if (k.linkedinUrl) g.identifiers.push(`linkedin:${k.linkedinUrl}`);
       if (k.email) g.identifiers.push(`email:${k.email}`);
+      if (k.sourceId) g.sourceKeys.push(sourceKey(k.sourceId, k.name));
       g.reasons.push(...(groupReasons.get(i) ?? []));
       byRoot.set(find(i), g);
     });
     for (const g of byRoot.values()) {
       g.identifiers = [...new Set(g.identifiers)].sort();
+      g.sourceKeys = [...new Set(g.sourceKeys)].sort();
       g.reasons = [...new Set(g.reasons)];
     }
     return byRoot;
   };
 
-  // Link to known people through identifiers only this group has.
+  // Link to known people through identifiers only this group has. A source ID + name counts here too, so a
+  // source-ID-only person with saved history who later arrives with an email keeps their ID.
   let groups = collect();
+  const links = (g: Group) => [...g.identifiers, ...g.sourceKeys];
   const uses = new Map<string, number>();
-  for (const g of groups.values()) for (const id of g.identifiers) uses.set(id, (uses.get(id) ?? 0) + 1);
-  const knownIds = (g: Group) => [...new Set(g.identifiers.filter((id) => uses.get(id) === 1 && known.has(id)).map((id) => known.get(id)!))];
+  for (const g of groups.values()) for (const id of links(g)) uses.set(id, (uses.get(id) ?? 0) + 1);
+  const knownIds = (g: Group) => [...new Set(links(g).filter((id) => uses.get(id) === 1 && known.has(id)).map((id) => known.get(id)!))];
   const byKnown = new Map<string, number>();
   for (const [root, g] of groups) {
     const ids = knownIds(g);
@@ -241,6 +251,7 @@ export function resolvePeople<T>(rows: readonly T[], keyOf: (r: T) => IdentityRo
 
   // IDs already taken: by known people (even through an identifier this group shares) and by linked groups.
   const taken = new Set(known.values());
+  const linked = new Set([...groups.values()].flatMap((g) => (knownIds(g).length === 1 ? knownIds(g) : [])));
   return [...groups.values()].map((g) => {
     const k = (i: number) => keys[i]!;
     const ids = knownIds(g);
@@ -249,16 +260,18 @@ export function resolvePeople<T>(rows: readonly T[], keyOf: (r: T) => IdentityRo
     let personId: string;
     if (ids.length === 1) {
       personId = ids[0]!;
-      anchor = g.identifiers.find((id) => known.get(id) === personId)!;
+      anchor = links(g).find((id) => known.get(id) === personId)!;
     } else {
       if (ids.length > 1) reasons.push(`its LinkedIn URL and email belong to different people already on record (${ids.sort().join(', ')})`);
       const first = k(g.members[0]!);
       anchor =
         g.identifiers.find((id) => id.startsWith('linkedin:')) ??
         g.identifiers.find((id) => id.startsWith('email:')) ??
-        (first.sourceId ? `source_id:${first.sourceId}|${normalize(first.name)}` : `row:${hash64(first.signature)}`);
+        (first.sourceId ? sourceKey(first.sourceId, first.name) : `row:${hash64(first.signature)}`);
       personId = `P-${hash64(anchor)}`;
-      if (taken.has(personId)) {
+      // Taken by someone else, unless the anchor itself is on record for this very ID and no other group took it
+      // (e.g. a source-ID-only person whose source ID another row in this data shares, so it could not link above).
+      if (taken.has(personId) && (known.get(anchor) !== personId || linked.has(personId))) {
         // The anchor is on record for someone else (an email this group shares with them): never take their ID.
         reasons.push(`${anchor.slice(anchor.indexOf(':') + 1)} is on record for another person`);
         personId = `P-${hash64(`${anchor}|${g.identifiers.join('|')}|unlinked`)}`;

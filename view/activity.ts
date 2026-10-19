@@ -264,18 +264,35 @@ export interface StoredPerson {
   /** ISO time of the first saved action. */
   since: string;
   /**
-   * Their strong identifiers (`linkedin:<url>`, `email:<email>`) as seen when acting. The next dataset build
-   * keeps this person ID for anyone with one of them, even after a LinkedIn URL or email is added or dropped.
+   * Their identifiers (`linkedin:<url>`, `email:<email>`, and `source_id:<id>|<name>` for someone with neither;
+   * see linksOf), saved when they act and whenever a later build resolves them with a new one (acceptIdentities).
+   * The next dataset build keeps this person ID for anyone with one of them, even after a LinkedIn URL or email
+   * is added or dropped.
    */
   identifiers?: string[];
 }
 
-/** identifier → person ID for everyone with saved history (each identifier belongs to the first person saved with it). */
+/**
+ * identifier → person ID for everyone with saved history (each identifier belongs to the first person saved with it).
+ * A source-ID-only person's anchor (`source_id:<id>|<name>`) counts too; the store before this saved them with no
+ * identifiers, so their stored anchor is read as one.
+ */
 export function knownPeople(people: ReadonlyMap<string, StoredPerson>): Map<string, string> {
   const known = new Map<string, string>();
-  for (const p of [...people.values()].sort((x, y) => x.since.localeCompare(y.since) || x.personId.localeCompare(y.personId)))
-    for (const id of p.identifiers ?? []) if (!known.has(id)) known.set(id, p.personId);
+  for (const p of [...people.values()].sort((x, y) => x.since.localeCompare(y.since) || x.personId.localeCompare(y.personId))) {
+    const ids = [...(p.identifiers ?? []), ...(p.anchor?.startsWith('source_id:') ? [p.anchor] : [])];
+    for (const id of ids) if (!known.has(id)) known.set(id, p.personId);
+  }
   return known;
+}
+
+/**
+ * What saved history is kept under for this person: their LinkedIn URLs and emails, plus, for someone known only
+ * by a source ID, that source ID + name (the same rule that joins their rows).
+ */
+export function linksOf(person: PersonRef): string[] {
+  const { identifiers, kind, anchor } = person.identity;
+  return kind === 'source_id' && !identifiers.includes(anchor) ? [...identifiers, anchor] : [...identifiers];
 }
 
 /** Saved history for one of this person's identifiers that sits under another person ID (e.g. read before the store loaded). */

@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { buildDataset, type SourceTexts } from '../pipeline';
-import { activitySnapshot, useKnownPeople } from '../view/actionStore';
+import { activitySnapshot, rememberIdentities, useKnownPeople } from '../view/actionStore';
 import { bundledSources } from '../view/data';
 import { buildAssessmentStore, type AssessmentStore } from './assessments';
 import { createSimulatedComeet, type ComeetService } from './comeet';
@@ -47,6 +47,8 @@ export function App({ sources: initialSources = bundledSources, delayMs }: Props
   const [sources, setSources] = useState(initialSources);
   const known = useKnownPeople();
   const store = useMemo(() => buildAssessmentStore(buildDataset(sources, { knownPeople: known })), [sources, known]);
+  // Identity links this build accepted are saved at once (view/actionStore.ts: rememberIdentities).
+  useEffect(() => void rememberIdentities(store.dataset.candidates), [store]);
   const [session, setSession] = useState(0);
   // The service reads the current pool (imports included) and history on every check, as a real backend would.
   const latest = useRef(store);
