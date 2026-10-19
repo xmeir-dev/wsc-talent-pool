@@ -6,15 +6,16 @@
   border-radius: var(--ml-radius-pill);
   cursor: pointer;
 }
+/* The kit tag draws its outline as an inset shadow, so hover and open change the shadow, not the border. */
 .ask-trigger:hover .ml-tag {
-  border-color: var(--ml-text-muted);
+  box-shadow: inset 0 0 0 1px var(--ml-text-muted);
 }
 .ask-trigger:focus-visible {
   outline: 2px solid var(--ml-text);
   outline-offset: 2px;
 }
 .ask-trigger[aria-expanded='true'] .ml-tag {
-  border-color: var(--ml-text);
+  box-shadow: inset 0 0 0 1px var(--ml-text);
 }
 
 /* Doubled class: beats the kit popover's 360px max-width. */
