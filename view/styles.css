@@ -31,7 +31,7 @@ ul {
 }
 
 .content {
-  padding: var(--ml-space-lg) var(--ml-space-xl) 48px;
+  padding: var(--ml-space-lg) var(--ml-space-xl);
 }
 
 .page-head {
