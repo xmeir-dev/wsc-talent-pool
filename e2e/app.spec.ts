@@ -111,7 +111,7 @@ test('clicking a column header sorts the attendee list', async ({ page }) => {
   const firstName = () => bodyRows(page).first().locator('.name').textContent();
   expect(await firstName()).toContain('Adaora Okafor');
   await page.getByRole('columnheader', { name: /Relevant job/ }).getByRole('button').click();
-  await expect(bodyRows(page).first().locator('.jobs .fit-good')).toContainText('Senior ML Engineer');
+  await expect(bodyRows(page).first().locator('.jobs .fit').first()).toContainText('Senior ML Engineer: Shortlist');
   await page.getByRole('columnheader', { name: /Candidate/ }).getByRole('button').click();
   expect(await firstName()).toContain('Adaora Okafor');
   await page.getByRole('columnheader', { name: /Candidate/ }).getByRole('button').click();

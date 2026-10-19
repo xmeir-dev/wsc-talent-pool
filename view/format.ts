@@ -12,7 +12,7 @@ import type {
   PossibleReference,
   Recommendation,
 } from '../pipeline';
-import { rules } from '../pipeline';
+import { minYearsFor, policyFor, requiredThreshold } from '../pipeline';
 
 /** "JOB001 · Senior ML Engineer": how a job reads in pickers. */
 export function jobLabel(job: Job): string {
@@ -32,12 +32,6 @@ export function conferenceShort(name: string): string {
 }
 
 /** "Senior Product Manager - Sports Data" → "Senior PM - Sports Data": the job filter's button only. */
-/** The most points a person could score for a job: every required skill named, every nice-to-have, the industry bonus if the role has one. */
-export function maxPoints(a: CandidateAssessment, job: Job): number {
-  const bonus = a.industryBonusEvidence === 'not part of this role' ? 0 : rules.POINTS.industryBonus;
-  return a.points.requiredMax + job.niceToHave.length * rules.POINTS.niceToHave + bonus;
-}
-
 export function jobShort(job: Job): string {
   return job.title.replace(/\bProduct Manager\b/, 'PM');
 }
@@ -126,4 +120,69 @@ export function years(start: number, end: number | null): string {
 
 export function referenceLine(r: PossibleReference): string {
   return `Both at ${r.company}, ${years(r.overlapStart, r.overlapEnd)}`;
+}
+
+export type FitCheckKey = 'must' | 'skills' | 'years';
+
+export interface FitCheck {
+  key: FitCheckKey;
+  ok: boolean;
+  /** One line for the hover: what was checked and what the profile shows. */
+  tip: string;
+}
+
+const CHECK_NAME: Record<FitCheckKey, string> = {
+  must: 'Must-have skills',
+  skills: 'Required skills',
+  years: 'Experience',
+};
+
+const and = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+
+/**
+ * The three shortlist checks, shown one icon each. All three pass exactly when the pipeline shortlists
+ * (pipeline/assess.ts). A profile that cannot be judged fails all three, with the reason, never a guess.
+ */
+export function fitChecks(a: CandidateAssessment, job: Job): FitCheck[] {
+  const c = a.candidate;
+  const profile = c.profile;
+  const unknown = !profile
+    ? 'no usable LinkedIn profile'
+    : c.profileStatus === 'conflict'
+      ? 'the profile may belong to someone else'
+      : profile.skills.length === 0
+        ? 'the profile lists no skills'
+        : null;
+  if (unknown || !profile) {
+    return (['must', 'skills', 'years'] as const).map((key) => ({ key, ok: false, tip: `${CHECK_NAME[key]}: unknown, ${unknown}` }));
+  }
+  const essentials = policyFor(job).policy.essentials.map((e) => e.label);
+  const threshold = requiredThreshold(a.points.requiredMax);
+  const minYears = minYearsFor(job);
+  const years = profile.yearsExperience;
+  return [
+    {
+      key: 'must',
+      ok: a.missingEssentials.length === 0,
+      tip:
+        essentials.length === 0
+          ? `${CHECK_NAME.must}: none set for this role`
+          : a.missingEssentials.length > 0
+            ? `${CHECK_NAME.must}: missing ${and(a.missingEssentials)}`
+            : `${CHECK_NAME.must}: has ${and(essentials)}`,
+    },
+    {
+      key: 'skills',
+      ok: a.points.required >= threshold,
+      tip: `${CHECK_NAME.skills}: ${a.points.required} of ${a.points.requiredMax} points (needs ${threshold})`,
+    },
+    {
+      key: 'years',
+      ok: minYears === null || (years !== null && years >= minYears),
+      tip:
+        minYears === null
+          ? `${CHECK_NAME.years}: no minimum for this role`
+          : `${CHECK_NAME.years}: ${years === null ? 'years not stated' : `${years} years`} (needs ${minYears})`,
+    },
+  ];
 }

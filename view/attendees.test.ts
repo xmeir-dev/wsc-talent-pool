@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildDataset, parseCsv } from '../pipeline';
 import { attendeesCsv, attended, bestJobId, buildPool, countryCounts, filterAttendees, filterCounts, jobItems, sortAttendees } from './attendees';
 import { placeOf } from './place';
+import { fitChecks } from './format';
 import { bundledSources } from './data';
 
 const pool = buildPool(buildDataset(bundledSources));
@@ -139,5 +140,25 @@ describe('attendees export', () => {
 
     const byConf = asc('conference').map((p) => p.candidate.attendances[0]!.conferenceDate);
     expect(byConf).toEqual([...byConf].sort());
+  });
+});
+
+describe('job fit checks', () => {
+  const pool = buildPool(buildDataset(bundledSources));
+  it('all three pass exactly when the person is shortlisted, for every attendee and job', () => {
+    const items = pool.attendees.flatMap((p) => p.relevantFor);
+    expect(items.length).toBeGreaterThan(30);
+    for (const { job, outcome, a } of items) {
+      expect(fitChecks(a, job).every((c) => c.ok), `${a.candidate.fullName} for ${job.jobId}`).toBe(outcome === 'shortlist');
+    }
+  });
+
+  it('says what each check found', () => {
+    const alex = pool.attendees.find((p) => p.candidate.fullName === 'Alex Turner')!.relevantFor[0]!;
+    expect(fitChecks(alex.a, alex.job).map((c) => [c.ok, c.tip])).toEqual([
+      [false, 'Must-have skills: missing Sports Analytics'],
+      [true, 'Required skills: 6 of 8 points (needs 5)'],
+      [true, 'Experience: 8 years (needs 5)'],
+    ]);
   });
 });

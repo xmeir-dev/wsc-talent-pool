@@ -110,11 +110,13 @@ describe('recruiter view: list', () => {
     render(<App />);
     await showAll(userEvent.setup());
     const adaora = screen.getByRole('row', { name: /Adaora Okafor/ });
-    expect(adaora.querySelector('.jobs')?.textContent).toBe('Senior ML Engineer50%: Needs review');
+    expect(adaora.querySelector('.jobs')?.textContent).toBe('Senior ML Engineer: Needs review');
+    expect([...adaora.querySelectorAll('.fit-check')].map((c) => c.classList.contains('is-ok'))).toEqual([false, true, true]);
+    expect(within(adaora).getByRole('img', { name: /^Must-have skills: missing PyTorch/ })).toBeTruthy();
     const noah = screen.getByRole('row', { name: /Noah Anderson/ });
-    expect([...noah.querySelectorAll('.jobs .fit-pill')].map((p) => p.textContent)).toEqual([
-      'Data Engineer80%: Shortlist',
-      'Backend Engineer40%: Needs review',
+    expect([...noah.querySelectorAll('.jobs .fit')].map((p) => p.textContent)).toEqual([
+      'Data Engineer: Shortlist',
+      'Backend Engineer: Needs review',
     ]);
     expect(adaora.textContent).not.toContain('JOB001');
     expect(adaora.textContent).toContain('Data & AI Summit Europe');
@@ -180,7 +182,7 @@ describe('recruiter view: list', () => {
     expect(rows()[0]!.textContent).toContain('Priya Anand');
     expect(screen.queryByRole('columnheader', { name: /Score/ })).toBeNull();
     expect(screen.getByRole('columnheader', { name: /Relevant job/ })).toBeTruthy();
-    const ml = (r: HTMLElement) => [...r.querySelectorAll('.jobs .fit-pill')].find((p) => p.textContent?.startsWith('Senior ML Engineer'))!;
+    const ml = (r: HTMLElement) => [...r.querySelectorAll('.jobs .fit')].find((p) => p.textContent?.startsWith('Senior ML Engineer'))!;
     expect(rows().slice(0, 7).every((r) => ml(r).textContent?.includes('Shortlist'))).toBe(true);
     expect(rows().slice(7).every((r) => ml(r).textContent?.includes('Needs review'))).toBe(true);
 
