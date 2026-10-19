@@ -154,7 +154,7 @@ export function decide(
 
 /**
  * History that is not (yet) a stored person record: this browser's entries, the seeded examples, Comeet records,
- * or a supplied person (published C-HS### ID, fixed by data/person_ids.json, so storing their links cannot change
+ * or a supplied person (published C-HS### ID, fixed by data/demo/person_ids.json, so storing their links cannot change
  * what the CLI gives anyone).
  */
 const seededKeys = new Set(SEEDED.map((e) => e.candidateKey));

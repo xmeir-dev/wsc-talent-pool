@@ -5,7 +5,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { readXlsx, records } from '../tests/xlsx-read';
+import { readXlsx, records } from '../xlsx-read';
 
 const title = (page: Page) => page.locator('.list-count');
 const popover = (page: Page) => page.getByRole('dialog', { name: 'Add a conference' });

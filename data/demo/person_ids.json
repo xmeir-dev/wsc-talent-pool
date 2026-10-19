@@ -1,5 +1,5 @@
 {
-  "about": "Published person IDs of the supplied attendees, keyed by identity anchor (pipeline/identity.ts). They keep the IDs the first release exported (candidate_key), so seeded history, demo_comeet.json and saved browser history stay attached. Anyone not listed gets a P-<hash of anchor> ID. Synthetic data, not WSC records.",
+  "about": "Published person IDs of the supplied attendees, keyed by identity anchor (pipeline/identity.ts). They keep the IDs the first release exported (candidate_key), so seeded history, comeet.json and saved browser history stay attached. Anyone not listed gets a P-<hash of anchor> ID. Synthetic data, not WSC records.",
   "people": {
     "linkedin:linkedin.com/in/adaora-okafor-tech": "C-HS051",
     "linkedin:linkedin.com/in/alex-turner-olym": "C-HS021",

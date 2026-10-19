@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { readXlsx } from '../tests/xlsx-read';
+import { readXlsx } from '../xlsx-read';
 
-const ROOT = join(import.meta.dirname, '..');
+const ROOT = join(import.meta.dirname, '../..');
 
 /** Fails the test on any console error or uncaught page error (web-font fetches excepted when offline). */
 function watchErrors(page: Page): string[] {

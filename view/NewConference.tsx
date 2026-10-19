@@ -3,8 +3,8 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { CalendarAdd01Icon, Cancel01Icon, CircleArrowUp02Icon, ClipboardPasteIcon, FileUploadIcon } from '@hugeicons/core-free-icons';
 import { Button, Popover, Tooltip } from '@meir-labs/ui-kit';
 import type { ListImport } from './importList';
-import sample from '../data/samples/wsc_product_meetup.csv?raw';
-import sampleProfiles from '../data/samples/wsc_product_meetup_profiles.csv?raw';
+import sample from '../data/demo/samples/wsc_product_meetup.csv?raw';
+import sampleProfiles from '../data/demo/samples/wsc_product_meetup_profiles.csv?raw';
 
 /** A Google Sheets link becomes its CSV export (the sheet must be viewable by anyone with the link); other links are fetched as they are. */
 function csvUrl(link: string): string {

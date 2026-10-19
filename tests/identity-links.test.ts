@@ -219,7 +219,7 @@ describe('source-ID-only people who later gain an email', () => {
   });
 });
 
-describe('the store keeps accepted links in its own transaction (memory backend here; IndexedDB in e2e)', () => {
+describe('the store keeps accepted links in its own transaction (memory backend here; IndexedDB in the browser tests)', () => {
   it('rememberIdentities saves a link for a person with history, independently of any action', async () => {
     await store.resetActivity();
     const first = importRow(empty(), bridge({}));

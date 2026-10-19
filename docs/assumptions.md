@@ -23,7 +23,7 @@ All 75 supplied attendees match a profile: **42 list WSC employee connections an
 
 Profile freshness, application history, previous rejection, job interest, and permission to contact are unknown. Total experience is not specialty experience; employment-history lists cannot safely be paired by position.
 
-Roles have no location in the data, so location does not affect the score; recruiters can filter by where attendees are based. The Location filter lists countries with a WSC office first (`data/wsc_offices.json`, from WSC's own site, checked 2026-10-19; Spain appears only on the careers page, so it may be remote hires rather than an office). See [Made up for the recruiter view](#made-up-for-the-recruiter-view) for everything the view shows that the files don't contain.
+Roles have no location in the data, so location does not affect the score; recruiters can filter by where attendees are based. The Location filter lists countries with a WSC office first (`data/demo/wsc_offices.json`, from WSC's own site, checked 2026-10-19; Spain appears only on the careers page, so it may be remote hires rather than an office). See [Made up for the recruiter view](#made-up-for-the-recruiter-view) for everything the view shows that the files don't contain.
 
 ## Made up for the recruiter view
 
@@ -31,10 +31,10 @@ None of this feeds the ranking. Each item is made up because the supplied files 
 
 **Content**
 
-- **AI summaries.** Attendees with no recruiter note get a one-line summary written by an AI model from their LinkedIn fields (`data/ai_summaries.json`), labelled "AI summary" on screen.
-- **Recruiters and avatars.** The files don't say who wrote a conference note, so each conference has an invented recruiter (`data/demo_recruiters.json`). Employee and recruiter avatars are generated illustrations.
-- **Comeet history.** Four people have made-up Comeet records (`data/demo_comeet.json`): Alex Turner (rejected for Senior PM), Ryan Patel (in process for Data Engineer), James Thornton (rejected for an older role) and Scarlett Green (an uncontacted lead). The integration demo seeds its simulated Comeet from the same file and applies the same contact rules. Production reads them from the Comeet Recruiting API, matched by email.
-- **Sample meetup.** `data/samples/wsc_product_meetup.csv` is a made-up WSC product meetup: three returning attendees and five new people, whose LinkedIn profiles come in `wsc_product_meetup_profiles.csv` (standing in for the profile lookup production runs). Adding it fills the empty Senior PM shortlist with Lior Ben-David and Maya Levin, which is Shir's "product meetup, then a product role opens" story from the call.
+- **AI summaries.** Attendees with no recruiter note get a one-line summary written by an AI model from their LinkedIn fields (`data/demo/ai_summaries.json`), labelled "AI summary" on screen.
+- **Recruiters and avatars.** The files don't say who wrote a conference note, so each conference has an invented recruiter (`data/demo/recruiters.json`). Employee and recruiter avatars are generated illustrations.
+- **Comeet history.** Four people have made-up Comeet records (`data/demo/comeet.json`): Alex Turner (rejected for Senior PM), Ryan Patel (in process for Data Engineer), James Thornton (rejected for an older role) and Scarlett Green (an uncontacted lead). The integration demo seeds its simulated Comeet from the same file and applies the same contact rules. Production reads them from the Comeet Recruiting API, matched by email.
+- **Sample meetup.** `data/demo/samples/wsc_product_meetup.csv` is a made-up WSC product meetup: three returning attendees and five new people, whose LinkedIn profiles come in `wsc_product_meetup_profiles.csv` (standing in for the profile lookup production runs). Adding it fills the empty Senior PM shortlist with Lior Ben-David and Maya Levin, which is Shir's "product meetup, then a product role opens" story from the call.
 
 **Links and addresses**
 
@@ -71,7 +71,7 @@ None of this feeds the ranking. Each item is made up because the supplied files 
 
 ## People already in Comeet
 
-Comeet status is unknown in this exercise: the `comeet_status` column is reserved and always reads `unknown`. In production it is read, not guessed: Comeet's Recruiting API returns each candidate's `status`, `current_steps`, `position_uid` and `time_last_status_changed`. Comeet sends webhooks for positions and hires but not for status changes, so the integration polls it (for example every 15 minutes, plus the nightly check). The profile's Comeet row shows how it would look, using made-up records for four people (`data/demo_comeet.json`). In production, before anyone is contacted:
+Comeet status is unknown in this exercise: the `comeet_status` column is reserved and always reads `unknown`. In production it is read, not guessed: Comeet's Recruiting API returns each candidate's `status`, `current_steps`, `position_uid` and `time_last_status_changed`. Comeet sends webhooks for positions and hires but not for status changes, so the integration polls it (for example every 15 minutes, plus the nightly check). The profile's Comeet row shows how it would look, using made-up records for four people (`data/demo/comeet.json`). In production, before anyone is contacted:
 
 - **Match on email** against Comeet candidates and employees.
 - **In an active process** for any role: link the HubSpot contact to the Comeet candidate and do not contact them again from the talent pool; the owning recruiter decides.

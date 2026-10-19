@@ -4,7 +4,7 @@ import { Cancel01Icon, MailAdd01Icon } from '@hugeicons/core-free-icons';
 import { Avatar, Button, Popover, Select } from '@meir-labs/ui-kit';
 import type { Candidate, Job } from '../pipeline';
 import { ownEntry } from '../pipeline/text';
-import recruiters from '../data/demo_recruiters.json';
+import recruiters from '../data/demo/recruiters.json';
 import type { Relevant } from './attendees';
 import comeetIcon from './assets/comeet.png';
 import { initials } from './avatars';
@@ -14,7 +14,7 @@ import { recordActions, useActivityState } from './actionStore';
 const RECRUITERS: Record<string, { id: string; name: string }> = recruiters.byConference;
 const firstName = (name: string) => name.split(' ')[0] ?? name;
 
-/** Signed by the recruiter who met them (made up, see data/demo_recruiters.json). */
+/** Signed by the recruiter who met them (made up, see data/demo/recruiters.json). */
 function senderFor(c: Candidate) {
   return c.attendances.map((at) => ownEntry(RECRUITERS, at.conferenceName)).find(Boolean) ?? null;
 }

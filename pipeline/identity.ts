@@ -9,7 +9,7 @@
  *   are "unanchored": shown, but no action may be saved for them.
  * - It never comes from a name alone, from row order, or from which source row happens to sort first.
  *   So another attendance, reordered input or added profile evidence never changes it.
- * - People in the supplied data keep their published IDs (C-HS001…) through data/person_ids.json
+ * - People in the supplied data keep their published IDs (C-HS001…) through data/demo/person_ids.json
  *   (anchor → ID). Anyone else gets P-<16 hex>, a 64-bit FNV-1a hash of the anchor: the same anchor
  *   gives the same ID in the CLI and in every browser, and different anchors give different IDs.
  * - IDs are checked for uniqueness before any map is built; a clash is an error, never a silent overwrite.
@@ -18,7 +18,7 @@
  * a person can have many of each, and neither is used to own saved actions.
  */
 
-import registry from '../data/person_ids.json';
+import registry from '../data/demo/person_ids.json';
 import { DataValidationError } from './errors';
 import { normalize } from './text';
 
@@ -74,8 +74,8 @@ export const REGISTERED_IDS: ReadonlyMap<string, string> = (() => {
   const map = new Map<string, string>();
   const seen = new Set<string>();
   for (const [anchor, id] of Object.entries(people)) {
-    if (!/^C-/.test(id) || !PERSON_ID_PATTERN.test(id)) throw new DataValidationError([`data/person_ids.json: ${id} is not a published person ID`]);
-    if (seen.has(id)) throw new DataValidationError([`data/person_ids.json: ${id} is given to more than one person`]);
+    if (!/^C-/.test(id) || !PERSON_ID_PATTERN.test(id)) throw new DataValidationError([`data/demo/person_ids.json: ${id} is not a published person ID`]);
+    if (seen.has(id)) throw new DataValidationError([`data/demo/person_ids.json: ${id} is given to more than one person`]);
     seen.add(id);
     map.set(anchor, id);
   }
@@ -171,7 +171,7 @@ export interface PersonGroup<T> {
  * - rows with neither join only rows with the same source ID and the same name, so different names sharing a
  *   source ID stay different people.
  * Then the person ID: if the person's identifiers that are unique to them in this data point at one known
- * person (data/person_ids.json, or history this browser saved), that ID is kept, even if the person has since
+ * person (data/demo/person_ids.json, or history this browser saved), that ID is kept, even if the person has since
  * gained or lost a LinkedIn URL or email; two known people at once is a conflict. A saved source ID + name
  * (a source-ID-only person with history) counts as such an identifier for rows with that source ID and name. Otherwise P-<hash> of the
  * first LinkedIn URL, else the email, else source ID + name, else the row. Same input, same IDs.

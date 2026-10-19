@@ -1,7 +1,7 @@
 import type { Candidate } from '../pipeline';
 import { ownEntry } from '../pipeline/text';
-import ai from '../data/ai_summaries.json';
-import recruiters from '../data/demo_recruiters.json';
+import ai from '../data/demo/ai_summaries.json';
+import recruiters from '../data/demo/recruiters.json';
 
 export type OverviewSource = 'recruiter' | 'ai';
 
@@ -10,7 +10,7 @@ export interface OverviewLine {
   source: OverviewSource;
   /** Where it came from, for the tooltip. */
   origin: string;
-  /** A recruiter's note: who wrote it (made up, see data/demo_recruiters.json) and when (the conference date). */
+  /** A recruiter's note: who wrote it (made up, see data/demo/recruiters.json) and when (the conference date). */
   by?: { id: string; name: string; date: string };
 }
 

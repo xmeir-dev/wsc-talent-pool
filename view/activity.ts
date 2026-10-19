@@ -7,7 +7,7 @@
  *
  * Every entry is owned by a durable person ID (Candidate.candidateKey, pipeline/identity.ts), never a name.
  */
-import comeetHistory from '../data/demo_comeet.json';
+import comeetHistory from '../data/demo/comeet.json';
 import { identityBlock, mayOwnLegacyKey, type Candidate } from '../pipeline';
 import { normalize, ownEntry } from '../pipeline/text';
 
@@ -34,7 +34,7 @@ export type Entry =
   | (Base & { kind: 'outcome'; jobId: string; jobTitle: string; outcome: Outcome })
   | (Base & { kind: 'do_not_contact' });
 
-/** A Comeet record for one role (made up, see data/demo_comeet.json). */
+/** A Comeet record for one role (made up, see data/demo/comeet.json). */
 export interface ComeetRecord {
   job: string;
   outcome: string;

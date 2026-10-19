@@ -8,7 +8,7 @@ Each person has one durable ID, `candidateKey` in code and `candidate_key` in th
 
 | Kind of person | ID | Example |
 |---|---|---|
-| A supplied attendee (the 75 in `data/`) | Their published ID, kept through `data/person_ids.json` | `C-HS002` |
+| A supplied attendee (the 75 in `data/`) | Their published ID, kept through `data/demo/person_ids.json` | `C-HS002` |
 | Someone with saved history in this browser | The ID that history is under, found through any of their LinkedIn URLs or emails | `P-b0bd83ef0fb00689` |
 | Anyone else (imports, other data folders) | `P-` + 16 hex characters: a 64-bit FNV-1a hash of their identity anchor | `P-bb8012068ac60de2` |
 

@@ -1,6 +1,6 @@
 /**
  * Demo-only Comeet fixtures. Fictional positions and recruiters. The Comeet history is the same made-up
- * file the recruiter view reads (data/demo_comeet.json); nothing here comes from a real Comeet account.
+ * file the recruiter view reads (data/demo/comeet.json); nothing here comes from a real Comeet account.
  */
 
 import type { Candidate } from '../pipeline';

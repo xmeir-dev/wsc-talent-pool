@@ -1,6 +1,6 @@
 /**
  * The decision the action store runs inside each transaction. Pure, so it is tested here; the real
- * two-tab behaviour (IndexedDB across tabs) is in e2e/multi-tab-history.spec.ts.
+ * two-tab behaviour (IndexedDB across tabs) is in tests/browser/multi-tab-history.spec.ts.
  */
 import { describe, expect, it } from 'vitest';
 import { decide, type ActionRequest } from '../view/actionStore';

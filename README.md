@@ -61,13 +61,13 @@ The assessment logic in `pipeline/` is plain TypeScript with no file or network 
 ## Repo contents
 
 - `assignment/` — the task brief as provided (open `assignment/index.html`)
-- `data/` — the provided CSVs (synthetic), plus clearly labelled made-up demo files for the view (`ai_summaries.json`, `demo_recruiters.json`, `demo_comeet.json`, `wsc_offices.json`, `samples/`); none of them feeds the ranking
+- `data/` — the four CSVs WSC provided (synthetic)
+- `data/demo/` — files added for the demos, none of which feeds the ranking: made-up Comeet history, recruiters and AI summaries, WSC office locations, a sample meetup list (`samples/`), and `person_ids.json`, which keeps each supplied attendee's published ID stable
 - `pipeline/` — assessment rules (`rules.ts`), scoring, ranking, strict CSV reading, event editions, CSV and Excel output
 - `cli/` — the `npm run pipeline` command
 - `view/` — the recruiter view (React + Vite, plain CSS)
-- `tests/` — Vitest tests and synthetic fixtures
+- `tests/` — Vitest tests and synthetic fixtures; `tests/browser/` holds the Playwright browser tests
 - `integration-demo/` — the simulated HubSpot → Comeet concept
-- `e2e/` — Playwright browser tests
 - `docs/identity-and-history.md` — person IDs, import lifetime, saved history across tabs, and invite versus handoff rules
 - `docs/importing-and-events.md` — strict CSV checks, event editions, repeated rows and retries
 - `docs/export-formats.md` — the Excel download versus the unsanitized CRM CSV, and the spreadsheet check

@@ -29,7 +29,7 @@ import type { Attendee, Relevant } from './attendees';
 import { AskConnection, connectionPeople } from './AskConnection';
 import { avatarFor, initials } from './avatars';
 import { canonicalSkill, ownEntry } from '../pipeline/text';
-import comeetHistory from '../data/demo_comeet.json';
+import comeetHistory from '../data/demo/comeet.json';
 import comeetIcon from './assets/comeet.png';
 import hubspotIcon from './assets/hubspot.png';
 import { actionGate, current, comeetFor, describe, heldFor, personFlags, referenceSummary, roleStatus, shortDay, STATE_LABEL, STATUS_LABEL, storedAsSomeoneElse, type Entry } from './activity';
@@ -360,7 +360,7 @@ const linkedinHref = (url: string) => (/^https?:\/\//.test(url) ? url : `https:/
 /** Assumed record links: the snapshot's HS… IDs are source IDs, not HubSpot record IDs, and Comeet is searched by email. */
 const hubspotRecord = (id: string) => `https://app.hubspot.com/contacts/record/0-1/${id}`;
 const comeetSearch = (q: string) => `https://app.comeet.co/app/candidates?search=${encodeURIComponent(q)}`;
-/** Past Comeet applications (made up, see data/demo_comeet.json); newest first. */
+/** Past Comeet applications (made up, see data/demo/comeet.json); newest first. */
 const COMEET: Record<string, { job: string; outcome: string; date: string }[]> = comeetHistory.byCandidate;
 const monthYear = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 

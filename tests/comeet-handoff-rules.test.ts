@@ -56,7 +56,7 @@ describe('conflicting identity', () => {
   });
 });
 
-describe('shared Comeet history (data/demo_comeet.json)', () => {
+describe('shared Comeet history (data/demo/comeet.json)', () => {
   it('seeds Ryan in process for Data Engineer, and no one outside the shared file', () => {
     const comeet = fresh();
     const ryan = payloadFor(comeet, 'Ryan Patel', 'JOB004');

@@ -14,7 +14,7 @@ import { rememberIdentities, useActivity, useKnownPeople } from './actionStore';
 import { PageFooter } from './PageFooter';
 import { PoolCards } from './PoolCards';
 import { bundledSources } from './data';
-import offices from '../data/wsc_offices.json';
+import offices from '../data/demo/wsc_offices.json';
 import { downloadFile, exportCsv, exportXlsx } from './download';
 import { importAttendeeList } from './importList';
 import { FilterMenu, type FilterOption } from './FilterMenu';

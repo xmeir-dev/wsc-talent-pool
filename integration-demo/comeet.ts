@@ -161,7 +161,7 @@ export interface SimulationOptions {
   isAvailable: () => boolean;
   delayMs?: number;
   /**
-   * The contact pool, read on every check so imports count. Anyone in it with a record in data/demo_comeet.json
+   * The contact pool, read on every check so imports count. Anyone in it with a record in data/demo/comeet.json
    * for an open position is seeded. When given, a handoff for someone not in it, or whose identity is
    * unresolved, is refused by the service itself, not only by the button.
    */
@@ -182,7 +182,7 @@ const SEEDED_HISTORY: HistoryState = { entries: SEEDED, people: new Map(), held:
 
 /**
  * May this person be handed off for this role? checkHandoff in view/activity.ts on the shared Comeet history
- * (data/demo_comeet.json) and the recorded outreach: an unresolved identity or an active process for any role
+ * (data/demo/comeet.json) and the recorded outreach: an unresolved identity or an active process for any role
  * blocks; an uncontacted lead does not; a decline or earlier contact for this role is shown, not blocking,
  * because adding someone to the ATS sends nothing (the decline still blocks another invite).
  */

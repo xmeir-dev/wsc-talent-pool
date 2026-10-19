@@ -91,7 +91,7 @@ HubSpot holds the pool and displays the history; Comeet owns progress after hand
 | --- | --- | --- |
 | History and flags | Browser storage, one browser, survives reload, labelled Simulated | HubSpot: a note per entry on the contact, contact properties for person flags and last contact; the assessment store keeps the per-role table for fast filtering |
 | Role status before handoff | Computed from the history | Same, mirrored to HubSpot properties so lists can filter on it |
-| Role status after handoff | Made-up Comeet history (`data/demo_comeet.json`) | A Comeet lead or candidate for that role; its `outreach_status` and `status` are read back every few minutes (no status webhook) |
+| Role status after handoff | Made-up Comeet history (`data/demo/comeet.json`) | A Comeet lead or candidate for that role; its `outreach_status` and `status` are read back every few minutes (no status webhook) |
 | Invite | Simulated entry | Created as a Comeet lead or candidate for the role; marked Sent only when an actual message is confirmed, not on creation ([create a candidate](https://developers.comeet.com/reference/create-a-candidate-new) does not say an invitation is sent) |
 | Reference request | Simulated entry; copy and email are Prepared | Slack bot direct message, Sent on API success; email Prepared until confirmed |
 | Deletion | Clear the browser history for that person | Delete across HubSpot, the assessment store and Comeet, keeping only a dated record that a deletion happened, with no personal data |
@@ -125,7 +125,7 @@ All in the recruiter view (`view/`); the pipeline and its CSV output do not chan
 Tests:
 
 - Unit (`tests/activity.test.ts`): role status per role (declined for one role, open for another); an uncontacted Comeet lead not counting as in process; every block rule; a past Comeet rejection for another role warning (a withdrawal does not); Prepared not counted as contact; a repeated simulated send blocked; a correction superseding an earlier entry.
-- Browser (`e2e/contact-tracking.spec.ts`): the seeded examples render and block as described; an invite survives a reload and blocks a repeat; the Status filter narrows the list.
+- Browser (`tests/browser/contact-tracking.spec.ts`): the seeded examples render and block as described; an invite survives a reload and blocks a repeat; the Status filter narrows the list.
 
 ## Open questions
 
