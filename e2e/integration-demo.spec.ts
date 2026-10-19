@@ -211,6 +211,20 @@ test('F7: Go, Golang and Golang, Go are the same requirement, so the order never
   expect(errors).toEqual([]);
 });
 
+test('F7: a SageMaker, AWS role keeps both requirements, so Adaora (AWS, no SageMaker) is in review at 1 / 2', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/');
+  await publishRole(page, 'SageMaker AWS', 'SageMaker, AWS');
+  await toApp(page, 'HubSpot');
+  await expect(notices(page).getByRole('button', { name: 'SageMaker AWS: 1 shortlist', exact: true })).toBeVisible();
+  await notices(page).getByRole('button', { name: /^SageMaker AWS: \d+ needs review$/ }).click();
+  await page.getByRole('table', { name: /^SageMaker AWS/ }).getByRole('button', { name: 'Adaora Okafor', exact: true }).click();
+  await card(page).getByRole('combobox', { name: 'Role' }).selectOption({ label: 'JOB005 · SageMaker AWS' });
+  await expect(card(page).getByTestId('tm-outcome')).toHaveText('Needs review');
+  await expect(card(page).locator('.tm-stat', { hasText: 'Required skills' })).toContainText('1 / 2');
+  expect(errors).toEqual([]);
+});
+
 test('a required skill named "constructor" publishes as ordinary text, with no error', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');

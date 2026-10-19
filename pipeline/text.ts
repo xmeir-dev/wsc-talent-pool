@@ -1,6 +1,6 @@
 /** Small text helpers shared by the assessment modules. */
 
-import { SKILL_EVIDENCE, SKILL_SYNONYMS } from './rules';
+import { SKILL_SYNONYMS } from './rules';
 
 export function normalize(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -33,39 +33,22 @@ export function canonicalSkill(skill: string): string {
 }
 
 /**
- * A name that is not a configured skill but counts as one ("opencv" counts as Computer Vision) → the first
- * configured skill, in rules order, that lists it as on profile ("football analytics" → Sports Analytics).
- * Requiring both adds nothing: the narrower name folds into the skill.
- */
-const FOLDS_INTO = (() => {
-  const map = new Map<string, string>();
-  for (const [key, rule] of Object.entries(SKILL_EVIDENCE)) {
-    for (const term of rule.named) {
-      if (Object.hasOwn(SKILL_EVIDENCE, term) || Object.hasOwn(SKILL_SYNONYMS, term) || map.has(term)) continue;
-      map.set(term, key);
-    }
-  }
-  return map;
-})();
-
-/**
- * A job's skill list as scored. Extra spaces are collapsed and the list counts each skill once, whatever the order:
- * - repeats and spelling variants are one requirement ("Python; python ; Python", "Go; Golang", "Golang; Go"); the
- *   first spelling is kept for display only, since scoring looks the skill up by canonicalSkill();
- * - a narrower name is dropped when the skill it counts as is also required ("Computer Vision; OpenCV" and
- *   "OpenCV; Computer Vision" are Computer Vision). Without that skill it stays, matching its own name only.
+ * A job's skill list as scored. Extra spaces are collapsed, and repeats and the configured spelling variants are one
+ * requirement whatever the order ("Python; python ; Python", "Go; Golang", "Golang; Go"); the first spelling is kept
+ * for display only, since scoring looks the skill up by canonicalSkill(). Every other name the recruiter entered
+ * stays its own requirement: "AWS; SageMaker" is two, in either order, because knowing AWS does not show SageMaker.
  */
 export function uniqueSkills(skills: string[]): string[] {
   const seen = new Set<string>();
-  const kept: { skill: string; key: string }[] = [];
+  const out: string[] = [];
   for (const raw of skills) {
     const skill = raw.replace(/\s+/g, ' ').trim();
     const key = canonicalSkill(skill);
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    kept.push({ skill, key });
+    out.push(skill);
   }
-  return kept.filter(({ key }) => !seen.has(FOLDS_INTO.get(key) ?? '')).map(({ skill }) => skill);
+  return out;
 }
 
 function escapeRegExp(s: string): string {
