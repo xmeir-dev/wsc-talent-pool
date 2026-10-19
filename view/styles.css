@@ -130,6 +130,9 @@ ul {
   border-top: 1px solid var(--ml-border-subtle);
   font-size: 13px;
 }
+.pool-list li:first-child {
+  border-top: 0;
+}
 .pool-list li .muted {
   white-space: nowrap;
 }
