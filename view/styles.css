@@ -220,9 +220,13 @@ ul {
   color: var(--ml-text-muted);
 }
 
+/* Same type as the profile's section titles (Overview, Fit to WSC roles). */
 .list-count {
   margin-right: var(--ml-space-sm);
-  color: var(--ml-text-muted);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ml-text);
 }
 
 /* One line above the table: count, pickers, then Export at the right edge. */
