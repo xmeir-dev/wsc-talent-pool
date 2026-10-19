@@ -40,6 +40,6 @@ npx playwright test --project integration-demo
 | Comeet lookup and create | In-memory service (`comeet.ts`), fictional positions and one active candidate (`fixtures.ts`) | Comeet Recruiting API (Enterprise; access through Comeet support) |
 | Comeet position and profile | Approximate layout with configured custom fields and tags | Comeet's own pages |
 | Overnight run and notification | Computed on load from `data/`; a HubSpot-style notification | A scheduled job after event capture and enrichment; HubSpot notification or task |
-| Comeet status in HubSpot | Read from the simulated Comeet | Comeet webhook writes a HubSpot contact property |
+| Comeet status in HubSpot | Read from the simulated Comeet | A scheduled sync reads each candidate's status from Comeet's Recruiting API (Comeet sends no status-change webhook) and writes a HubSpot contact property |
 | Spreadsheet import | Validated, then appended to the same source tables (`sources.ts`) | HubSpot import, then the same scoring job |
 | New role | Appended as a job; scored immediately | Comeet "position created" webhook starts scoring |

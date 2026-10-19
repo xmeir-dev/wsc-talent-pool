@@ -58,7 +58,7 @@ The assessment logic in `pipeline/` is plain TypeScript with no file or network 
 ## Repo contents
 
 - `assignment/` — the task brief as provided (open `assignment/index.html`)
-- `data/` — the provided CSVs (synthetic)
+- `data/` — the provided CSVs (synthetic), plus clearly labelled made-up demo files for the view (`ai_summaries.json`, `demo_recruiters.json`, `demo_comeet.json`, `wsc_offices.json`, `samples/`); none of them feeds the ranking
 - `pipeline/` — assessment rules (`rules.ts`), scoring, ranking and CSV output
 - `cli/` — the `npm run pipeline` command
 - `view/` — the recruiter view (React + Vite, plain CSS)

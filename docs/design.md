@@ -10,6 +10,7 @@ The core pain is signal-to-noise: too many contacts to screen and too little hel
 - **Three outcomes, not a cut-off.** Shortlist, needs review, or not recommended for this role. Missing information sends someone to review, never to rejection, and nobody is deleted: a person who does not fit one role stays in the pool for the next.
 - **Relevance and job fit are separate.** Conference relevance sorts the pool by what people actually do, not by which event they attended.
 - **Connections are a reference lead, not a score.** They only break exact ties, so they can never lift a weaker candidate over a stronger one.
+- **AI reads, rules decide.** For attendees with no recruiter note, the view shows a one-line summary written by an AI model (Claude) from the LinkedIn fields, labelled "AI summary" and checked against the files (`data/ai_summaries.json`). It helps a recruiter skim; it never changes a result.
 - **One shared engine.** The same TypeScript module runs the CLI, the recruiter view and the integration demo, so every screen and the HubSpot-ready CSV agree. The [schema and flow](schema-and-flow.md) defines each step and column; the [assumptions](assumptions.md) list what was assumed.
 
 ## Production version
@@ -48,4 +49,5 @@ Contacts followed up, time from a role opening to a qualified shortlist, recruit
 1. **Check the rules with hiring managers** against past hires, and tune the 60% required-skills bar, minimum years and skill equivalents.
 2. **Connect the real tools:** a HubSpot test account and a Comeet sandbox, to prove the handoff and status sync the demo simulates.
 3. **Record recruiter decisions** (approached, not interested, hired) to learn which recommendations work.
-4. **Future idea, separate from the current rules: an AI step for free text.** A language model could read recruiter notes and full work history to suggest evidence the skill list misses. Its suggestions would be labelled and confirmed by a recruiter before affecting any outcome; the deterministic rules stay the decision-maker.
+4. **Future idea, beyond today's display-only summaries: an AI step for free text.** A language model could read recruiter notes and full work history to suggest evidence the skill list misses. Its suggestions would be labelled and confirmed by a recruiter before affecting any outcome; the deterministic rules stay the decision-maker.
+5. **From conference pool to talent hub.** Conferences are one source. The same pool, matching and reference leads work for any contact WSC holds: people from tech-company layoffs (the recruiter's own idea from the call; a layoff alert alone covers only part of the need, so laid-off people would flow into the pool and be matched like attendees), past applicants, referrals and LinkedIn sourcing. Each becomes another source on the sync panel.
