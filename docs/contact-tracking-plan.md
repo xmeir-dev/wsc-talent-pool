@@ -1,6 +1,6 @@
 # Contact tracking plan
 
-Status: revised 2026-10-19 after two CTO reviews. The assignment scope below is built (simulated, in `view/activity.ts`); live connections and sending stay out of scope.
+Status: the assignment scope below is built (simulated, in `view/activity.ts`); live connections and sending stay out of scope.
 
 Proposal: keep a history of every outreach action and show where each person stands **for each role**, with person-wide warnings on top, so recruiters can see who was contacted, how and with what result, and are stopped before contacting someone they shouldn't. Outreach stays separate from candidate fit: nothing here changes a ranking.
 
@@ -16,16 +16,16 @@ Why it matters:
 - **Managers can see progress.** Contacted, responded and declined per conference and per role is the first honest measure of whether conference contacts turn into hires (the [design doc](design.md#measuring-success)'s success measures need this data).
 - **It keeps people in fewer tools.** HubSpot holds the pool and shows the history; Comeet keeps owning recruitment progress after handoff, as the call asked ("data should move between systems").
 
-## What changed after review
+## Design requirements
 
-| Review point | Change in this version |
+| Requirement | How this version meets it |
 | --- | --- |
 | Track outcomes per person **and role** | Status is per person × role. Person-wide warnings (Do not contact, Already interviewing) sit on top. Reference requests are tracked separately from contacting the candidate. |
 | Only record "sent" when sending is confirmed | Every action has a state: Prepared, Sent, Failed, Confirmed by recruiter, or Simulated. Copying a message or opening email is Prepared, never Sent. Adding someone to Comeet is not treated as an invitation. |
 | Repeat protection beyond a 30-day rule | Blocking rules apply to single and bulk actions: Do not contact, already in a process, same role already contacted, same colleague already asked about the same person. The demo checks them again inside one storage transaction, so two tabs cannot both send or erase each other's history; production runs the same check server-side for two recruiters acting at once ([identity and history](identity-and-history.md)). |
 | Use Comeet's existing tracking | Comeet leads already carry a role, an outreach status (Not Contacted, Contacted, Responded) and a process status ([lead schema](https://developers.comeet.com/reference/lead-schema)). Production uses them instead of rebuilding them. |
-| A Comeet lead isn't necessarily interviewing (second review) | A new lead comes back as "In progress" + "Not Contacted" ([create a lead](https://developers.comeet.com/reference/create-a-lead)). Only an active candidacy, or a lead already contacted, counts as Already in process; an uncontacted lead does not block the first approach. |
-| Simulated is a label, not a state (second review) | Demo actions are "Sent · Simulated" or "Prepared · Simulated", so they trigger the same repeat protection as real ones. |
+| A Comeet lead isn't necessarily interviewing | A new lead comes back as "In progress" + "Not Contacted" ([create a lead](https://developers.comeet.com/reference/create-a-lead)). Only an active candidacy, or a lead already contacted, counts as Already in process; an uncontacted lead does not block the first approach. |
+| Simulated is a label, not a state | Demo actions are "Sent · Simulated" or "Prepared · Simulated", so they trigger the same repeat protection as real ones. |
 | Allow corrections and deletion | Corrections add a new entry that supersedes the old one (audit kept). A deletion request removes the person's history from every connected system. |
 
 ## What the recruiter sees
@@ -104,7 +104,7 @@ Keep it to what demonstrates the thinking:
 
 1. A **clearly simulated** activity history.
 2. **Role-aware status** in the table and a Status filter.
-3. Seeded examples, so reviewers see the rules without clicking around:
+3. Seeded examples, so readers see the rules without clicking around:
     - **Declined one role, open for another**: blocked for that role, invitable for the other with a warning.
     - **Already in process**: Ryan Patel, at the phone screen for Data Engineer in the demo Comeet data, blocked from new invites.
     - **Copied but not sent**: a reference request to a colleague that was copied, shown as Prepared, not counted as contact.
@@ -122,7 +122,7 @@ All in the recruiter view (`view/`); the pipeline and its CSV output do not chan
 4. **Table**: each role's status inside its job chip, an **Invite** pill on hover where allowed, and a **Status** filter.
 5. **Profile**: the Activity card with flags, each job card's status, and the request state under each WSC connection.
 
-Tests (all passing: 141 unit, 19 browser):
+Tests:
 
 - Unit (`tests/activity.test.ts`): role status per role (declined for one role, open for another); an uncontacted Comeet lead not counting as in process; every block rule; a past Comeet rejection for another role warning (a withdrawal does not); Prepared not counted as contact; a repeated simulated send blocked; a correction superseding an earlier entry.
 - Browser (`e2e/contact-tracking.spec.ts`): the seeded examples render and block as described; an invite survives a reload and blocks a repeat; the Status filter narrows the list.
@@ -134,4 +134,3 @@ Tests (all passing: 141 unit, 19 browser):
 - [ ] HubSpot notes or custom timeline events for the history? Timeline events need a full HubSpot app, not the Service Key planned today.
 - [ ] The cross-role warning window: 30 days, or longer?
 - [ ] Who may set Do not contact, and who may lift it?
-- [x] Build the assignment scope before the 2026-10-21 presentation? Yes, built (above).
