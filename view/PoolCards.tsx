@@ -33,7 +33,7 @@ function PoolCard({
   label: string;
   count: number;
   rows: Row[];
-  /** The card's one action, if any (e.g. New conference). */
+  /** The card's one action, if any (e.g. Add conference). */
   action?: ReactNode;
   selected: string[];
   onSelect: (next: string[]) => void;

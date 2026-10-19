@@ -254,7 +254,7 @@
   color: var(--ml-text-muted);
 }
 
-/* New conference: the same panel, narrower; one file row, then Add to pool. */
+/* Add conference: the same panel, narrower; one file row, then Add to pool. */
 .ask.new-conf {
   width: min(380px, calc(100vw - 32px));
 }

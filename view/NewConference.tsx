@@ -30,7 +30,7 @@ function preview(file: string, text: string, known: Set<string>, existing: strin
   return { file, text, names, date: records[0]!.conference_date!, people: records.length, returning };
 }
 
-/** "New conference": add one event's attendee list to the pool. */
+/** "Add conference": add one event's attendee list to the pool. */
 export function NewConference({
   known,
   existing,
@@ -69,7 +69,7 @@ export function NewConference({
         <span className="ml-btn-icon-slot" aria-hidden="true">
           <HugeiconsIcon icon={Add01Icon} size={16} strokeWidth={1.75} />
         </span>
-        <span className="ml-btn-label">New conference</span>
+        <span className="ml-btn-label">Add conference</span>
       </Popover.Trigger>
       <Popover.Content className="ask new-conf" aria-label="Add a conference">
         <div className="ask-head">
