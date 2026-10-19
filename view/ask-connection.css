@@ -259,10 +259,11 @@
   width: min(380px, calc(100vw - 32px));
 }
 .new-conf-drop {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 2px;
-  padding: 24px 16px;
+  padding: 24px 16px 20px;
   border: 1px dashed var(--ml-border);
   border-radius: 12px;
   background: var(--ml-bg-surface);
@@ -284,9 +285,31 @@
 .new-conf-drop[data-over] {
   border-color: var(--ml-text-muted);
 }
-.new-conf-drop:focus-visible {
+.new-conf-drop:has(.new-conf-browse:focus-visible) {
   outline: 2px solid var(--ml-text);
   outline-offset: 2px;
+}
+.new-conf-browse {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ml-text);
+  font: inherit;
+  cursor: pointer;
+}
+.new-conf-browse:focus-visible {
+  outline: none;
+}
+/* Stretch the browse button over the whole zone. */
+.new-conf-browse::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.new-conf-drop .new-conf-chip {
+  position: relative;
+  margin-top: 12px;
 }
 .new-conf-link {
   display: flex;
@@ -310,11 +333,26 @@
   color: var(--ml-text);
   font: inherit;
 }
-.new-conf-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
+.new-conf-paste {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-right: -6px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ml-text-muted);
+  cursor: pointer;
+}
+.new-conf-paste:hover {
+  background: var(--ml-bg-surface);
+  color: var(--ml-text);
+}
+.new-conf-paste:focus-visible {
+  outline: 2px solid var(--ml-text);
+  outline-offset: 1px;
 }
 .new-conf-chip {
   height: 28px;

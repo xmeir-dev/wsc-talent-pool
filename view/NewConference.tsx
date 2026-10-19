@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { CalendarAdd01Icon, Cancel01Icon, FileUploadIcon, Link01Icon } from '@hugeicons/core-free-icons';
-import { Button, Popover } from '@meir-labs/ui-kit';
+import { CalendarAdd01Icon, Cancel01Icon, CircleArrowUp02Icon, ClipboardPasteIcon, FileUploadIcon } from '@hugeicons/core-free-icons';
+import { Button, Popover, Tooltip } from '@meir-labs/ui-kit';
 import { parseCsv } from '../pipeline';
 import sample from '../data/samples/wsc_product_meetup.csv?raw';
 
@@ -57,6 +57,8 @@ export function NewConference({
   };
   const fromLink = async (url: string) => {
     if (!/^https?:\/\//.test(url.trim())) return setError('Paste a full link, starting with https://');
+    // The form itself can't be read without signing in; its answers live in the linked sheet.
+    if (/docs\.google\.com\/forms\//.test(url)) return setError('That is the form itself. In the form, open Responses, then View in Sheets, and paste that link.');
     setBusy(true);
     setError(null);
     try {
@@ -96,11 +98,10 @@ export function NewConference({
             e.target.value = '';
           }}
         />
-        <button
-          type="button"
+        {/* The whole zone takes a dropped file; its button stretches over it, and the sample chip sits above that. */}
+        <div
           className="new-conf-drop"
           data-over={over || undefined}
-          onClick={() => input.current?.click()}
           onDragOver={(e) => {
             e.preventDefault();
             setOver(true);
@@ -114,15 +115,19 @@ export function NewConference({
           }}
         >
           <HugeiconsIcon icon={FileUploadIcon} size={24} strokeWidth={1.5} aria-hidden="true" />
-          <span>Choose attendee list</span>
+          <button type="button" className="new-conf-browse" onClick={() => input.current?.click()}>
+            Choose attendee list
+          </button>
           <span className="muted">Drop a CSV here or click to browse</span>
-        </button>
+          <button type="button" className="new-conf-chip" onClick={() => add(sample)}>
+            Use a sample list
+          </button>
+        </div>
         <label className="new-conf-link">
-          <HugeiconsIcon icon={Link01Icon} size={16} strokeWidth={1.75} aria-hidden="true" />
           <input
             type="url"
             value={link}
-            placeholder="Or paste a Google Sheets link"
+            placeholder="Or paste the form's responses sheet"
             aria-label="Attendee list link"
             disabled={busy}
             onChange={(e) => setLink(e.target.value)}
@@ -138,15 +143,41 @@ export function NewConference({
               if (e.key === 'Enter') void fromLink(link);
             }}
           />
+          {/* Empty: paste from the clipboard. With a link typed in: send it. */}
+          {link.trim() ? (
+            <Tooltip content="Add list">
+              <button type="button" className="new-conf-paste" aria-label="Add list from link" disabled={busy} onClick={() => void fromLink(link)}>
+                <HugeiconsIcon icon={CircleArrowUp02Icon} size={18} strokeWidth={1.75} />
+              </button>
+            </Tooltip>
+          ) : (
+            <Tooltip content="Paste">
+              <button
+                type="button"
+                className="new-conf-paste"
+                aria-label="Paste link"
+                disabled={busy}
+                onClick={async () => {
+                  try {
+                    const url = (await navigator.clipboard.readText()).trim();
+                    if (!url) return setError('The clipboard is empty.');
+                    setLink(url);
+                    void fromLink(url);
+                  } catch {
+                    setError('Paste with ⌘V instead; the browser blocked clipboard access.');
+                  }
+                }}
+              >
+                <HugeiconsIcon icon={ClipboardPasteIcon} size={16} strokeWidth={1.75} />
+              </button>
+            </Tooltip>
+          )}
         </label>
-        <div className="new-conf-foot">
-          <button type="button" className="new-conf-chip" onClick={() => add(sample)}>
-            Use a sample list
-          </button>
-          <span className="ask-status muted" role="status">
+        {(busy || error) && (
+          <p className="ask-status muted" role="status">
             {busy ? 'Opening the link…' : error}
-          </span>
-        </div>
+          </p>
+        )}
       </Popover.Content>
     </Popover>
   );
