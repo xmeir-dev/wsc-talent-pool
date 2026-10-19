@@ -136,6 +136,7 @@ function RelevantFor({ list, statusOf }: { list: Attendee['relevantFor']; status
                 <HugeiconsIcon icon={shortlisted ? CheckmarkBadge01Icon : HelpCircleIcon} size={14} strokeWidth={1.75} aria-hidden="true" />
               ) : (
                 <span className="fit-status" title={s.simulated ? 'Simulated' : undefined}>
+                  <span className="ml-visually-hidden">, </span>
                   {STATUS_LABEL[s.status]}
                 </span>
               )}
