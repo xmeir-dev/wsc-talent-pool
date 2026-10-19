@@ -660,8 +660,8 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
         <div className="d-grid">
           <div className="d-col">
             {contactCard}
-            {metCard}
             {activityCard}
+            {metCard}
           </div>
           <div className="d-col">
             {careerCard}
