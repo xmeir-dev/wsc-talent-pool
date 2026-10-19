@@ -6,6 +6,7 @@ import comeetIcon from './assets/comeet.png';
 import { DemoBadge } from './DemoBadge';
 import googleFormsIcon from './assets/google-forms.png';
 import hubspotIcon from './assets/hubspot.png';
+import slackIcon from './assets/slack.png';
 
 const MIN = 60_000;
 
@@ -95,6 +96,28 @@ const SOURCES: { key: string; name: string; icon: string; home: string; steps: R
     ],
     google: true,
     fields: [{ id: 'folder', label: 'Event sign-ups folder', placeholder: 'https://drive.google.com/drive/folders/…' }],
+  },
+  {
+    key: 'slack',
+    name: 'Slack',
+    icon: slackIcon,
+    home: 'https://app.slack.com/',
+    steps: [
+      <>
+        Go to {ext('https://api.slack.com/apps', 'Slack apps')}, click <b>Create New App → From scratch</b>, name it "WSC talent pool" and pick
+        the WSC workspace.
+      </>,
+      <>
+        Under <b>OAuth &amp; Permissions → Bot Token Scopes</b>, add <code>chat:write</code>, <code>im:write</code>, <code>users:read</code> and{' '}
+        <code>users:read.email</code> (to find each colleague by their work email).
+      </>,
+      <>
+        Click <b>Install to Workspace</b>; a Slack admin may need to approve it ({ext('https://api.slack.com/authentication/basics', 'Slack guide')}).
+      </>,
+      <>Copy the <b>Bot User OAuth Token</b> (starts with <code>xoxb-</code>), then paste it here.</>,
+      <>Ask messages to WSC colleagues then go out as direct messages from the app, instead of being copied by hand.</>,
+    ],
+    fields: [{ id: 'token', label: 'Bot User OAuth Token', placeholder: 'xoxb-…', secret: true }],
   },
 ];
 

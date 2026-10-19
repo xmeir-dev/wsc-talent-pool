@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { BubbleChatIcon, Cancel01Icon, MailAdd01Icon, SlackIcon } from '@hugeicons/core-free-icons';
-import { Avatar, Button, Popover, Select } from '@meir-labs/ui-kit';
+import { Avatar, Button, Popover } from '@meir-labs/ui-kit';
 import type { Candidate, Employee, Job } from '../pipeline';
 import type { Attendee } from './attendees';
 import { connectionPeople } from './AskConnection';
@@ -53,16 +53,25 @@ function BulkPanel({ label, icon, title, children }: { label: string; icon: Reac
 
 /** Shown above the table once rows are ticked: invite them all, or ask their WSC connections, in one go. */
 export function BulkActions({ selected, jobs, onClear }: { selected: Attendee[]; jobs: Job[]; onClear: () => void }) {
-  const [jobId, setJobId] = useState('');
   const [status, setStatus] = useState<string | null>(null);
-  // Default job: the one most of the selected people fit.
-  const fitted = useMemo(() => {
-    const count = new Map<string, number>();
-    for (const p of selected) for (const r of p.relevantFor) count.set(r.job.jobId, (count.get(r.job.jobId) ?? 0) + 1);
-    return [...count.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] ?? jobs[0]?.jobId ?? '';
+  // Each person goes to their own best job (shortlisted first); people with no fitting job or no email are skipped.
+  const plan = useMemo(() => {
+    const byJob = new Map<string, { job: Job; people: Candidate[] }>();
+    let noJob = 0;
+    let noEmail = 0;
+    for (const p of selected) {
+      const best = [...p.relevantFor].sort((x, y) => (x.outcome === 'shortlist' ? 0 : 1) - (y.outcome === 'shortlist' ? 0 : 1))[0];
+      if (!best) noJob++;
+      else if (!p.candidate.email) noEmail++;
+      else {
+        const g = byJob.get(best.job.jobId) ?? { job: best.job, people: [] };
+        g.people.push(p.candidate);
+        byJob.set(best.job.jobId, g);
+      }
+    }
+    const groups = jobs.flatMap((j) => byJob.get(j.jobId) ?? []);
+    return { groups, total: groups.reduce((n, g) => n + g.people.length, 0), noJob, noEmail };
   }, [selected, jobs]);
-  const job = jobs.find((j) => j.jobId === (jobId || fitted)) ?? jobs[0];
-  const reachable = selected.filter((p) => p.candidate.email);
 
   // Colleague → the selected people they know.
   const asks = useMemo(() => {
@@ -78,55 +87,65 @@ export function BulkActions({ selected, jobs, onClear }: { selected: Attendee[];
   }, [selected]);
   const unconnected = selected.filter((p) => !asks.some((g) => g.people.includes(p.candidate))).length;
 
-  if (!selected.length || !job) return null;
-  const first = reachable[0]?.candidate;
+  if (!selected.length) return null;
+  const preview = plan.groups[0];
 
   return (
     <div className="bulk-bar" role="region" aria-label="Selected attendees">
       <span className="bulk-count">{selected.length} selected</span>
-      <BulkPanel label="Invite to jobs" icon={<HugeiconsIcon icon={MailAdd01Icon} size={16} strokeWidth={1.75} />} title={`Invite ${selected.length} to a job`}>
+      <BulkPanel
+        label="Invite to jobs"
+        icon={<HugeiconsIcon icon={MailAdd01Icon} size={16} strokeWidth={1.75} />}
+        title={`Invite ${plan.total} to ${plan.groups.length === 1 ? 'a job' : 'jobs'}`}
+      >
         {(close) => (
           <>
-            <Select
-              value={job.jobId}
-              onValueChange={(v) => {
-                setJobId(v);
-                setStatus(null);
-              }}
-            >
-              <Select.Trigger aria-label="Job" />
-              <Select.Content>
-                {jobs.map((j) => (
-                  <Select.Item key={j.jobId} value={j.jobId}>
-                    {j.title}
-                  </Select.Item>
-                ))}
-              </Select.Content>
-            </Select>
-            {first && (
+            {/* Who goes where: each person's best-fit job. */}
+            <ul className="bulk-asks">
+              {plan.groups.map(({ job, people }) => (
+                <li key={job.jobId}>
+                  <span className="bulk-ask-who">
+                    <span>
+                      {job.title} <span className="muted">· {people.length}</span>
+                    </span>
+                    <span className="muted">{names(people)}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {(plan.noJob > 0 || plan.noEmail > 0) && (
+              <p className="muted bulk-note">
+                Skipped:{' '}
+                {[plan.noJob && `${plan.noJob} not a fit for any open job`, plan.noEmail && `${plan.noEmail} without an email`].filter(Boolean).join(', ')}
+              </p>
+            )}
+            {preview && (
               <>
                 <p className="muted bulk-note">
-                  Each invite is written for that person: their name, where they met WSC, their company. Preview for {first.fullName}:
+                  Each invite is written for that person and their job. Preview for {preview.people[0]!.fullName}:
                 </p>
-                <textarea className="ask-text" readOnly rows={8} value={inviteMessage(first, job)} aria-label={`Invite preview for ${first.fullName}`} />
+                <textarea
+                  className="ask-text"
+                  readOnly
+                  rows={8}
+                  value={inviteMessage(preview.people[0]!, preview.job)}
+                  aria-label={`Invite preview for ${preview.people[0]!.fullName}`}
+                />
               </>
             )}
             <div className="ask-actions">
               <Button
                 size="sm"
                 variant="primary"
-                disabled={!reachable.length}
+                disabled={!plan.total}
                 leftIcon={<img src={comeetIcon} alt="" width={16} height={16} />}
                 onClick={() => {
-                  setStatus(`Comeet would add ${reachable.length} to ${job.title} and send each invite.`);
+                  setStatus(`Comeet would add ${plan.total} to ${plan.groups.length === 1 ? plan.groups[0]!.job.title : `${plan.groups.length} jobs`} and send each invite.`);
                   close();
                 }}
               >
-                Send {reachable.length} {reachable.length === 1 ? 'invite' : 'invites'}
+                Send {plan.total} {plan.total === 1 ? 'invite' : 'invites'}
               </Button>
-              {reachable.length < selected.length && (
-                <span className="ask-status muted">{selected.length - reachable.length} without an email are skipped</span>
-              )}
             </div>
           </>
         )}
