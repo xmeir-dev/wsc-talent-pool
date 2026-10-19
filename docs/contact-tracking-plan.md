@@ -1,6 +1,6 @@
 # Contact tracking plan
 
-Status: proposal, revised 2026-10-19 after CTO review. Not built yet.
+Status: revised 2026-10-19 after two CTO reviews; the assignment scope below is approved to build. Live connections and sending stay out of scope.
 
 Proposal: keep a history of every outreach action and show where each person stands **for each role**, with person-wide warnings on top, so recruiters can see who was contacted, how and with what result, and are stopped before contacting someone they shouldn't. Outreach stays separate from candidate fit: nothing here changes a ranking.
 
@@ -24,6 +24,8 @@ Why it matters:
 | Only record "sent" when sending is confirmed | Every action has a state: Prepared, Sent, Failed, Confirmed by recruiter, or Simulated. Copying a message or opening email is Prepared, never Sent. Adding someone to Comeet is not treated as an invitation. |
 | Repeat protection beyond a 30-day rule | Blocking rules apply to single and bulk actions: Do not contact, already in a process, same role already contacted, same colleague already asked about the same person. Production adds a server-side check for two recruiters acting at once. |
 | Use Comeet's existing tracking | Comeet leads already carry a role, an outreach status (Not Contacted, Contacted, Responded) and a process status ([lead schema](https://developers.comeet.com/reference/lead-schema)). Production uses them instead of rebuilding them. |
+| A Comeet lead isn't necessarily interviewing (second review) | A new lead comes back as "In progress" + "Not Contacted" ([create a lead](https://developers.comeet.com/reference/create-a-lead)). Only an active candidacy, or a lead already contacted, counts as Already in process; an uncontacted lead does not block the first approach. |
+| Simulated is a label, not a state (second review) | Demo actions are "Sent · Simulated" or "Prepared · Simulated", so they trigger the same repeat protection as real ones. |
 | Allow corrections and deletion | Corrections add a new entry that supersedes the old one (audit kept). A deletion request removes the person's history from every connected system. |
 
 ## What the recruiter sees
@@ -46,7 +48,7 @@ Three kinds of record, kept apart:
 | Record | Key | Values |
 | --- | --- | --- |
 | Role status | person × role | Not contacted, Contacted, Responded, Interested, Declined; once handed off: Comeet's own process status (In progress, On hold, Rejected, Not interested, Hired) |
-| Person flags | person | Do not contact; Already interviewing (derived: an active Comeet process for any role) |
+| Person flags | person | Do not contact; Already in process (derived: an active Comeet candidacy for any role, or a lead whose outreach status is Contacted or Responded; a lead still "Not Contacted" does not count) |
 | Reference requests | person × colleague | Prepared, Sent, Failed, Confirmed, with any answer the recruiter records |
 
 Each outreach or reference action is an entry with: role (if any), channel (Comeet, Slack, email, copy), **action state**, by, at.
@@ -57,7 +59,8 @@ Each outreach or reference action is an entry with: role (if any), channel (Come
 | Sent | The sending system confirmed it (Slack API success, an email send result, a Comeet message we can see) | Yes |
 | Failed | The sending system returned an error | No |
 | Confirmed | The recruiter marked a Prepared message as sent by them | Yes |
-| Simulated | Demo only: what would have been sent | Shown as simulated, never mixed with real counts |
+
+**Simulated** is a separate label on an entry, not a state: in the demo every action is "Sent · Simulated" or "Prepared · Simulated". Simulated entries follow exactly the same rules (a simulated send blocks a repeat), and are never mixed into real counts.
 
 Corrections: entries are not edited in place. A correction is a new entry that supersedes an earlier one (for example "Declined" entered by mistake, replaced by "Responded"), so the history shows both. Deletion is different: a person's deletion request removes their entries, flags and requests everywhere (see below).
 
@@ -68,7 +71,7 @@ Checked for every single and bulk action. A bulk action skips blocked people and
 | Rule | Blocks |
 | --- | --- |
 | Do not contact | Every invite and every reference request about them |
-| Already interviewing (active Comeet process, any role) | New invites; the owning recruiter decides |
+| Already in process (active Comeet candidacy, or a contacted lead, any role) | New invites; the owning recruiter decides. An uncontacted Comeet lead does not block |
 | Role status is Contacted or later for this role | A second invite to the same role |
 | Declined this role | Invites to this role; other roles stay open, with a warning |
 | Same colleague already asked about the same person (Sent or Confirmed) | A repeat request |
@@ -99,7 +102,7 @@ Keep it to what demonstrates the thinking:
 2. **Role-aware status** in the table and a Status filter.
 3. Seeded examples, so reviewers see the rules without clicking around:
     - **Declined one role, open for another**: blocked for that role, invitable for the other with a warning.
-    - **Already interviewing**: Ryan Patel, in process for Data Engineer in the demo Comeet data, blocked from new invites.
+    - **Already in process**: Ryan Patel, at the phone screen for Data Engineer in the demo Comeet data, blocked from new invites.
     - **Copied but not sent**: a reference request to a colleague that was copied, shown as Prepared, not counted as contact.
 4. The block messages in Invite, Ask and both bulk actions.
 
@@ -110,7 +113,7 @@ Left for production: outcome buttons beyond Responded/Declined, Do not contact m
 All in the recruiter view (`view/`); the pipeline and its CSV output do not change.
 
 1. **Activity store**: new `view/activity.ts` with entries in browser storage (falls back to memory when storage is blocked), seeded examples, and pure functions `roleStatus(person, role)`, `personFlags(person)` and `checkContact(action)` implementing the rules above.
-2. **Record actions with their state**: Invite, Ask and both bulk actions add Simulated entries; Copy and Email add Prepared entries; a **Sent by me** control turns Prepared into Confirmed.
+2. **Record actions with their state**: Invite, Ask in Slack and both bulk actions add "Sent · Simulated" entries; Copy and Email add "Prepared · Simulated"; a **Sent by me** control turns Prepared into Confirmed.
 3. **Blocks**: the rules table, in single and bulk actions, with the skip summary.
 4. **Table and filter**: Status column (per selected role) with the flag icon, and a Status filter.
 5. **Profile**: Activity card, Reference requests list, flags.
@@ -118,14 +121,15 @@ All in the recruiter view (`view/`); the pipeline and its CSV output do not chan
 
 Tests:
 
-- Unit: role status per role (declined for one role, open for another); person flags; every block rule; Prepared not counted as contact; a correction superseding an earlier entry.
+- Unit: role status per role (declined for one role, open for another); person flags, including an uncontacted Comeet lead not counting as in process; every block rule; Prepared not counted as contact; a repeated simulated send blocked; a correction superseding an earlier entry.
 - Unit: bulk skip summary counts.
 - Browser: the three seeded examples render as described; inviting someone then reloading shows the entry; the Status filter narrows by role.
 - The existing 128 unit and 16 browser tests stay green.
 
 ## Open questions
 
-- [ ] Are Comeet leads (with outreach status) enabled in WSC's account, and can the Recruiting API create them, or only read them?
+- [x] Can the Recruiting API create leads? Yes: [create a lead](https://developers.comeet.com/reference/create-a-lead) takes a role (`position_uid`) and an `outreach_status`.
+- [ ] Are leads enabled in WSC's Comeet account, with API permission to create and read them?
 - [ ] HubSpot notes or custom timeline events for the history? Timeline events need a full HubSpot app, not the Service Key planned today.
 - [ ] The cross-role warning window: 30 days, or longer?
 - [ ] Who may set Do not contact, and who may lift it?
