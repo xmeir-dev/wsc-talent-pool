@@ -16,7 +16,11 @@ const SUMMIT = 'SportsTech Innovation Summit';
 const csv = (...rows: string[]) => Buffer.from([HEADER, ...rows].join('\n') + '\n');
 
 async function addList(page: Page, name: string, buffer: Buffer) {
-  if (!(await popover(page).isVisible())) await page.getByRole('button', { name: 'Add conference' }).click();
+  // After a successful import the popover fades out while still visible; wait for it to go before reopening.
+  if (!(await popover(page).and(page.locator('[data-open="true"]')).isVisible())) {
+    await expect(popover(page)).toHaveCount(0);
+    await page.getByRole('button', { name: 'Add conference' }).click();
+  }
   await popover(page).locator('input[type=file]').setInputFiles({ name, mimeType: 'text/csv', buffer });
 }
 
