@@ -570,6 +570,14 @@
 .sync-form ol {
   margin-bottom: 4px;
 }
+.sync-fields {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--ml-border-subtle);
+  border-radius: 10px;
+  background: var(--ml-bg-card);
+}
 .sync-google {
   justify-self: start;
 }

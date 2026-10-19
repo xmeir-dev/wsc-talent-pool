@@ -245,39 +245,42 @@ export function SyncStatus() {
                 <li key={i}>{step}</li>
               ))}
             </ol>
-            {shown.google && (
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                className="sync-google"
-                disabled={googleSignedIn}
-                onClick={() => setGoogleSignedIn(true)}
-                leftIcon={<img src={googleFormsIcon} alt="" width={16} height={16} />}
-              >
-                {googleSignedIn ? 'Signed in with Google' : 'Sign in with Google'}
-              </Button>
-            )}
-            {shown.fields.map((f) => (
-              <label key={f.id} className="sync-field">
-                <span>
-                  {f.label}
-                  {f.optional && <span className="muted"> (optional)</span>}
-                </span>
-                <input
-                  type={f.secret ? 'password' : 'text'}
-                  autoComplete="off"
-                  spellCheck={false}
-                  placeholder={f.placeholder}
-                  value={values[f.id] ?? ''}
-                  onChange={(e) => setValues((v) => ({ ...v, [f.id]: e.target.value }))}
-                />
-              </label>
-            ))}
-            <div className="sync-form-actions">
-              <Button type="submit" size="sm" variant="primary" disabled={!ready || connecting !== null}>
-                {connecting === shown.key ? 'Connecting…' : `Connect ${shown.name}`}
-              </Button>
+            {/* The fields sit in their own box under the steps. */}
+            <div className="sync-fields">
+              {shown.google && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="sync-google"
+                  disabled={googleSignedIn}
+                  onClick={() => setGoogleSignedIn(true)}
+                  leftIcon={<img src={googleFormsIcon} alt="" width={16} height={16} />}
+                >
+                  {googleSignedIn ? 'Signed in with Google' : 'Sign in with Google'}
+                </Button>
+              )}
+              {shown.fields.map((f) => (
+                <label key={f.id} className="sync-field">
+                  <span>
+                    {f.label}
+                    {f.optional && <span className="muted"> (optional)</span>}
+                  </span>
+                  <input
+                    type={f.secret ? 'password' : 'text'}
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder={f.placeholder}
+                    value={values[f.id] ?? ''}
+                    onChange={(e) => setValues((v) => ({ ...v, [f.id]: e.target.value }))}
+                  />
+                </label>
+              ))}
+              <div className="sync-form-actions">
+                <Button type="submit" size="sm" variant="primary" disabled={!ready || connecting !== null}>
+                  {connecting === shown.key ? 'Connecting…' : `Connect ${shown.name}`}
+                </Button>
+              </div>
             </div>
           </form>
         )}
