@@ -233,6 +233,11 @@ ul {
 }
 
 /* Same type as the profile's section titles (Overview, Fit to WSC roles). */
+/* "At a glance" above the cards: the same type as the list's count line, with room before the cards. */
+.section-label {
+  margin: 0 0 var(--ml-space-md);
+}
+.section-label,
 .list-count {
   font-size: 16px;
   font-weight: 600;

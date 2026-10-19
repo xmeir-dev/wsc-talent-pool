@@ -244,6 +244,7 @@ function Workspace({ dataset, onAddAttendees }: { dataset: Dataset; onAddAttende
           }}
         />
       </header>
+      <h2 className="section-label">At a glance</h2>
       <PoolCards
         pool={pool}
         attendeesPer={filterCounts(pool).conferences}
