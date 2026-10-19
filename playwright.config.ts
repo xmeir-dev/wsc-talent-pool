@@ -4,7 +4,7 @@ const PORT = 4317;
 const DEMO_PORT = 4318;
 
 export default defineConfig({
-  testDir: 'e2e',
+  testDir: 'tests/browser',
   fullyParallel: true,
   reporter: 'list',
   use: { trace: 'retain-on-failure' },
