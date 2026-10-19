@@ -628,7 +628,9 @@ export function CandidateDetail({ a, row, fits, onBack, onJob }: Props) {
           })}
         </ul>
       ) : (
-        <p className="muted">No outreach yet</p>
+        <div>
+          <InviteToJob c={c} fits={ordered} secondary />
+        </div>
       )}
     </section>
   );

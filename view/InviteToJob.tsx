@@ -45,11 +45,14 @@ export function InviteToJob({
   fits,
   jobId: initialJobId,
   compact = false,
+  secondary = false,
 }: {
   c: Candidate;
   fits: { job: Job; outcome: Relevant }[];
   jobId?: string;
   compact?: boolean;
+  /** The quieter look, for the empty Activity card. */
+  secondary?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [jobId, setJobId] = useState(initialJobId ?? fits[0]?.job.jobId ?? '');
@@ -82,7 +85,7 @@ export function InviteToJob({
           Invite
         </Popover.Trigger>
       ) : (
-        <Popover.Trigger className="ml-btn ml-btn-primary ml-btn-size-md">
+        <Popover.Trigger className={`ml-btn ${secondary ? 'ml-btn-secondary' : 'ml-btn-primary'} ml-btn-size-md`}>
           <span className="ml-btn-icon-slot" aria-hidden="true">
             <HugeiconsIcon icon={MailAdd01Icon} size={16} strokeWidth={1.75} />
           </span>
