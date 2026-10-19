@@ -186,6 +186,9 @@ export function buildDataset(sources: SourceTexts, options: BuildOptions = {}): 
     const job = toJob(r);
     if (!job.jobId) warnings.push('jobs: a row without job_id was ignored');
     else if (jobs.some((j) => j.jobId === job.jobId)) warnings.push(`jobs: duplicate ${job.jobId} ignored (first kept)`);
+    else if (jobs.some((j) => j.jobId.toUpperCase() === job.jobId.toUpperCase())) {
+      throw new DataValidationError([`jobs: job_id "${job.jobId}" differs only by letter case from another job; use distinct IDs`]);
+    }
     else jobs.push(job);
     const listed = splitList(r.required_skills).length + splitList(r.nice_to_have).length;
     if (job.jobId && listed > job.requiredSkills.length + job.niceToHave.length) {

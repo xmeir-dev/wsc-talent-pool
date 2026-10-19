@@ -3,6 +3,7 @@
  */
 
 import { toCsv } from './csv';
+import { DataValidationError } from './errors';
 import { toXlsx, type XlsxColumn } from './xlsx';
 import { formatYears } from './history';
 import { joinOr } from './text';
@@ -146,7 +147,15 @@ export function assessmentToCsv(result: JobAssessment): string {
 }
 
 export function outputFileName(jobId: string): string {
+  assertOutputJobId(jobId);
   return `candidates_${jobId}.csv`;
+}
+
+/** Source IDs are labels, never paths. Keep exports within the chosen folder on every platform. */
+function assertOutputJobId(jobId: string): void {
+  if (!jobId.trim() || /[\\/\p{Cc}]/u.test(jobId)) {
+    throw new DataValidationError(['jobs: job_id must be nonempty and cannot contain path separators or control characters']);
+  }
 }
 
 /** Columns holding counts, ranks and years: numeric cells in the Excel download. Every other column is text. */
@@ -172,5 +181,6 @@ export function assessmentToXlsx(result: JobAssessment): Uint8Array {
 }
 
 export function outputXlsxFileName(jobId: string): string {
+  assertOutputJobId(jobId);
   return `candidates_${jobId}.xlsx`;
 }

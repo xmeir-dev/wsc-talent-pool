@@ -1,8 +1,8 @@
 # HubSpot → Comeet integration demo
 
-A clickable concept of the production recruiter experience: review the talent pool inside HubSpot, then hand a person into Comeet for a role.
+**See how a recruiter could review conference contacts in HubSpot and add a suitable person to a Comeet role.**
 
-**Everything here is simulated.** Synthetic data, no HubSpot or Comeet account, no network calls. Each screen is drawn in that product's layout, approximated from public screenshots; no logos or product assets are used. The **HubSpot | Comeet** switch in the yellow strip works like two browser tabs. Every recommendation, rank, gap and reference comes from the same `pipeline/` the CLI and recruiter view use.
+All data and recruiting actions are simulated. There is no live HubSpot or Comeet connection. Screens approximate the products from public screenshots, with no product logos or assets. The recommendations use the same assessment code as the CLI and recruiter view.
 
 ```bash
 npm run demo:integrations   # http://localhost:5173
@@ -11,47 +11,59 @@ npx playwright test --project integration-demo
 
 ## Walkthrough: the morning after a conference
 
-1. **Overnight run.** The demo opens in HubSpot with a notification: the conference contacts were scored overnight for every open Comeet role, with a count per role. In production this runs after the event's contacts land in HubSpot and are enriched.
-   ![Morning notification](../docs/screenshots/integration-1-hubspot-morning.png)
-2. **Shortlist and Needs review.** Click **6 shortlist** next to Senior ML Engineer. The role's saved view lists the 6 with rank, fit reason, WSC connections, outreach for that role and Comeet status. **Needs review (6)** next to the filters switches the same view to the people a recruiter should check; each count in the notification opens its group directly (Senior Product Manager - Sports Data: 0 shortlist, 5 needs review). Every open role has its own view, and returning from a contact keeps the group you were on.
-   ![Shortlist](../docs/screenshots/integration-2-hubspot-shortlist.png)
-3. **Contact record.** Open **Priya Anand**. The **Talent match** app card in the Overview tab shows the recommendation, required skills on the profile, matched evidence, what is not confirmed, and one list of WSC people: "Connection" for a listed mutual connection, "Same company, 2y overlap" for someone who shared an employer at overlapping dates (that does not prove they worked together). Switch **Role** to read her other assessments. Outreach from the recruiter app appears in **Recent activities** as HubSpot logs it: a sent invite is a logged email, a draft is a note, a reference request is a task. Each **Event attendance** there shows the person's relevance to that event's topic (for example "Relevance to event topic (Sports Technology & Analytics): Relevant" for Jack Thomas); that is not a job verdict, which is the card's **Recommendation** for the selected role. **Last contacted** changes only for a sent invite: drafts, reference requests (they go to a colleague) and Comeet records do not count. Noah Anderson shows the seeded example: declined Backend Engineer, still open on the Data Engineer shortlist.
-   ![Contact card](../docs/screenshots/integration-3-hubspot-contact-card.png)
-4. **Handoff.** **Add to Comeet** previews what will be sent. Nothing is sent until **Confirm**, and no email goes out.
-   ![Handoff review](../docs/screenshots/integration-4-handoff-review.png)
-5. **Comeet.** **Open in Comeet** opens her profile in the position: status Sourced (not Applied), tags, the custom fields on Details, the Workflow card and the handoff note.
-   ![Comeet record](../docs/screenshots/integration-5-comeet-candidate.png)
-6. **Status comes back.** Back in HubSpot, the card says "In Comeet: Sourced" with **Open in Comeet** instead of Add, the record shows the Comeet status, and the shortlist's Comeet status column updates (Priya Anand: Sourced). The Comeet history is the same made-up file the recruiter view uses (`data/demo/comeet.json`), checked by the handoff rule (`checkHandoff` in `view/activity.ts`, the invite rule minus what only matters for contacting): Ryan Patel, in process for Data Engineer, shows "In progress · Phone screen" on the Data Engineer view and his card has no **Add to Comeet** for any role; Scarlett Green, an uncontacted lead, can still be added; a past rejection for another role warns without blocking, in the same words as the recruiter app's invite panels ("Rejected after technical interview for Computer Vision Engineer in Comeet · Jan 2024." on James Thornton's card). A withdrawal does not warn. A different person sharing an existing candidate's email, in any position, is stopped for review instead of being matched, and a contact whose identity is unresolved (another name on Priya's LinkedIn URL, in any spelling such as `uk.linkedin.com`) cannot be added at all. Ryan re-imported with only his email, or with a `uk.linkedin.com` spelling of his URL, is recognised as Ryan, so his process still blocks him. Noah Anderson's Backend Engineer handoff is allowed, with his decline shown on the card and carried in the note; someone with nothing recorded gets "No contact recorded" ([invite versus handoff](../docs/additional-info/identity-and-history.md#invite-versus-handoff)).
-   ![Comeet status in HubSpot](../docs/screenshots/integration-6-comeet-status-in-hubspot.png)
-7. **Manual import.** **Import** in HubSpot takes a spreadsheet from an event (or **Use sample file**). It is checked first: 4 new contacts, and 1 repeat attendee (James Thornton) added as an event to his existing contact, no duplicate. After import every role is re-scored and a notification reports the new counts (Senior ML Engineer: 7 shortlist, led by Noa Barak, and 7 needs review). A file with missing columns or broken CSV (a quote never closed, a row of the wrong width, a repeated header) imports nothing and names the line. A later edition of a known conference (SportsTech Innovation Summit 2026 after 2024) imports as its own event, labelled with its year. Rows for someone already recorded at that edition are skipped, so importing the same file twice adds nothing the second time ([importing and events](../docs/additional-info/importing-and-events.md)).
-   ![Import preview](../docs/screenshots/integration-7-import-preview.png)
-8. **New role.** In Comeet, **+** next to Positions opens a new position (prefilled). Publishing it scores the whole pool for that role; HubSpot gets a notification and a new saved view.
-   ![New position](../docs/screenshots/integration-8-comeet-new-position.png)
+1. **Open a role's shortlist.** The opening notification shows results for every role. Choose **6 shortlist** for Senior ML Engineer, or **Needs review (6)**. Each role keeps its own view.
+2. **Review Priya Anand.** Her **Talent match** card explains skills, gaps and possible references. Switch **Role** to compare assessments. A shared employer suggests a reference lead; it does not prove two people worked together.
+3. **Try the handoff.** **Add to Comeet** previews the record. **Confirm** creates it only in the simulation, with status **Sourced**, fields and a note. **Open in Comeet** shows it; the HubSpot view reflects the status. No email is sent.
+4. **Import the sample.** **Import → Use sample file** previews four new people and one returning attendee. Confirming adds the event to the existing contact and re-scores every role. Senior ML Engineer becomes seven shortlisted and seven needing review. Re-importing adds nothing; invalid CSVs import nothing and explain the error.
+5. **Create a role.** Switch to Comeet, select **+** beside Positions and publish the prefilled role. The pool is assessed for it and HubSpot gets a new notification and view.
 
-**Reset demo** starts the session over: it discards imported contacts, positions added in Comeet, handed-off Comeet records and notifications. Imported contacts also go away when the page is reloaded. Reset demo does not clear the saved outreach history this browser keeps (that needs the site's data cleared; see [identity and history](../docs/additional-info/identity-and-history.md#stored-state-version-and-upgrade)).
+The **HubSpot | Comeet** switch works like two browser tabs.
+
+<details>
+<summary>View the demo screens</summary>
+
+| Review | Handoff and updates |
+|---|---|
+| ![Morning notification](../docs/screenshots/integration-1-hubspot-morning.png) | ![Handoff review](../docs/screenshots/integration-4-handoff-review.png) |
+| ![Shortlist](../docs/screenshots/integration-2-hubspot-shortlist.png) | ![Comeet record](../docs/screenshots/integration-5-comeet-candidate.png) |
+| ![Contact card](../docs/screenshots/integration-3-hubspot-contact-card.png) | ![Returned status](../docs/screenshots/integration-6-comeet-status-in-hubspot.png) |
+| ![Import preview](../docs/screenshots/integration-7-import-preview.png) | ![New position](../docs/screenshots/integration-8-comeet-new-position.png) |
+
+</details>
+
+### History and safeguards
+
+Ryan Patel's active Comeet process blocks another handoff for any role. Scarlett Green, an uncontacted lead, can be added. A past rejection for another role warns; a withdrawal does not. Conflicting identities or an email shared with a different Comeet person stop the handoff for review.
+
+Noah Anderson's declined invitation stays attached to Backend Engineer. It does not close his Data Engineer opportunity or prevent a Comeet handoff; the handoff note carries the decline. See [invite versus handoff](../docs/additional-info/identity-and-history.md#invite-versus-handoff).
+
+Contact activities distinguish sent invites, drafts, employee reference requests and event attendance. Only sent invites change the demo's **Last contacted**. Event-topic relevance is separate from job fit.
+
+**Reset demo** clears imported contacts, new roles, simulated handoffs and notifications. Reloading also loses imports. Saved outreach history remains until browser site data is cleared. See [stored history](../docs/additional-info/identity-and-history.md#stored-state-version-and-upgrade).
 
 ## What is simulated
 
-| Piece | In the demo | In production |
+| Piece | Demo | Proposed production |
 |---|---|---|
-| Shortlist list | Built from `assessJob('JOB001')` | HubSpot saved view on synced contact properties |
-| Talent match card | React component | HubSpot UI extension (app card) reading the assessment store |
-| Role switching | Reads per-person, per-role, per-version assessments held in memory (`assessments.ts`) | Same keys, in the assessment store |
-| Contact history | The recruiter app's seeded outreach plus this browser's saved history (`view/actionStore.ts`), mapped in `hubspotActivity.ts` | Logged emails, notes and tasks on the HubSpot contact; HubSpot sets Last contacted itself |
-| Comeet lookup and create | In-memory service (`comeet.ts`), fictional positions (`fixtures.ts`), seeded from `data/demo/comeet.json` | Comeet Recruiting API (Enterprise; access through Comeet support) |
-| Comeet position and profile | Approximate layout with configured custom fields and tags | Comeet's own pages |
-| Overnight run and notification | Computed on load from `data/`; a HubSpot-style notification | A scheduled job after event capture and enrichment; HubSpot notification or task |
-| Comeet status in HubSpot | Read from the simulated Comeet | A scheduled sync reads each candidate's status from Comeet's Recruiting API (Comeet sends no status-change webhook) and writes a HubSpot contact property |
-| Spreadsheet import | Validated, then appended to the same source tables (`sources.ts`) | HubSpot import, then the same scoring job |
-| New role | Appended as a job; scored immediately | Comeet "position created" webhook starts scoring |
+| Role results | In-memory assessments and views | Separate assessment store and Shortlist/Needs review memberships for each role |
+| Talent match card | React component | HubSpot app card reading that role's assessment |
+| Contact history | Fictional history plus browser-saved actions | HubSpot emails, notes and tasks; HubSpot manages Last contacted |
+| Comeet records | In-memory lookup and creation | Recruiting API, with verified access and identity checks |
+| Status return | Read from simulated Comeet | Scheduled candidate-status sync; no such webhook is documented |
+| Notifications | Computed when the demo loads | Scoring after capture and enrichment, followed by a notification or task |
+| Import | Validated rows added to local source tables | HubSpot import followed by assessment |
+| New roles | Added locally and scored immediately | Comeet position webhook starts assessment |
+
+**A person can fit several roles at once.** Production keeps person–role revisions separately. The service updates each role's lists, and the app card reads its rank and reasons from the store. The demo's role-specific list columns still need validation in HubSpot. See the [multi-role design](../docs/schema-and-flow.md#production-multiple-roles).
 
 ## What the real products support
 
-What a live version would rely on, checked against each vendor's documentation:
+These documented features support the proposal. WSC's plans, permissions and actual setup still need verification.
 
-- **HubSpot lists:** saved views support filtering and chosen columns. The single-role list is the simplest demonstration. [Saved views](https://knowledge.hubspot.com/records/create-and-manage-saved-views).
-- **HubSpot app cards:** a supported place for the proposed interactive contact panel and handoff button. A real implementation uses HubSpot's UI components and an integration service. [UI extensions](https://developers.hubspot.com/docs/apps/developer-platform/add-features/ui-extensions/overview).
-- **HubSpot app card plan:** HubSpot's docs say UI extensions for private apps, and the serverless functions they use, require an Enterprise subscription; a developer test account works while building. [Private apps](https://developers.hubspot.com/docs/apps/legacy-apps/private-apps/build-with-projects/create-private-apps-with-projects), [serverless functions](https://developers.hubspot.com/docs/apps/developer-platform/add-features/serverless-functions/create-serverless-functions).
-- **HubSpot notifications:** the workflow action "Send in-app notification" posts to the HubSpot notification centre. [Workflow actions](https://knowledge.hubspot.com/workflows/choose-your-workflow-actions).
-- **Comeet positions:** a position webhook reports creation, update and deletion; no candidate-status webhook is documented, so status comes back by scheduled sync. Since April 2026 the API also has Leads endpoints, an alternative home for sourced prospects. [Position webhook](https://developers.comeet.com/reference/position-updates), [changelog](https://developers.comeet.com/reference/changelog).
-- **Comeet records:** candidate creation supports a position, sourced status, custom fields and a note. Custom candidate fields and customer Recruiting API access require Enterprise; access involves Comeet support. This establishes a supported route, not a verified WSC installation. [Create candidate](https://developers.comeet.com/reference/create-a-candidate-new), [custom fields](https://recruit-support.sparkhire.com/hc/en-us/articles/40045151370267-Custom-candidate-fields), [access](https://developers.comeet.com/reference/getting-started-comeet-customers).
+| Need | Documented route |
+|---|---|
+| HubSpot lists and views | [Saved views](https://knowledge.hubspot.com/records/create-and-manage-saved-views) and [service-managed list membership](https://developers.hubspot.com/docs/api-reference/legacy/crm/lists/guide#manage-list-membership). Shared contact properties cannot hold a different rank for each simultaneous role. |
+| Interactive contact card | [UI extensions](https://developers.hubspot.com/docs/apps/developer-platform/add-features/ui-extensions/overview). Enterprise is required for [HubSpot-hosted serverless functions](https://developers.hubspot.com/docs/apps/developer-platform/add-features/serverless-functions/create-serverless-functions); a developer test account works during development. Confirm the chosen app setup's plan requirements. |
+| HubSpot notifications | The workflow action [Send in-app notification](https://knowledge.hubspot.com/workflows/choose-your-workflow-actions). |
+| Comeet role changes | [Position webhooks](https://developers.comeet.com/reference/position-updates) cover creation, update and deletion. Candidate-status webhooks are not documented, so the proposal uses polling. The [changelog](https://developers.comeet.com/reference/changelog) also documents Leads endpoints for sourced prospects. |
+| Comeet handoff | [Candidate creation](https://developers.comeet.com/reference/create-a-candidate-new) supports a position, sourced status, custom fields and a note. [Custom fields](https://recruit-support.sparkhire.com/hc/en-us/articles/40045151370267-Custom-candidate-fields) and customer [Recruiting API access](https://developers.comeet.com/reference/getting-started-comeet-customers) require Enterprise; API access involves support. |

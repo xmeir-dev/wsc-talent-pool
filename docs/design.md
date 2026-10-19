@@ -1,55 +1,46 @@
 # Design
 
-**Help a recruiter decide whom to approach when a role opens, using conference contacts that would otherwise be forgotten.** The pipeline turns a mixed crowd of attendees into an explained shortlist for one role, with visible gaps and the WSC employees who may know each person.
+**Turn forgotten conference contacts into a shortlist a recruiter can act on.** The working tool assesses the supplied files for a selected role, explains its decisions and shows WSC colleagues who may know each person. HubSpot and Comeet integration is simulated.
 
 ## Why this approach
 
-The core pain is signal-to-noise: too many contacts to screen and too little help deciding whom to approach first. Adding more candidates does not fix that; filtering the existing pool does.
-
-- **Deterministic rules, not a black box.** Every result comes from written rules ([How candidates are ranked](scoring.md)) and every row says why in words: which skills matched, what is missing, what to check next. A hiring manager who disagrees with a rule can point to it, and it changes in one place.
-- **Three outcomes, not a cut-off.** Shortlist, needs review, or not recommended for this role. Missing information sends someone to review, never to rejection, and nobody is deleted: a person who does not fit one role stays in the pool for the next.
-- **Relevance and job fit are separate.** Conference relevance says whether a person's skills and industry match an event's topic, not which event they attended. It is reported beside job fit (the output CSV's `event_assessments` and the integration demo's HubSpot event activities); it does not sort the pool and never decides a job outcome.
-- **Connections are a reference lead, not a score.** They only break exact ties, so they can never lift a weaker candidate over a stronger one.
-- **AI reads, rules decide.** For attendees with no recruiter note, the view shows a one-line summary written by an AI model (Claude) from the LinkedIn fields, labelled "AI summary" and checked against the files (`data/demo/ai_summaries.json`). It helps a recruiter skim; it never changes a result.
-- **One shared engine.** The same TypeScript module runs the CLI, the recruiter view and the integration demo, so every screen, the HubSpot-ready CSV and the Excel download agree ([export formats](additional-info/export-formats.md)). The [schema and flow](schema-and-flow.md) defines each step and column; the [assumptions](assumptions.md) list what was assumed.
+- **Visible rules.** Skills and experience determine three outcomes: shortlist, needs review, or not recommended for this role. Everyone stays in the pool. The rules have [known classification gaps](scoring.md#limits) and need hiring-manager validation.
+- **Separate evidence.** Conference relevance describes fit with the event’s topic, not job fit. Employee connections break qualification ties and suggest references; they do not establish ability or endorsement.
+- **One calculation everywhere.** The CLI, recruiter view and integration demo share the same assessment logic. Labelled AI summaries help readers skim profiles but never change decisions. [Flow](schema-and-flow.md), [rules](scoring.md), [exports](additional-info/export-formats.md).
 
 ## Production version
 
-**Recruiters stay in the tools they use.** Contacts and recommendations live in HubSpot; selected people are handed into Comeet for a specific role. The standalone view built for this exercise is where recruiters work the pool today; everything it does is designed to land in those two tools. The [integration demo](../integration-demo/README.md) shows the experience the morning after a conference.
+**Keep recruiting work in HubSpot and Comeet.** HubSpot holds contacts; Comeet manages selected candidates for each role. The [integration demo](../integration-demo/README.md) illustrates this proposal, without connecting to either service.
 
-| Today (CSV) | Production source |
+| Source | Proposed connection |
 |---|---|
-| `conference_attendees.csv` | **The organizer's attendee list, arriving without uploads.** For events WSC hosts, one shared sign-up form (Google Forms, which WSC uses) sends each attendee straight into HubSpot, replacing today's spreadsheet per event; only forms in a shared Drive folder, "Event sign-ups", are synced ([which forms](assumptions.md#how-conference-lists-arrive)). Outside organizers' lists are sent to a dedicated email address or shared folder, or synced by the event platform's HubSpot integration ([options](assumptions.md#how-conference-lists-arrive)). HubSpot's Import button is the fallback. Repeat attendees are matched on LinkedIn URL or email and get the new event edition on their existing contact. Each run of a conference is its own edition (the organiser's event ID, else name and date), and a list sent again for the same edition adds nothing ([importing and events](additional-info/importing-and-events.md)). |
-| `linkedin_profiles.csv` | **Enrichment.** LinkedIn's API offers no general profile lookup to ordinary companies, so production uses (1) what the attendee list or the candidate provides, (2) a licensed enrichment vendor whose terms permit recruiting use, and (3) a recruiter opening the profile for anyone in "needs review". Which of these WSC can use needs confirming with legal. |
-| `wsc_employees.csv` and connections | **Employee roster** from the HR system. Mutual connections are not available through LinkedIn's API, so the first version relies on shared employers in work history ("possible references", already implemented) and employees confirming whom they know. |
-| `job_openings.csv` | **Comeet.** Comeet's position webhook (created, updated, deleted) starts an assessment for that role. Comeet documents no webhook for candidate status, so a scheduled sync writes each person's Comeet status to HubSpot, flagging anyone already in process or recently rejected ([stance](assumptions.md#people-already-in-comeet)). |
-| `output/candidates_<job>.csv` | **HubSpot.** Results are written to custom `talent_` contact properties, matched on email. One self-updating list per open role holds its shortlist, and a workflow sends the recruiter an in-app notification when results change. |
+| Conference lists | WSC Google Forms in an approved “Event sign-ups” folder feed HubSpot through an integration service. Outside lists arrive by dedicated email, shared folder or an event-platform connection; manual import remains available. [Capture rules](assumptions.md#how-conference-lists-arrive). |
+| LinkedIn profiles | Use attendee-provided data, a licensed recruiting-data provider or recruiter review. Ordinary LinkedIn API access does not provide general profile lookup or mutual connections. No scraping. |
+| Employees | Read the HR roster and shared employment history; ask employees to confirm possible references. |
+| Open roles | Comeet position webhooks trigger assessment. Poll candidate status because no status-change webhook is documented. [Contact rules](assumptions.md#people-already-in-comeet). |
+| Results | Store each person’s assessment separately for every role. Update separate Shortlist and Needs review lists in HubSpot. The CSV remains a single-role snapshot, not storage for simultaneous roles. |
 
-**Triggers:** new or changed HubSpot contacts (checked every few minutes: the Service Key used for this kind of integration cannot receive webhooks; a full HubSpot app can, if WSC wants instant scoring), a new form response in the "Event sign-ups" folder, a new or changed Comeet role, a nightly check as a safety net, or a recruiter on demand (**Sync now** in the view's **Your accounts** panel).
+**Refresh:** assess new or changed contacts, profiles and roles; include a nightly check and manual **Sync now**. HubSpot Service Keys support data access, not webhooks, so contact changes require polling or a project-based app. An integration service, such as N8N or Workato, coordinates the work.
 
-**Job location.** In production each Comeet role would carry its office or country and whether it is on-site, hybrid or remote; the supplied roles have none, so location plays no part in the score ([assumption](assumptions.md#data-and-operating-limits)). Someone outside the role's country would be flagged for the recruiter to confirm relocation or remote work, never rejected automatically or counted in the skills outcome, since WSC's remote and relocation rules are still to confirm with WSC. Until roles carry a location, the recruiter view's Location filter is the stand-in.
+**Access:** the design assumes Comeet Enterprise for API access and custom fields, and HubSpot Enterprise for the proposed private app card; workflows require Professional or higher. Confirm WSC’s plans. Without the card, use lists and a separate handoff action, subject to validation. Setup needs scoped HubSpot access, Comeet support’s key and secret, Google sign-in and a Slack app for colleague requests. The view’s **Your accounts** panel contains setup steps; [vendor references](../integration-demo/README.md#what-the-real-products-support) support the proposal, not a tested installation.
 
-**Platform requirements, to confirm with WSC.** Comeet's Recruiting API and custom candidate fields need **Comeet Enterprise**. The interactive contact card with **Add to Comeet** is a HubSpot app card, which for an in-house app needs **HubSpot Enterprise**; workflows need Professional or higher. Without HubSpot Enterprise, properties, lists, import and notifications still work and the handoff becomes a list action. Connecting each tool: HubSpot uses a Service Key (Settings → Integrations → Service Keys, created by a Super Admin, with contact, contact-schema and list scopes); Comeet uses a Recruiting API key (requested through Comeet's API access form, copied by an Admin from Settings → Integrations) plus a secret from Comeet support, and support points position updates at the tool; Google Forms needs a one-time Google sign-in that allows reading the "Event sign-ups" folder and its responses; and Slack needs a small workspace app (bot token with `chat:write`, `im:write`, `users:read`, `users:read.email`) so reference requests go to colleagues as direct messages. The view's **Your accounts** panel lists these steps. All four are joined by a small integration service (for example N8N or Workato) that runs the scoring.
+**Location:** supplied roles have none, so it does not affect current scores. Production should flag country, remote-work or relocation questions for a recruiter, using WSC’s confirmed policy.
 
 ## At scale
 
-Thousands of contacts are little computing; the hard parts are identity and history.
-
-- **One person, one record.** Match by LinkedIn URL, then email; never merge on name alone. Uncertain matches go to a recruiter.
-- **Incremental re-assessment.** When a contact, profile or role changes, reassess only the affected people and roles.
-- **Keep history per job.** A HubSpot property holds one current value, so every assessment (person, role, rule version, date, result) is also stored in a small database; earlier decisions survive and rule changes can be compared.
-- **Respect rate limits.** Batch writes to HubSpot and Comeet and retry safely, so a large import cannot create duplicates.
-
-**Privacy:** notice and a lawful basis at capture, consented or licensed sources only (no LinkedIn scraping), a retention period, deletion across HubSpot, the assessment store and Comeet, and logged access for the recruiting team only. Details in [Assumptions](assumptions.md#privacy).
+- **Keep one person.** Match LinkedIn URL, then email; never merge on name alone. Preserve each event edition and make repeated imports harmless.
+- **Keep each role’s history.** Store current and earlier assessments per person and role. Publish list membership changes in order, discard superseded runs and retry safely. Rank and reasons come from that store in the app card; native list columns still need validation. [Storage contract](schema-and-flow.md#production-multiple-roles).
+- **Limit repeated work.** Reassess affected records only, batch writes and respect provider limits.
+- **Protect candidate data.** Confirm permitted sources, capture notice, retention, restricted access and deletion across all stores. [Privacy assumptions](assumptions.md#privacy).
 
 ## Measuring success
 
-Contacts followed up, time from a role opening to a qualified shortlist, recruiter screening time per role, and hires from conferences and referrals. The tool narrows the list today; it has not yet been shown to improve any of these.
+Measure recruiter screening effort, time from role opening to shortlist, follow-ups and hires. None has yet shown an improvement.
 
 ## With more time
 
-1. **Check the rules with hiring managers** against past hires, and tune the 60% required-skills bar, minimum years and skill equivalents.
-2. **Connect the real tools:** a HubSpot test account and a Comeet sandbox, to prove the handoff and status sync the demo simulates.
-3. **Record recruiter decisions** (approached, not interested, hired) to learn which recommendations work.
-4. **Future idea, beyond today's display-only summaries: an AI step for free text.** A language model could read recruiter notes and full work history to suggest evidence the skill list misses. Its suggestions would be labelled and confirmed by a recruiter before affecting any outcome; the deterministic rules stay the decision-maker.
-5. **From conference pool to talent hub.** Conferences are one source. The same pool, matching and reference leads work for any contact WSC holds: people from tech-company layoffs (the recruiter's own idea from the call; a layoff alert alone covers only part of the need, so laid-off people would flow into the pool and be matched like attendees), past applicants, referrals and LinkedIn sourcing. Each becomes another source on the sync panel. These expansion ideas are parked in [Future work: beyond conferences](future-work.md), with examples and a suggested first extension.
+1. Validate rules against past decisions and fix known classification gaps.
+2. Prove capture, handoff and status sync in test accounts.
+3. Record recruiter decisions and measure results.
+4. Explore AI suggestions from free text, labelled and confirmed before affecting outcomes.
+5. Consider other talent sources, including the recruiter’s layoff-outreach idea. These remain [future work](future-work.md).

@@ -1,42 +1,39 @@
 # Export formats
 
-There are two kinds of download, for two different jobs. They are labelled separately and never share a format.
+**Use Excel to read results; use CSV to import them into HubSpot.** The Excel download keeps text as text. The CSV preserves exact assessment values and is unsafe to open as a spreadsheet.
 
-| Purpose | Where | Format | Values |
-|---|---|---|---|
-| **For people to open** (the default) | Recruiter view: **Download** → **Attendees shown (N), Excel**; with one job chosen also **Full JOB… assessment (N), Excel** | Excel workbook, `.xlsx`, MIME `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`. Files `attendees_<filters>.xlsx` and `candidates_<job_id>.xlsx` | Every text value is a text cell; counts, ranks and years are number cells. Text is exactly as in the pool, with nothing added |
-| **CRM import / data interchange** | Recruiter view, with one job chosen: **CRM import CSV, full JOB… assessment**. CLI: `npm run pipeline` | UTF-8 CSV, `candidates_<job_id>.csv`, `text/csv` | The same normalized values as the assessment (surrounding whitespace trimmed on import), not sanitized for formulas. Byte for byte the same file as the CLI writes (a test checks this). Not meant to be opened in a spreadsheet program |
+| Download | Contents |
+|---|---|
+| **Attendees shown, Excel** | People in the table's current order, with every filter applied. |
+| **Full JOB… assessment, Excel** | Every person, column and decision for the selected job, in the same order as its CSV. |
+| **CRM import CSV, full JOB… assessment** | Full selected-job assessment, byte-for-byte identical to the CLI output. Use the [HubSpot mapping](../schema-and-flow.md#hubspot-preparation). |
+
+The last two choices appear when one job is selected. Without one selected job, Download saves the attendees shown as Excel.
 
 ## Why two formats
 
-A spreadsheet program guesses each CSV cell's type when it opens the file. A cell that starts with `=`, `+`, `-` or `@` can be turned into a formula, so an attendee called `=1+2` shows as `3`. Putting the cell in CSV quotes does not prevent this: quotes only protect commas and line breaks. Changing the value instead (adding an apostrophe or a space in front) would corrupt the CRM import and break the match with the CLI file. So:
+Spreadsheet programs can read a CSV value such as `=1+2` as a formula and show `3`. CSV quoting does not prevent this. Adding an apostrophe would change the value imported into HubSpot.
 
-- The **CSV is not sanitized**. `pipeline/csv.ts` writes the assessment's values unchanged (the normalized values: both importers trim surrounding whitespace), only quoting where CSV punctuation requires it. The shared serializer never adds prefixes. Import this file into HubSpot with the [mapping in Schema and flow](../schema-and-flow.md#hubspot-preparation); do not open it in a spreadsheet program to read it.
-- The **Excel file says what each cell is** (`pipeline/xlsx.ts`, a small writer in this repo with no added dependency):
-  - Text is written as an inline string cell (`t="inlineStr"`) with the Text number format (`@`). It is never a formula element and never left for the program to type, and it is not changed. A value that looks like a number in a text column (such as `007`) stays text.
-  - Counts, ranks and years (`shortlist_rank`, the skill counts, `years_experience`, `connection_count`) are number cells, so they sort and add up. The column decides the type, never the look of a value.
-  - Characters XML cannot hold (control characters) use the format's own `_xHHHH_` escape. Tab, line feed and carriage return are written as character references, so a reader keeps them.
-  - A cell holds at most 32,767 characters, the format's limit; LibreOffice silently cuts anything longer when it opens a file. Longer text is therefore cut by the writer, visibly. It is cut to fit the limit and ends with "… [truncated: N characters in total; the CRM import CSV has the full text]". Only the Excel download does this; the CRM CSV keeps every character. The LibreOffice test checks that a 40,001-character value opens as exactly this marked text.
+The **CSV therefore remains unsanitized**, using the assessment's normalized values, including trimmed surrounding whitespace. It adds only required CSV quoting. It is an interchange file, not the reading copy.
 
-The Excel assessment has the same columns, people, order and decisions as the CSV for that job. The attendee download has the same people, order and filters as the table on screen. `conference_name` there holds each event edition's label, so two runs of one conference read apart ([importing and events](importing-and-events.md#event-editions)).
+The **Excel workbook assigns cell types**: text stays literal, including `=1+2` and `007`; counts, ranks and years are numbers. No formula cells are written. XML control characters are escaped using the workbook format.
+
+Excel cells are limited to 32,767 characters. Longer text is cut with a visible marker stating its original length and pointing to the CSV for the full value. The CSV is not truncated. Event names in attendee exports distinguish [conference editions](importing-and-events.md#event-editions).
 
 ## Supported reader and what was tested
 
-**Supported reader: LibreOffice Calc 26.8.1.1** (`soffice --version`: `LibreOffice 26.8.1.1 bf6ef2662401c7d6dce671ab4deb26ee0af3a7c1`), on macOS, run headless. **Tested format: the `.xlsx` files above**, made by the app's own export code.
+**Verified reader: LibreOffice Calc 26.8.1.1 on macOS.** The test opens, saves and reopens workbooks made by the actual export code, checking:
 
-`tests/import-export/xlsx-libreoffice.test.ts` (also `npm run verify:xlsx`):
+- Formula-like names and companies, including leading spaces and control characters, remain literal text with no formula cells.
+- Counts and ranks remain numeric and unchanged.
+- Oversized text has the visible truncation marker.
 
-1. imports attendees whose name and company are `=1+2`, `+1+2`, `-1+2`, `@SUM(1,2)` and `\u0001=1+2` through the recruiter view's import, then makes the attendee and assessment Excel files with the real export functions;
-2. makes a second file whose name and company start with a space, tab, carriage return, line feed, vertical tab, U+0001 or a no-break space before `=1+2`;
-3. opens each file in LibreOffice and saves it as `.xlsx` (open and save), then reopens the saved file and converts it to UTF-8 CSV;
-4. checks the saved file contains no formula (`<f>`) anywhere, every one of those values is a string cell with exactly the original text, the reopened CSV shows the same literal text, and every count and rank is still a number cell with the same value.
+A control test opens the CRM CSV and confirms that `=1+2` becomes a formula. It demonstrates why the formats must stay separate.
 
-A control in the same test opens the CRM CSV directly in LibreOffice: there `=1+2` does become a formula showing 3. This shows both why the CRM file is not the person download and that the check can detect a formula.
+One reader difference: LibreOffice converts a CR LF pair within a cell to a single line feed. It remains text. Other tested values return unchanged.
 
-One known reader behaviour: a CR LF pair inside a cell comes back from LibreOffice as a single line feed (its line-break convention). That value is still text, not a formula, and the test records this. Every other tested value comes back byte for byte.
-
-Without LibreOffice installed the test is skipped with a message, so `npm test` passes on a fresh checkout. `npm run verify:xlsx` fails instead of skipping. Set `SOFFICE=/path/to/soffice` if it is not on the usual paths.
+Run `npm run verify:xlsx` for this check (`tests/import-export/xlsx-libreoffice.test.ts`). It fails if LibreOffice is unavailable; ordinary `npm test` skips that check instead. Set `SOFFICE=/path/to/soffice` if needed.
 
 ## What this does not claim
 
-The check was run with LibreOffice only. Microsoft Excel, Google Sheets and Numbers were not tested. They read the same standard cell types and are expected to behave the same, but that has not been verified here. This is not a claim that the file is safe in every spreadsheet program, and it does not cover what a person types into a cell after opening it. The CSV meant for CRM import is not made safe to open in a spreadsheet: it is exact on purpose.
+Microsoft Excel, Google Sheets and Numbers have not been tested. Verification covers the generated `.xlsx` files in LibreOffice, not every spreadsheet program or later manual edits. The CRM CSV remains unsafe for spreadsheet viewing by design.

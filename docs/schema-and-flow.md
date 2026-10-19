@@ -1,57 +1,59 @@
 # Schema and flow
 
-**Output:** a ranked candidate list for one selected role, explaining fit, gaps, and potential employee references. The pipeline in `pipeline/` implements this contract; a live HubSpot import has not been tested. Scoring rules: [How candidates are ranked](scoring.md).
+**Each role gets a ranked candidate list with reasons, gaps and possible employee references.** The CLI and both views use the same assessment code. A live HubSpot import has not been tested. See [scoring rules](scoring.md).
 
 ## Flow
 
-```mermaid
-flowchart TB
-  subgraph IN["WSC's files"]
-    direction LR
-    jobs[job_openings] ~~~ att[conference_attendees] ~~~ prof[linkedin_profiles] ~~~ emp[wsc_employees]
-  end
-  IN --> s1["1 · Select role"] --> s2["2 · Combine evidence<br/>one record per person"]
-  s2 --> s3["3 · Conference relevance"] --> s5
-  s2 --> s4["4 · Job fit"] --> s5
-  s2 --> wc["WSC connections<br/>and possible references"] --> s5["5 · Rank and export"]
-  subgraph OUT["Results"]
-    direction LR
-    csv[HubSpot-ready CSV] ~~~ xl[Excel download]
-  end
-  s5 --> OUT
-```
+1. **Select a role** from `job_openings.csv`. An unknown ID stops the run and lists valid IDs.
+2. **Join the evidence:** attendees, LinkedIn profiles and employee histories. Broken CSVs or missing required columns stop the run.
+3. **Assess event relevance** from skills, industry and event topic. This describes attendance; it never changes job fit or ranking.
+4. **Assess job fit:** required skills, experience, gaps and a next step.
+5. **Rank and export:** one CSV per selected role; the view also offers Excel. The supplied output covers all four roles. Identical inputs and rules give identical results.
 
-| Step | Input → action → output |
-|---|---|
-| 1. Select role | `job_id` + `job_openings.csv` → load the role's requirements. An unknown `job_id` stops with the list of valid IDs. |
-| 2. Combine evidence | Read each file strictly (a broken quote, a row of the wrong width or an ambiguous header stops with its line and column) and check it has its required columns. Group attendee rows into event editions ([importing and events](additional-info/importing-and-events.md)). Attendees + LinkedIn profiles, matched by normalized profile URL; connections + employees, matched by employee ID; candidate and employee work histories compared for shared employers → candidate records with source evidence. |
-| 3. Assess conference relevance | Skills, industry, and `conference_domain` → relevance and explanation for each event: fit with the event's topic, not with a job. It does not sort the pool or exclude anyone from job matching; it is reported in `event_assessments` and on the integration demo's HubSpot event activities. |
-| 4. Assess job fit | Candidate evidence + role requirements → skill counts, recommendation, reasons, gaps, and next check, using the [scoring rules](scoring.md). |
-| 5. Rank and export | Recommendations → `output/candidates_<job_id>.csv`. All four jobs are included. Identical inputs and rules produce identical files. The recruiter view also offers the same rows as an Excel file for reading ([export formats](additional-info/export-formats.md)). |
-
-Keep one person with all their attendance records: rows sharing a LinkedIn URL (any spelling of it) are one person, and a row with no URL joins the one LinkedIn person with its email. Never merge by name alone. Ambiguous identities stay separate, each with its own durable person ID (`candidate_key`, below) and visible warnings, and are held for review; missing profiles remain eligible for review. One person at one event edition is one attendance ([importing and events](additional-info/importing-and-events.md)).
+People match by LinkedIn URL, or by email when it identifies one person. Names alone never merge records. Ambiguous identities stay flagged for review; missing profiles do too. One person can have several events, but one event edition counts once. See [importing and events](additional-info/importing-and-events.md).
 
 ## Output fields
 
-**One row per person per selected job; separate files for different jobs.** Put shortlisted people first. Source files retain the detailed evidence.
+**One row per person per role, including people who need review or do not fit.** Engineers can use this complete column reference for imports.
 
-| Group | Columns | Purpose |
+| Group | Columns | Meaning |
 |---|---|---|
-| Recommendation | `recommendation`, `shortlist_rank`, `tie_note`, `outcome_reason`, `fit_evidence`, `skill_gaps`, `seniority_evidence`, `industry_match_evidence` | Why this person fits, what is unconfirmed, and their position. Written for a recruiter: reasons cite the profile skill used, and related-skill or likely matches are labelled ("PyTorch: only a related skill (Deep Learning)", "Object Detection: likely (from Sports CV), please confirm"). |
-| Skill counts | `required_skills_on_profile`, `required_skills_likely`, `required_skills_total`, `required_skills_needed`, `nice_to_have_on_profile`, `nice_to_have_total`, `industry_match` | The counts behind the outcome and the ranking, so anyone can recheck them. |
-| Person | `candidate_key`, `source_contact_ids`, `full_name`, `firstname`, `lastname`, `email`, `linkedin_url`, `current_company`, `current_title`, `years_experience` | Identify the person. `candidate_key` is the person's durable ID: the published `C-HS…` ID for the supplied attendees, otherwise `P-` plus a hash of their LinkedIn URL, email or source ID and name; it does not change when they attend another event ([identity and history](additional-info/identity-and-history.md)). `firstname` is the first word of `full_name` and `lastname` the rest ("Maria de la Cruz" → Maria / de la Cruz); a one-word name leaves `lastname` blank. Check unusual name orders before import. Experience is total experience, including internships, not necessarily time in the specialty. |
-| Role and history | `job_id`, `job_title`, `event_assessments`, `assessment_version` | Identify the role and rule version. Each event (one per event edition the person attended) keeps its date, name, domain, relevance with reason, HubSpot ID, source and notes, plus `event <id>` when an event ID was supplied. |
-| References | `employee_connections`, `connection_count`, `connection_status`, `possible_references` | Listed connections: resolved employee names, IDs and titles. Possible references: employees who shared an employer in overlapping years. Kept apart; neither is scored. |
-| Review | `profile_status`, `data_quality_flags`, `review_next_step`, `comeet_status`, `job_interest` | Explain missing/conflicting data and what to check. Comeet status and job interest are `unknown` in this exercise; in production a scheduled sync fills Comeet status ([design](design.md#production-version)). |
+| Recommendation | `recommendation`, `shortlist_rank`, `tie_note`, `outcome_reason`, `fit_evidence`, `skill_gaps`, `seniority_evidence`, `industry_match_evidence` | Outcome, rank, evidence and gaps. Related or inferred skills are labelled as unconfirmed. |
+| Skill counts | `required_skills_on_profile`, `required_skills_likely`, `required_skills_total`, `required_skills_needed`, `nice_to_have_on_profile`, `nice_to_have_total`, `industry_match` | Counts used for assessment and ranking. Only JOB001 has an industry-match rule. |
+| Person | `candidate_key`, `source_contact_ids`, `full_name`, `firstname`, `lastname`, `email`, `linkedin_url`, `current_company`, `current_title`, `years_experience` | Durable person ID and source details. Names split at the first space; check unusual name orders. Experience includes internships and may cover other specialties. |
+| Role and history | `job_id`, `job_title`, `event_assessments`, `assessment_version` | Role and rule version; each event's date, topic, relevance, source, notes and supplied IDs. |
+| References | `employee_connections`, `connection_count`, `connection_status`, `possible_references` | Listed connections and shared-employer overlaps, kept separate. Connections only break exact fit ties; possible references never affect rank. |
+| Review | `profile_status`, `data_quality_flags`, `review_next_step`, `comeet_status`, `job_interest` | Missing or conflicting evidence and next check. CSV Comeet status and interest are `unknown`; the views use separate fictional history. |
 
-Export UTF-8 CSV with headers. Values are the same normalized values as the assessment (surrounding whitespace trimmed on import), not sanitized for formulas: this file is for CRM import, not for opening in a spreadsheet program, which may read a value like `=1+2` as a formula ([export formats](additional-info/export-formats.md)). Years, counts, and ranks are numbers; other fields are text. List entries share a cell, separated by `; ` (events by ` | `). Keys, role, version, statuses, and explanations are always filled. Unavailable source values are blank and flagged; conflicting values (e.g. two emails for one person) are left blank and both are listed in the flags. Rank starts at 1, tied people share a rank, and rank is blank outside the shortlist. Use `none identified` for no skill gaps, `none` for no quality flags, `none listed` for no connections, and `none found` for no possible references. Skill counts are blank when there is no usable profile.
+`candidate_key` uses the supplied people's published `C-HS…` IDs, otherwise a `P-` hash derived from identifiers. It stays stable across repeat attendance. See [identity and history](additional-info/identity-and-history.md).
 
-`recommendation` is `shortlist`, `needs_review`, or `not_recommended_for_role` (no evidence of the role's core discipline; still in the pool for other roles). Rows are ordered shortlist first, then needs review, then not recommended; within each, by skill counts. `profile_status` is `matched`, `missing_url`, `unmatched`, `invalid_url`, or `conflict`. Count only resolved employee IDs: an empty source list gives 0 and `none_listed`; unresolved IDs give `partially_resolved`, even if none resolve. An unavailable profile gives a blank count and `unknown`. An industry match is assessed only where that role's policy defines one (JOB001).
+### Values and ordering
+
+| Field | Contract |
+|---|---|
+| Recommendation | `shortlist`, `needs_review`, `not_recommended_for_role`, in that order, then ranked by fit. Everyone remains in the pool. |
+| Rank | Starts at 1; ties share a rank. Blank outside the shortlist. |
+| Profile status | `matched`, `missing_url`, `unmatched`, `invalid_url`, `conflict`. Skill counts are blank without a usable profile. |
+| Connections | Count resolved employee IDs only. Empty list: `0` / `none_listed`. Any unresolved IDs: `partially_resolved`. No profile: blank / `unknown`. |
+| Missing values | Unavailable source values are blank and flagged. Conflicting values, such as emails, stay blank with details in flags. |
+| Empty findings | `none identified` for skill gaps; `none` for quality flags; `none listed` for connections; `none found` for references. |
+
+CSV uses UTF-8 headers, numbers for years/counts/ranks and text elsewhere. Lists use `; `; events use ` | `. Keys, role, version, statuses and explanations are filled. Import trims surrounding whitespace.
+
+**Use Excel for spreadsheet reading.** The CSV preserves values for CRM import, including text a spreadsheet might interpret as a formula. See [export formats](additional-info/export-formats.md).
 
 ## HubSpot preparation
 
-Map `email` to Email, `firstname` to First name, `lastname` to Last name, and other columns to configured `talent_<column>` contact properties, using Number or text as above. Synthetic `HS...` IDs are source identifiers, not HubSpot Record IDs. Resolve identity/email conflicts before import. [HubSpot import guide](https://knowledge.hubspot.com/import-and-export/understand-the-import-tool).
+Map `email`, `firstname`, `lastname` to HubSpot's matching contact fields; map the rest to `talent_<column>` properties with the types above. Synthetic `HS...` IDs are source IDs, not HubSpot Record IDs. Resolve identity conflicts first. [Import guide](https://knowledge.hubspot.com/import-and-export/understand-the-import-tool).
 
-Contact properties hold one selected-job snapshot: another job can overwrite it. Preserve per-job results. Blank CSV cells do not clear old values, including a former shortlist rank, so production updates need an explicit clearing policy. [HubSpot file requirements](https://knowledge.hubspot.com/import-and-export/set-up-your-import-file).
+These properties hold **one role's snapshot**. Importing another role can overwrite it. Blank CSV cells do not clear old values, including old ranks; production needs explicit clearing. [File requirements](https://knowledge.hubspot.com/import-and-export/set-up-your-import-file).
 
-Automated tests (`npm test`) cover missing/conflicting profiles, repeat attendees, duplicates, unresolved connections, visible skill gaps, and connections unable to outrank clearly stronger qualifications, using synthetic fixtures in `tests/fixtures/`.
+`npm test` checks matching, duplicates, missing evidence, references and ranking with synthetic fixtures.
+
+## Production: multiple roles
+
+**Proposed, not connected:** keep each person's results for every role in a separate assessment store. Save immutable revisions keyed by person, role, input version and rule version, with one current revision per person–role pair.
+
+Each role gets Shortlist and Needs review lists. The service manages membership through HubSpot's `MANUAL` lists API; a contact can belong to several lists. The app card reads that role's rank, reasons and gaps from the assessment store. Shared contact properties cannot supply different values in each role's native list columns. [Lists API](https://developers.hubspot.com/docs/api-reference/legacy/crm/lists/guide#manage-list-membership).
+
+Publish one run per role at a time, reject superseded runs and retry membership differences. Notify recruiters only when that revision's lists match its results. Lists may briefly lag; the store and HubSpot do not update atomically. List limits, permissions, app-card access and column layout still need a test account check.
