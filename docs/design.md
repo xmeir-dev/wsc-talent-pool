@@ -36,7 +36,7 @@
 
 ## At scale
 
-- **Keep one person.** Match LinkedIn URL, then email; never merge on name alone. Preserve each event edition and make repeated imports harmless.
+- **Keep one person.** Match LinkedIn URL, then email; never merge on name alone. Preserve each event edition and make repeated imports harmless. People without a LinkedIn profile need a [lookup agent and a no-invite rule](additional-info/identity-and-history.md#later-people-without-a-linkedin-profile).
 - **Keep each role’s history.** Store current and earlier assessments per person and role. Publish list membership changes in order, discard superseded runs and retry safely. Rank and reasons come from that store in the app card; native list columns still need validation. [Storage contract](schema-and-flow.md#production-multiple-roles).
 - **Limit repeated work.** Reassess affected records only, batch writes and respect provider limits.
 - **Protect candidate data.** Confirm permitted sources, capture notice, retention, restricted access and deletion across all stores. [Privacy assumptions](assumptions.md#privacy).

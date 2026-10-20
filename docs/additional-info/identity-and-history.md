@@ -86,3 +86,13 @@ The old list is not deleted, and ownership is never guessed. Older source-ID rec
 The handoff note carries recorded role, date, person responsible and simulated label. With no history it says **“No contact recorded”**, which does not assert that no contact ever happened.
 
 At confirmation, simulated Comeet checks identity across every position and re-reads the current pool and history. An email shared with a different candidate is a conflict, not a match. Repeating a handoff to the same position returns the existing record.
+
+## Later: people without a LinkedIn profile
+
+Every supplied attendee has a LinkedIn URL, so this case does not arise in the assignment data. In production it will: badge scans and sign-up forms often arrive with only a name and an email.
+
+**The gap.** Today an email-only row is a valid person. It lands in Needs review and can still be invited. If the same human appears at another conference as "Daniel Levi" with a personal email, the tool sees two people, and both could get an invite. A name match never merges, by design.
+
+**The rule to add: no profile, no invite.** A person without a LinkedIn profile stays in review with one task, find the profile. Once the URL is on file, the existing rule decides: the same URL merges, a different URL means two people.
+
+**Automate the lookup.** A research agent runs on every new person without a profile. It searches using what the row has (name, email, company, title, conference) and proposes a LinkedIn URL with its evidence. Above a set confidence it adds the URL itself and logs why. Below it, the recruiter gets the suggestion to confirm or reject in one click. Either way, the merge itself still follows the URL rule, so the agent never decides who is the same person.
