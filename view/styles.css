@@ -222,12 +222,22 @@ ul {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 6px 24px;
   padding: 40px var(--ml-space-xl) 24px;
   background: linear-gradient(to bottom, transparent, color-mix(in srgb, #d7f20a 9%, transparent));
   font-size: 13px;
-  color: var(--ml-text-muted);
+  color: color-mix(in srgb, var(--ml-text-faint) 60%, transparent);
+}
+.page-foot-made,
+.page-foot-docs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.page-foot-docs {
+  gap: 16px;
 }
 .page-foot img {
   border-radius: 4px;
@@ -238,7 +248,7 @@ ul {
   transition: color 150ms ease-out;
 }
 .page-foot a:hover {
-  color: var(--ml-text-muted);
+  color: var(--ml-text-faint);
 }
 
 /* Same type as the profile's section titles (Overview, Fit to WSC roles). */
