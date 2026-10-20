@@ -20,7 +20,7 @@ The whole story in four steps:
 Import and New position (steps 7 to 9 below) show what happens when a new spreadsheet or a new role arrives.
 
 ```bash
-npm run demo:integrations   # http://localhost:5173
+npm run demo:integrations   # then open the address printed in the terminal
 npx playwright test --project integration-demo
 ```
 

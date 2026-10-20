@@ -18,14 +18,16 @@ For **JOB001, Senior ML Engineer**, the current rules produce **6 shortlisted, 6
 
 ## Try the recruiter view
 
-Use **Node.js 22.22.2** (`nvm install` selects it). Also supported: later 22.x, 24.15+ within 24.x, or 26+. No accounts or keys needed.
+**Live:** https://wsc-talent-pool.vercel.app/ · no sign-in needed.
+
+To run it on your own computer instead, use **Node.js 22.22.2** (`nvm install` selects it). Also supported: later 22.x, 24.15+ within 24.x, or 26+. No accounts or keys needed.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Open **http://localhost:5173**.
+Then open the address printed in the terminal.
 
 1. Choose **Senior ML Engineer** in the **Job** filter. Review the shortlist and people needing a closer look.
 2. Open a person to see skills, gaps, work history and possible WSC references. Each profile has its own link; a broken link shows the attendee list.
