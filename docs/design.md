@@ -15,7 +15,7 @@
 | Source | Proposed connection |
 |---|---|
 | Conference lists | WSC Google Forms in an approved “Event sign-ups” folder feed HubSpot through an integration service. Outside lists arrive by dedicated email, shared folder or an event-platform connection; manual import remains available. [Capture rules](assumptions.md#how-conference-lists-arrive). Each event becomes a HubSpot marketing event, which keeps registration and attendance as separate statuses on the contact ([marketing events on contacts](https://knowledge.hubspot.com/integrations/view-marketing-events-on-contact-records)); registration is not proof of attendance. |
-| LinkedIn profiles | Use attendee-provided data, a licensed recruiting-data provider or recruiter review. Ordinary LinkedIn API access does not provide general profile lookup or mutual connections. No scraping. |
+| LinkedIn profiles | Use attendee-provided data, LinkedIn Recruiter, a licensed recruiting-data provider or recruiter review. Ordinary LinkedIn API access does not provide general profile lookup or mutual connections. |
 | Employees | Read the HR roster and shared employment history; ask employees to confirm possible references. |
 | Open roles | Comeet position webhooks trigger assessment. Poll candidate status because no status-change webhook is documented. [Contact rules](assumptions.md#people-already-in-comeet). |
 | Results | Store each person’s assessment separately for every role. Update separate Shortlist and Needs review lists in HubSpot, and notify the recruiter when results change. The CSV remains a single-role snapshot, not storage for simultaneous roles. |

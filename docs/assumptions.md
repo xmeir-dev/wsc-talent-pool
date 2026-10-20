@@ -75,7 +75,7 @@ The rejection window requires recruiting-team agreement. A production invite cou
 Production assumptions, requiring WSC’s review:
 
 - Explain recruiting use at capture and record consent or another lawful basis.
-- Use permitted attendee data, licensed sources or manual review; no LinkedIn scraping.
+- Get profile data through proper channels: what attendees shared, LinkedIn Recruiter, a licensed recruiting-data provider or manual review.
 - Delete or reconfirm unengaged contacts after 12 months, subject to legal approval. Honor access, correction and deletion across HubSpot, Comeet and the assessment store.
 - Restrict access to recruiting and log views and exports.
 
