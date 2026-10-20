@@ -131,7 +131,7 @@ export function App({ sources: initialSources = bundledSources, delayMs }: Props
             Comeet
           </button>
         </div>
-        <p className="demo-label">Integration concept · synthetic data · no live connection.</p>
+        <p className="demo-label">Production preview · synthetic data · no live connection.</p>
         <div className="demo-controls">
           <button type="button" className="demo-reset" onClick={reset}>
             Reset demo

@@ -53,20 +53,22 @@ npm run pipeline -- JOB001 --data "my data" --out "my output"
 
 Defaults are the project's `data/` and `output/`. Existing output files with the same name are overwritten. Help writes nothing; invalid arguments stop before writing. Exit codes: `0` success, `1` data/file/job problem, `2` invalid command.
 
-## See the integration concept
+## Production preview
+
+**Live:** https://wsc-talent-pool-demo.vercel.app/ (also linked from the recruiter view's footer). Locally:
 
 ```bash
 npm run demo:integrations
 ```
 
-Open the address printed in the terminal. It shows the morning after a conference inside HubSpot and Comeet:
+The preview shows the morning after a conference inside HubSpot and Comeet, the tools WSC's recruiters already use:
 
 - A notification leads to each role's **Shortlist** and **Needs review** views.
 - A **Talent match** card on a contact hands the person into Comeet as a Sourced prospect for the role's recruiter. The HubSpot contact owner and marketing status stay untouched.
 - Comeet status comes back to HubSpot, and spreadsheet imports are re-scored.
 - A new Comeet position gets criteria suggested from its job description (scripted, labelled simulated). The recruiter confirms them before the pool is scored.
 
-This is a separate simulation with synthetic data, not connected to either product. [Walkthrough](integration-demo/README.md) · [platform requirements](docs/design.md#production-version).
+This is a separate simulation with synthetic data, not connected to either product. Start in HubSpot; Comeet is empty until someone is handed over. [What it is and walkthrough](integration-demo/README.md) · [platform requirements](docs/design.md#production-version).
 
 ## Check the submission
 
@@ -87,5 +89,5 @@ npm run test:all                # unit and browser checks; builds both demos
 | `assignment/`, `data/` | Original brief and four supplied CSVs |
 | `pipeline/`, `cli/` | Shared assessment logic and command-line runner |
 | `output/` | Included results for all four roles |
-| `view/`, `integration-demo/`, `data/demo/` | Recruiter view, integration simulation and labelled demo fixtures |
+| `view/`, `integration-demo/`, `data/demo/` | Recruiter view, production preview (HubSpot → Comeet simulation) and labelled demo fixtures |
 | `docs/`, `tests/` | Design, rules, assumptions, supporting detail and checks |

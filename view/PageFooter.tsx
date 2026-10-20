@@ -25,6 +25,9 @@ export function PageFooter() {
         <a href={`${REPO}/docs/design.md`} target="_blank" rel="noreferrer">
           Design
         </a>
+        <a href="https://wsc-talent-pool-demo.vercel.app/" target="_blank" rel="noreferrer">
+          Production preview
+        </a>
       </nav>
     </footer>
   );

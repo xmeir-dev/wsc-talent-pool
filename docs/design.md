@@ -10,7 +10,7 @@
 
 ## Production version
 
-**Keep recruiting work in HubSpot and Comeet.** HubSpot holds contacts; Comeet manages selected candidates for each role. The [integration demo](../integration-demo/README.md) illustrates this proposal, without connecting to either service.
+**Keep recruiting work in HubSpot and Comeet.** HubSpot holds contacts; Comeet manages selected candidates for each role. The [production preview](../integration-demo/README.md) illustrates this proposal, without connecting to either service.
 
 | Source | Proposed connection |
 |---|---|
