@@ -107,7 +107,7 @@ Full merge and history rules: [Identity and history](additional-info/identity-an
 
 **The shortlist has not been validated against hiring-manager decisions.** The 60% threshold, experience minimums, must-haves and skill mappings are assumptions.
 
-**Likely skills are leads, not facts.** They keep people like Mason Young (TensorFlow for PyTorch, Highlight Detection for Object Detection) in review rather than out of sight. They never count toward the 60% threshold; the one place they count is a JOB001 must-have.
+**A related skill is a lead, not proof.** A profile that says TensorFlow where PyTorch is asked (or Highlight Detection for Object Detection, as on Mason Young's) never counts toward the 60% of required skills needed to shortlist; it only sends the person to review with a note to confirm. The one exception is JOB001's must-have “PyTorch or related deep learning”, which accepts a related tool by design.
 
 **Known missed signal: Tobias Braun.** His profile lists ML Architecture and SageMaker, but the JOB001 core-discipline list recognizes neither. The current output marks him not recommended and says “No machine learning or computer vision skill on profile”. That explanation is too broad. His hands-on computer-vision experience is unconfirmed; this case warrants recruiter review. This limitation remains in the current rules and CSV.
 
