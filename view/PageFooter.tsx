@@ -1,5 +1,5 @@
 /** The sign-off under every page (list and profile), full width below the content column. */
-const REPO = 'https://github.com/xmeir-dev/wsc-talent-pool/blob/main';
+const DOCS = '/project'; // the repository's documents, published with the view (see scripts/build-docs.mjs)
 
 export function PageFooter() {
   return (
@@ -16,13 +16,13 @@ export function PageFooter() {
         <span>WSC Sports, Oct 18–19, 2026</span>
       </span>
       <nav className="page-foot-docs" aria-label="Project documents">
-        <a href={`${REPO}/README.md`} target="_blank" rel="noreferrer">
+        <a href={`${DOCS}/README.html`} target="_blank" rel="noreferrer">
           README
         </a>
-        <a href={`${REPO}/docs/assumptions.md`} target="_blank" rel="noreferrer">
+        <a href={`${DOCS}/docs/assumptions.html`} target="_blank" rel="noreferrer">
           Assumptions
         </a>
-        <a href={`${REPO}/docs/design.md`} target="_blank" rel="noreferrer">
+        <a href={`${DOCS}/docs/design.html`} target="_blank" rel="noreferrer">
           Design
         </a>
         <a href="https://wsc-talent-pool-demo.vercel.app/" target="_blank" rel="noreferrer">
