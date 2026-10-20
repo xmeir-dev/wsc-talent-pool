@@ -13,7 +13,7 @@ export function PageFooter() {
           for
         </span>
         <img src="/favicon-192.png" alt="" width={16} height={16} />
-        <span>WSC Sports, Oct 18–19, 2026</span>
+        <span>WSC Sports, Oct 18–20, 2026</span>
       </span>
       <nav className="page-foot-docs" aria-label="Project documents">
         <a href={`${DOCS}/README.html`} target="_blank" rel="noreferrer">
