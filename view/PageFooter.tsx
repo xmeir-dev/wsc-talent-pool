@@ -11,6 +11,10 @@ export function PageFooter() {
       </span>
       <img src="/favicon-192.png" alt="" width={16} height={16} />
       <span>WSC Sports, Oct 18–20, 2026</span>
+      <span aria-hidden="true">·</span>
+      <a href="https://wsc-talent-pool-demo.vercel.app/" target="_blank" rel="noreferrer">
+        Production preview
+      </a>
     </footer>
   );
 }

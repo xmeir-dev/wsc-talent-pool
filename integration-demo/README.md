@@ -1,8 +1,23 @@
-# HubSpot → Comeet integration demo
+# Production preview: HubSpot → Comeet
 
-**See how a recruiter could review conference contacts in HubSpot and add a suitable person to a Comeet role.**
+**Live:** https://wsc-talent-pool-demo.vercel.app/ · the recruiter view links to it from its footer.
 
-**All data and recruiting actions are simulated.** There is no live HubSpot or Comeet connection and no network call. Screens approximate the products from public screenshots, with no product logos or assets. The yellow strip at the top says this is a demo, and its **HubSpot | Comeet** switch works like two browser tabs; the product screens themselves are drawn as the real product would show them, so only the strip and the AI-criteria header say "simulated". Every recommendation, rank, gap and reference comes from the same `pipeline/` the CLI and recruiter view use.
+## What this is
+
+The [recruiter view](../README.md#try-the-recruiter-view) is the assignment's own screen. This preview shows the same results where WSC's recruiters already work: contacts and the overnight talent match in **HubSpot**, and the people worth pursuing handed into **Comeet**, the applicant tracking system where roles are opened. On the discovery call the recruiter said she opens roles in Comeet and wants data moving between systems rather than another tool, so the production version keeps recruiting inside those two products. This preview is what that would look like.
+
+**Everything here is simulated.** Synthetic data, no HubSpot or Comeet account, no network calls. Each screen is drawn in that product's layout, approximated from public screenshots, with no product logos or assets. The **HubSpot | Comeet** switch in the yellow strip works like two browser tabs; only the strip and the AI-criteria header say "simulated". Every recommendation, rank, gap and reference comes from the same `pipeline/` the CLI and recruiter view use.
+
+**Start in HubSpot, not Comeet.** Comeet opens empty because nothing has been handed over yet; that is the point. Conference contacts stay in HubSpot, and Comeet only receives the people a recruiter chooses. The seeded candidates already in Comeet (added by hand, before any integration) have empty Role fit, Evidence and Gaps fields; a person handed over from HubSpot arrives with all of them filled.
+
+The whole story in four steps:
+
+1. In **HubSpot**, the notification "Talent match ran overnight" → **View results** opens the Senior ML Engineer shortlist.
+2. Open **Priya Anand** → **Add to Comeet** → **Confirm**. Nothing is emailed.
+3. **Open in Comeet**: she is on the position's **Prospects (1)** tab as Sourced, owned by the role's recruiter, with role fit, evidence, gaps, possible references and the handoff note.
+4. Back in **HubSpot**, her card reads "In Comeet: Sourced". The status came back on its own.
+
+Import and New position (steps 7 to 9 below) show what happens when a new spreadsheet or a new role arrives.
 
 ```bash
 npm run demo:integrations   # http://localhost:5173

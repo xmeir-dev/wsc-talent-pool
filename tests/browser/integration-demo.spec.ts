@@ -36,7 +36,7 @@ async function openContact(page: Page, name: string) {
 test('morning after: the overnight notice leads to the shortlist, then card → handoff → Comeet record', async ({ page }) => {
   const errors = watchErrors(page);
   await page.goto('/');
-  await expect(page.getByText('Integration concept · synthetic data · no live connection.')).toBeVisible();
+  await expect(page.getByText('Production preview · synthetic data · no live connection.')).toBeVisible();
   await expect(notices(page)).toContainText('Talent match ran overnight');
   await expect(notices(page)).toContainText('75 conference contacts from 4 events scored for 4 open roles.');
   // One line, one link: the per-role counts live on the saved-view tabs.
