@@ -1,0 +1,5 @@
+{
+  "note": "Other ways of writing a skill name, proposed by Claude and kept only when two answers agree. Written by `npm run pipeline -- <job_id> --learn-skills`; review changes like any rule change. See docs/scoring.md#skill-variants.",
+  "variants": [],
+  "checked": {}
+}

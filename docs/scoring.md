@@ -49,6 +49,7 @@ A must-have the role does not also list as required (a new role's must-have AWS 
 | Evidence | Treatment |
 |---|---|
 | Exact skill or accepted alias | Counts toward the required-skills threshold |
+| Same skill written differently ("K8s", "Amazon Web Services"), learned | Counts exactly like the skill it stands for; see [skill variants](#skill-variants) |
 | Related skill or inferred experience | Shown for confirmation; does not count toward that threshold |
 | Skill absent from the profile | Unconfirmed, not proof the person lacks it |
 
@@ -151,9 +152,20 @@ Technical reference for reviewers checking the rules. Each job skill also matche
 
 Only spelling variants work both ways: **Go/Golang** and **REST API/REST APIs**. Other mappings are one-way: SageMaker counts as AWS, but AWS does not establish SageMaker.
 
-A narrower name (SageMaker, OpenCV, HLS, Football Analytics and the other extra names above) required alone matches only its own name: a job asking for SageMaker needs SageMaker on the profile, not AWS. A job asking for **AWS and SageMaker** has two requirements; order does not matter. The same applies to Computer Vision/OpenCV, Video Streaming/HLS and Sports Analytics/Football Analytics. Unlisted skills match only their own names.
+A narrower name (SageMaker, OpenCV, HLS, Football Analytics and the other extra names above) required alone matches only its own name: a job asking for SageMaker needs SageMaker on the profile, not AWS. A job asking for **AWS and SageMaker** has two requirements; order does not matter. The same applies to Computer Vision/OpenCV, Video Streaming/HLS and Sports Analytics/Football Analytics. Unlisted skills match only their own names, or a learned [skill variant](#skill-variants).
 
 These rules keep custom roles from silently losing a requirement. The first submitted version merged any name in a skill's "On profile" list into that skill, so order mattered ("Golang, Go" found nobody; "SageMaker, AWS" scored only SageMaker). Since the fix, a role requiring Python, Computer Vision, Object Detection, OpenCV under the provisional default has 4 requirements and shortlists 1 person instead of 10, with 42 in review; "SageMaker, AWS" goes from 0 to 31 in review; "OpenCV, Sports CV" from 1 shortlisted to 0 with 2 in review; "HLS, Live Streaming" from 3 shortlisted to 1 with 6 in review. The four supplied roles do not use such names and their results are unchanged.
+
+## Skill variants
+
+**People write the same skill differently: "K8s" for Kubernetes, "Amazon Web Services" for AWS.** Claude learns these so a qualified person is not missed for their wording. It never judges people or decides who fits.
+
+- **When:** `npm run pipeline -- <job_id> --learn-skills` sends each skill word the rules do not know, from profiles and from the role, with the role's skill names: "is this word one of these skills, written differently?" Each word is asked about each skill name once, not once per person, so the same word always gets the same answer.
+- **What counts:** a different spelling, singular or plural, an abbreviation, or the full name. Nothing broader, narrower or related: "ML Architecture" is not Machine Learning and "TensorFlow" is not PyTorch.
+- **Safeguards:** each question is asked twice and only matches both answers give are kept. A name these rules already treat (an alias, a related or inferred skill) is never reassigned. Saved answers go in `data/skill-variants.json` with the model and date; review its changes like any rule change.
+- **Effect:** a variant counts exactly like the skill it stands for, including its limits: "ML" is a related skill for PyTorch, as Machine Learning is.
+
+Scoring only reads the saved file; without `--learn-skills` nothing is sent anywhere. The file ships empty because this take-home includes no API key. Checking the supplied skill names by hand found only two easy variants, Live Sport and Sports Broadcast, and neither changes a result: both belong to SREs. The recruiter view uses the saved file and learns nothing itself; production would run the same step whenever new people or a new role arrive.
 
 ## Core-discipline reference
 

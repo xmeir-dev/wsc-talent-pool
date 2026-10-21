@@ -25,6 +25,7 @@
     "docs:site": "node scripts/build-docs.mjs"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "0.137.0",
     "@playwright/test": "1.64.1",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",

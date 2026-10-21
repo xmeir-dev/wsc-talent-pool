@@ -5,13 +5,16 @@
  *   npm run pipeline -- JOB001
  *   npm run pipeline -- --all
  *   npm run pipeline -- JOB001 --data path/to/data --out path/to/output
+ *   npm run pipeline -- JOB001 --learn-skills   (asks Claude about unfamiliar skill words first)
  */
 
 import { accessSync, constants, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assessJob, assessmentToCsv, buildDataset, DataValidationError, outputFileName, UnknownJobError } from '../pipeline';
+import { skillVariantProblems } from '../pipeline/variants';
 import { parseArgs, USAGE } from './args';
+import { claudeAsker, learnSkillVariants } from './learn-skills';
 import { loadSources } from './load-sources';
 import { cleanForTerminal, formatReport } from './report';
 
@@ -35,7 +38,10 @@ function fileProblem(err: unknown, action: string, fallbackPath: string, writing
   return new CliError(`Cannot ${action} ${path}: ${reasons[String(err.code)] ?? err.message}.`);
 }
 
-function run(argv: string[]): number {
+/** The learned skill variants every run scores with (pipeline/variants.ts reads it). */
+const VARIANTS_FILE = join(ROOT, 'data', 'skill-variants.json');
+
+async function run(argv: string[]): Promise<number> {
   const args = parseArgs(argv);
   if (args.kind === 'help') {
     console.log(USAGE);
@@ -59,6 +65,8 @@ function run(argv: string[]): number {
   const dataset = buildDataset(sources);
   for (const w of dataset.warnings) console.warn(cleanForTerminal(`warning: ${w}`));
   const jobIds = args.all ? dataset.jobs.map((j) => j.jobId) : [args.jobId!];
+  if (args.learnSkills) await learn(dataset, jobIds);
+  for (const p of skillVariantProblems()) console.warn(cleanForTerminal(`warning: skill variant ignored: ${p}`));
   const results = jobIds.map((jobId) => assessJob(dataset, jobId));
   const files = results.map((r) => ({ path: join(outDir, outputFileName(r.job.jobId)), csv: assessmentToCsv(r) }));
 
@@ -79,8 +87,27 @@ function run(argv: string[]): number {
   return 0;
 }
 
+async function learn(dataset: ReturnType<typeof buildDataset>, jobIds: string[]): Promise<void> {
+  // Unknown job IDs stop here, before any question is sent.
+  const jobs = jobIds.map((id) => assessJob(dataset, id).job);
+  const result = await learnSkillVariants(dataset, jobs, VARIANTS_FILE, claudeAsker());
+  if (result.questions > 0 && result.checked === 0) {
+    throw new CliError(`--learn-skills could not get answers from Claude, so nothing was scored or saved: ${result.failures[0] ?? 'no usable answer'}`);
+  }
+  const learned = result.added.map((v) => `  ${v.variant} → ${v.skill} (${v.kind.replace('_', ' ')})`);
+  console.log(
+    result.questions === 0
+      ? 'Skill variants: no new words to check.'
+      : [`Skill variants: checked ${result.checked} words, learned ${result.added.length}.`, ...learned].join('\n'),
+  );
+  for (const d of result.dropped) console.warn(cleanForTerminal(`warning: skill variant not saved (conflicts with rules.ts): ${d}`));
+  if (result.failures.length > 0) {
+    console.warn(cleanForTerminal(`warning: ${result.failures.length} calls to Claude failed; those words are asked again next run. First error: ${result.failures[0]}`));
+  }
+}
+
 try {
-  process.exitCode = run(process.argv.slice(2));
+  process.exitCode = await run(process.argv.slice(2));
 } catch (err) {
   if (err instanceof UnknownJobError) {
     console.error(cleanForTerminal(`Unknown job ID "${err.jobId}". Valid job IDs: ${err.knownJobIds.join(', ')}.`));

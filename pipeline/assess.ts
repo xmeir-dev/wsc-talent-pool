@@ -22,7 +22,7 @@ import {
   type RolePolicy,
 } from './rules';
 import { assessSeniority } from './seniority';
-import { canonicalSkill, containsTerm, jobIdKey, normalize, ownEntry } from './text';
+import { canonicalSkill, containsTerm, jobIdKey, normalize, ownEntry, profileSkillTerms } from './text';
 import type {
   Candidate,
   CandidateAssessment,
@@ -66,7 +66,8 @@ export function policyFor(job: Job): { policy: RolePolicy; isDefault: boolean } 
 /** Best match for one job skill among the profile's skills: named beats equivalent beats inferred. */
 export function matchSkill(profileSkills: string[], skill: string): { match: MatchKind; evidence: string | null } {
   const rule = evidenceRule(skill);
-  const find = (terms: string[] | undefined) => profileSkills.find((s) => (terms ?? []).includes(normalize(s))) ?? null;
+  const find = (terms: string[] | undefined) =>
+    profileSkills.find((s) => profileSkillTerms(s).some((t) => (terms ?? []).includes(t))) ?? null;
   const named = find(rule.named);
   if (named) return { match: 'named', evidence: named };
   const equivalent = find(rule.equivalent);
@@ -230,7 +231,7 @@ export function assessCandidate(candidate: Candidate, job: Job, employees: Map<s
     const partial = e.anyOf.map(evidenceFor).find((m) => m && m.match !== 'none');
     return partial ? `${e.label} (only a related skill, ${partial.evidence}, which is not enough)` : e.label;
   });
-  const coreEvidence = profile ? profile.skills.filter((s) => policy.coreDiscipline.terms.includes(normalize(s))) : [];
+  const coreEvidence = profile ? profile.skills.filter((s) => profileSkillTerms(s).some((t) => policy.coreDiscipline.terms.includes(t))) : [];
   const minYears = minYearsFor(job);
   const seniorityProblem = unresolvedSeniority(job);
   const seniority = assessSeniority(profile);

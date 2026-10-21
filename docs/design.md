@@ -6,7 +6,7 @@
 
 - **Visible rules.** Skills and experience determine three outcomes: shortlist, needs review, or not recommended for this role. Everyone stays in the pool. The rules have [known classification gaps](scoring.md#limits) and need hiring-manager validation.
 - **Separate evidence.** Conference relevance describes fit with the event’s topic, not job fit. Employee connections break qualification ties and suggest references; they do not establish ability or endorsement.
-- **One calculation everywhere.** The CLI, recruiter view and integration demo share the same assessment logic. Labelled AI summaries help readers skim profiles but never change decisions. When a role opens, AI suggests its criteria from the job description and a recruiter confirms them before any matching (below). [Flow](schema-and-flow.md), [rules](scoring.md), [exports](additional-info/export-formats.md).
+- **One calculation everywhere.** The CLI, recruiter view and integration demo share the same assessment logic. Labelled AI summaries help readers skim profiles but never change decisions. When a role opens, AI suggests its criteria from the job description and a recruiter confirms them before any matching (below). AI also learns other ways of writing a skill ("K8s" for Kubernetes) so wording does not hide a match; it never decides fit ([skill variants](scoring.md#skill-variants)). [Flow](schema-and-flow.md), [rules](scoring.md), [exports](additional-info/export-formats.md).
 
 ## Production version
 
@@ -50,5 +50,5 @@ Measure recruiter screening effort, time from role opening to shortlist, follow-
 1. Validate rules against past decisions and fix known classification gaps.
 2. Prove capture, handoff, owner assignment and status sync in test accounts.
 3. Record recruiter decisions and measure results.
-4. Explore AI suggestions from free text, labelled and confirmed before affecting outcomes.
+4. Run [skill-variant learning](scoring.md#skill-variants) on every import, and explore AI suggestions from other free text, labelled and confirmed before affecting outcomes.
 5. Consider other talent sources, including the recruiter’s layoff-outreach idea. These remain [future work](future-work.md).

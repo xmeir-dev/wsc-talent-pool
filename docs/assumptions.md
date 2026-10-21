@@ -83,7 +83,7 @@ The take-home runs manually. Production would reassess changed contacts, profile
 
 ## How candidates are ranked
 
-The 60% skills threshold, minimum years, must-haves and skill equivalents are exercise assumptions, not validated hiring standards. Confirm them with hiring managers and past decisions. [Rules and limits](scoring.md).
+The 60% skills threshold, minimum years, must-haves and skill equivalents are exercise assumptions, not validated hiring standards. Learned [skill variants](scoring.md#skill-variants) are limited to the same skill written differently; a wrong one would count fully, which is why two answers must agree and the saved file is reviewed. Confirm them with hiring managers and past decisions. [Rules and limits](scoring.md).
 
 A missing skill is unconfirmed, not proven absent. Total years are retained, with intern/junior history flagged for checking. Shared employers and overlapping dates suggest possible references, not proof that people worked together.
 

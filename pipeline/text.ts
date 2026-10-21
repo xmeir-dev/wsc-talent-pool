@@ -1,6 +1,7 @@
 /** Small text helpers shared by the assessment modules. */
 
 import { SKILL_SYNONYMS } from './rules';
+import { variantSkill } from './variants';
 
 export function normalize(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -27,12 +28,20 @@ export function ownEntry<T>(table: Readonly<Record<string, T>>, key: string): T 
 
 /**
  * The skill a job skill name is scored as: a configured spelling variant ("golang", "rest api", see SKILL_SYNONYMS)
- * is its skill, so either spelling, in any order, scores the same. Any other name is itself: a narrower tool listed
- * under a broad skill ("SageMaker" under AWS) matches only its own name when a job requires it.
+ * or a learned one ("k8s", see variants.ts) is its skill, so either spelling, in any order, scores the same. Any other
+ * name is itself: a narrower tool listed under a broad skill ("SageMaker" under AWS) matches only its own name when a
+ * job requires it.
  */
 export function canonicalSkill(skill: string): string {
   const n = normalize(skill);
-  return ownEntry(SKILL_SYNONYMS, n) ?? n;
+  return ownEntry(SKILL_SYNONYMS, n) ?? variantSkill(n) ?? n;
+}
+
+/** The names a profile skill is matched by: as written and, for a learned variant, the skill it stands for. */
+export function profileSkillTerms(skill: string): string[] {
+  const n = normalize(skill);
+  const learned = variantSkill(n);
+  return learned ? [n, learned] : [n];
 }
 
 /**

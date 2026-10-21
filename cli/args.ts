@@ -2,14 +2,14 @@
 
 export type ParsedArgs =
   | { kind: 'help' }
-  | { kind: 'run'; jobId: string | null; all: boolean; dataDir: string | null; outDir: string | null }
+  | { kind: 'run'; jobId: string | null; all: boolean; learnSkills: boolean; dataDir: string | null; outDir: string | null }
   | { kind: 'error'; message: string };
 
 const VALUE_FLAGS = ['--data', '--out'] as const;
 
 export const USAGE = `Usage:
-  npm run pipeline -- <job_id> [--data <folder>] [--out <folder>]
-  npm run pipeline -- --all [--data <folder>] [--out <folder>]
+  npm run pipeline -- <job_id> [--learn-skills] [--data <folder>] [--out <folder>]
+  npm run pipeline -- --all [--learn-skills] [--data <folder>] [--out <folder>]
   npm run pipeline -- --help
 
 Assesses the attendees for one job (or every job with --all), prints the shortlist and
@@ -18,6 +18,9 @@ the people who need review, and writes one CSV per job.
 Arguments:
   <job_id>         A job from job_openings.csv, e.g. JOB001 (any letter case).
   --all            Run every job in job_openings.csv. Cannot be combined with a job ID.
+  --learn-skills   Before scoring, ask Claude whether unfamiliar skill words are known skills
+                   written differently ("K8s" for Kubernetes) and save the agreed answers to
+                   data/skill-variants.json. Needs ANTHROPIC_API_KEY. Without it, nothing is sent.
   --data <folder>  Folder with the four source CSVs. Default: ./data in this project.
   --out <folder>   Folder for the CSVs. Created if missing. Default: ./output in this project.
   -h, --help       Show this help. Reads and writes no files.
@@ -32,6 +35,7 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
   const values: Record<string, string> = {};
   const jobIds: string[] = [];
   let all = false;
+  let learnSkills = false;
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
@@ -40,6 +44,11 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
       all = true;
     } else if (arg.startsWith('--all=')) {
       return { kind: 'error', message: 'Option --all takes no value.' };
+    } else if (arg === '--learn-skills') {
+      if (learnSkills) return { kind: 'error', message: 'Option --learn-skills was given more than once.' };
+      learnSkills = true;
+    } else if (arg.startsWith('--learn-skills=')) {
+      return { kind: 'error', message: 'Option --learn-skills takes no value.' };
     } else if (arg.startsWith('--')) {
       const eq = arg.indexOf('=');
       const flag = eq < 0 ? arg : arg.slice(0, eq);
@@ -59,5 +68,5 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
   if (jobIds.length > 1) return { kind: 'error', message: `Give one job ID, not ${jobIds.length} (${jobIds.join(', ')}). Use --all for every job.` };
   if (all && jobIds.length === 1) return { kind: 'error', message: `Give either a job ID (${jobIds[0]}) or --all, not both.` };
   if (!all && jobIds.length === 0) return { kind: 'error', message: 'Give a job ID (e.g. JOB001) or --all.' };
-  return { kind: 'run', jobId: jobIds[0] ?? null, all, dataDir: values['--data'] ?? null, outDir: values['--out'] ?? null };
+  return { kind: 'run', jobId: jobIds[0] ?? null, all, learnSkills, dataDir: values['--data'] ?? null, outDir: values['--out'] ?? null };
 }

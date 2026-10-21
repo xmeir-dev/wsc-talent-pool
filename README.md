@@ -47,6 +47,8 @@ npm run pipeline -- --help
 
 The first command writes `output/candidates_JOB001.csv` and prints each shortlisted and review candidate with the reasons and next step. All assessed people appear in the CSV. JOB002–JOB004 are also included.
 
+To have Claude first check unfamiliar skill words ("K8s" for Kubernetes) and save the answers to `data/skill-variants.json`, add `--learn-skills`. It needs `ANTHROPIC_API_KEY`; without the flag nothing is sent. [How it works](docs/scoring.md#skill-variants).
+
 To choose folders:
 
 ```bash

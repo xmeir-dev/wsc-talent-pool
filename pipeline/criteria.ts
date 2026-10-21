@@ -9,14 +9,14 @@ import type { JobPolicy } from './types';
 
 /**
  * Evidence for a job skill, looked up by its canonical skill so every accepted spelling ("Go", "Golang") gets the
- * same rule. The skill's own name always counts as named, before any alias; related and inferred evidence stay as
- * configured. A skill that is not configured matches its own name only.
+ * same rule. The skill's own name (and, for a learned variant, the skill it stands for) always counts as named, before
+ * any alias; related and inferred evidence stay as configured. A skill that is not configured matches its own name only.
  */
 export function evidenceRule(skill: string): SkillEvidenceRule {
   const own = normalize(skill);
   const key = canonicalSkill(skill);
   const rule = ownEntry(SKILL_EVIDENCE, key);
-  if (!rule) return { named: [own] };
+  if (!rule) return { named: [...new Set([key, own])] };
   // An alias is already one of the skill's named terms, so the set is the same for every spelling.
   return { ...rule, named: [key, ...rule.named.filter((t) => t !== key)] };
 }

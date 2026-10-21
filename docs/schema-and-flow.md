@@ -24,7 +24,7 @@ flowchart TB
 1. **Select a role** from `job_openings.csv`, with its own criteria when given ([below](#role-criteria-columns)). Job IDs match in any letter case; an unknown ID stops the run and lists valid IDs, and two IDs differing only by case are rejected when the files are read.
 2. **Join the evidence:** attendees, LinkedIn profiles and employee histories. Broken CSVs or missing required columns stop the run.
 3. **Assess event relevance** from skills, industry and event topic. This describes attendance; it never changes job fit or ranking.
-4. **Assess job fit:** required skills, experience, gaps and a next step.
+4. **Assess job fit:** required skills, experience, gaps and a next step. Skills written differently ("K8s") count through the saved [skill variants](scoring.md#skill-variants); `--learn-skills` asks Claude about unfamiliar words first.
 5. **Rank and export:** one CSV per selected role (`output/candidates_<job_id>.csv`); the view also offers Excel. A job ID that is empty or contains path separators or control characters cannot name an export file. The supplied output covers all four roles. Identical inputs and rules give identical results.
 
 People match by LinkedIn URL, or by email when it identifies one person. Names alone never merge records. Ambiguous identities stay flagged for review; missing profiles do too. One person can have several events, but one event edition counts once. See [importing and events](additional-info/importing-and-events.md).
